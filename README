@@ -1,0 +1,8 @@
+mozutils
+========
+
+Some shell scripts I use for mozilla development:
+
+    jsbuild:  builds javascript engine
+    jstest:   runs javascript shell tests
+    qwiggle:  runs wiggle on mercurial mq rejected patch pushes
