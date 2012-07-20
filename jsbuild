@@ -1,0 +1,102 @@
+#!/bin/bash
+
+LOGFILE=jsbuild.log
+
+COMMON_CONFIG="--with-ccache=/usr/local/bin/ccache"
+DEBUG_CONFIG="$COMMON_CONFIG --enable-debug --disable-optimize --enable-gczeal --enable-more-deterministic"
+THREAD_CONFIG="$DEBUG_CONFIG --with-system-nspr --enable-threadsafe"
+VALGRIND_CONFIG="$THREAD_CONFIG --disable-jemalloc --enable-valgrind"
+RELEASE_CONFIG=$COMMON_CONFIG
+
+CLEAN=
+DEBUG=
+THREAD=
+VALGRIND=
+RELEASE=
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+        -c) 
+            CLEAN=-c
+            ;;
+        debug) 
+            DEBUG=t
+            ;;
+        thread) 
+            THREAD=t
+            ;;
+        release)
+            RELEASE=t
+            ;;
+        valgrind)
+            VALGRIND=t
+            ;;
+        *)  
+            echo "jsbuild [-c] [debug] [thread] [valgrind] [release]"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ -z "$DEBUG" -a -z "$THREAD" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
+    DEBUG=debug
+    RELEASE=release
+fi
+
+if [ ! -e ./jsapi.h ]; then
+    echo Run jsbuild from the tree/js/src directory
+    exit 1
+fi
+
+function fail()
+{        
+    echo "Build failed, see $LOGFILE"
+    exit 1
+}
+
+function build()
+{
+    local NAME=$1
+    local DIR=$2
+    local CONFIG=$3
+    local CLEAN=$4
+
+    if [ -n "$CLEAN" ]; then
+        echo Clean $NAME
+        rm -rf $DIR
+    fi
+
+    if [ ! -d $DIR ]; then
+        echo Configure $NAME
+        mkdir $DIR
+        cd $DIR
+        ../configure $CONFIG > ../$LOGFILE 2>&1 || fail
+        cd ..
+    fi
+
+    echo Build $NAME
+    make -C $DIR -j8 >> $LOGFILE 2>&1 || fail
+}
+
+rm -f $LOGFILE
+
+if [ ! -d debug-build ] && [ ! -d release-build ]; then
+    autoconf213 2>&1 > $LOGFILE || fail
+fi
+
+if [ -n "$DEBUG" ]; then
+    build debug debug-build "$DEBUG_CONFIG" $CLEAN
+fi
+
+if [ -n "$THREAD" ]; then
+    build thread thread-build "$THREAD_CONFIG" $CLEAN
+fi
+
+if [ -n "$VALGRIND" ]; then
+    build valgrind valgrind-build "$VALGRIND_CONFIG" $CLEAN
+fi
+
+if [ -n "$RELEASE" ]; then
+    build release release-build "$RELEASE_CONFIG" $CLEAN
+fi

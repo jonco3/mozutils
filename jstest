@@ -1,0 +1,122 @@
+#!/bin/bash
+
+echo "jstest $PWD $*"
+echo
+
+CLEAN=
+DEBUG=
+THREAD=
+RELEASE=
+JITTEST=
+JSTEST=
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+        -c) 
+            CLEAN=-c
+            ;;
+        debug) 
+            DEBUG=debug
+            ;;
+        thread) 
+            THREAD=thread
+            ;;
+        release)
+            RELEASE=release
+            ;;
+        jittest)
+            JITTEST=t
+            ;;
+        jstest)
+            JSTEST=t
+            ;;
+        *)  
+            echo "jstest -c [debug|thread|release] [jittest|jstest]"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ -z "$DEBUG" -a -z "$THREAD" -a -z "$RELEASE" ]; then
+    DEBUG=debug
+    RELEASE=release
+fi
+
+if [ -z "$JITTEST" -a -z "$JSTEST" ]; then
+    JITTEST=t
+    JSTEST=t
+fi
+
+hg log -l 1 || exit 1
+
+jsbuild $CLEAN $DEBUG $THREAD $RELEASE || exit 1
+echo
+
+FAILFILE=jstest.failures.tmp
+LOGFILE=jstest.log
+
+rm -f $LOGFILE
+touch $LOGFILE
+
+function print-failures()
+{
+    if [ -e $FAILFILE ]; then
+        local FAILURES=`sort $FAILFILE`
+        rm $FAILFILE
+
+        for TEST in $FAILURES; do
+            echo "  $TEST failed"
+        done
+    fi
+}
+
+function jit-test()
+{
+    local NAME=$1
+    local JSBIN=$2
+
+    echo "Run $NAME jit tests"
+
+    rm -f $FAILFILE
+    ./jit-test/jit_test.py --no-progress -w $FAILFILE $JSBIN >> $LOGFILE
+    print-failures
+}
+
+function js-test()
+{
+    local NAME=$1
+    local JSBIN=$2
+
+    echo "Run $NAME js tests"
+
+    rm -f $FAILFILE
+    # --no-progress and --failure-file don't seem to work
+    ./tests/jstests.py -j6 $JSBIN | grep -E "^    " > $FAILFILE
+    print-failures
+}
+
+function test()
+{
+    local NAME=$1
+    local JSBIN=$2
+
+    if [ -n "$JITTEST" ]; then
+        jit-test $NAME $JSBIN
+    fi
+    if [ -n "$JSTEST" ]; then
+        js-test $NAME $JSBIN
+    fi
+}
+
+if [ -n "$DEBUG" ]; then
+    test debug ./debug-build/js
+fi
+
+if [ -n "$THREAD" ]; then
+    test thread ./thread-build/js
+fi
+
+if [ -n "$RELEASE" ]; then
+    test release ./release-build/js
+fi
