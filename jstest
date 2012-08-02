@@ -5,7 +5,6 @@ echo
 
 CLEAN=
 DEBUG=
-THREAD=
 RELEASE=
 JITTEST=
 JSTEST=
@@ -18,9 +17,6 @@ while [ $# -ge 1 ]; do
         debug) 
             DEBUG=debug
             ;;
-        thread) 
-            THREAD=thread
-            ;;
         release)
             RELEASE=release
             ;;
@@ -31,14 +27,14 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "jstest -c [debug|thread|release] [jittest|jstest]"
+            echo "jstest -c [debug|release] [jittest|jstest]"
             exit 1
             ;;
     esac
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$THREAD" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
     DEBUG=debug
     RELEASE=release
 fi
@@ -50,7 +46,7 @@ fi
 
 hg log -l 1 || exit 1
 
-jsbuild $CLEAN $DEBUG $THREAD $RELEASE || exit 1
+jsbuild $CLEAN $DEBUG $RELEASE || exit 1
 echo
 
 FAILFILE=jstest.failures.tmp
@@ -111,10 +107,6 @@ function test()
 
 if [ -n "$DEBUG" ]; then
     test debug ./debug-build/js
-fi
-
-if [ -n "$THREAD" ]; then
-    test thread ./thread-build/js
 fi
 
 if [ -n "$RELEASE" ]; then

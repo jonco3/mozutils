@@ -2,15 +2,13 @@
 
 LOGFILE=jsbuild.log
 
-COMMON_CONFIG="--with-ccache=/usr/local/bin/ccache"
-DEBUG_CONFIG="$COMMON_CONFIG --enable-debug --disable-optimize --enable-gczeal --enable-more-deterministic"
-THREAD_CONFIG="$DEBUG_CONFIG --with-system-nspr --enable-threadsafe"
-VALGRIND_CONFIG="$THREAD_CONFIG --disable-jemalloc --enable-valgrind"
+COMMON_CONFIG="--with-ccache=/usr/local/bin/ccache --with-system-nspr --enable-threadsafe"
+DEBUG_CONFIG="$COMMON_CONFIG --enable-debug --disable-optimize --enable-gczeal" # --enable-more-deterministic currently broken
+VALGRIND_CONFIG="$DEBUG_CONFIG --disable-jemalloc --enable-valgrind"
 RELEASE_CONFIG=$COMMON_CONFIG
 
 CLEAN=
 DEBUG=
-THREAD=
 VALGRIND=
 RELEASE=
 
@@ -22,9 +20,6 @@ while [ $# -ge 1 ]; do
         debug) 
             DEBUG=t
             ;;
-        thread) 
-            THREAD=t
-            ;;
         release)
             RELEASE=t
             ;;
@@ -32,14 +27,14 @@ while [ $# -ge 1 ]; do
             VALGRIND=t
             ;;
         *)  
-            echo "jsbuild [-c] [debug] [thread] [valgrind] [release]"
+            echo "jsbuild [-c] [debug] [valgrind] [release]"
             exit 1
             ;;
     esac
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$THREAD" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
+if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
     DEBUG=debug
     RELEASE=release
 fi
@@ -87,10 +82,6 @@ fi
 
 if [ -n "$DEBUG" ]; then
     build debug debug-build "$DEBUG_CONFIG" $CLEAN
-fi
-
-if [ -n "$THREAD" ]; then
-    build thread thread-build "$THREAD_CONFIG" $CLEAN
 fi
 
 if [ -n "$VALGRIND" ]; then
