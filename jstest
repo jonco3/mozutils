@@ -11,8 +11,11 @@ JSTEST=
 
 while [ $# -ge 1 ]; do
     case "$1" in
-        -c) 
+        -c)
             CLEAN=-c
+            ;;
+        -C)
+            CLEAN=-C
             ;;
         debug) 
             DEBUG=debug
@@ -27,12 +30,18 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "jstest -c [debug|release] [jittest|jstest]"
+            echo "usage: jstest [-c|-C] [debug|release] [jittest|jstest]"
+            echo "  -c => don'clean first (the default)"
+            echo "  -C => don't clean first"
             exit 1
             ;;
     esac
     shift
 done
+
+if [ -z "$CLEAN" ]; then
+    CLEAN=-c
+fi
 
 if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
     DEBUG=debug

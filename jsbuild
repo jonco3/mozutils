@@ -15,7 +15,10 @@ RELEASE=
 while [ $# -ge 1 ]; do
     case "$1" in
         -c) 
-            CLEAN=-c
+            CLEAN=t
+            ;;
+        -C) 
+            CLEAN=
             ;;
         debug) 
             DEBUG=t
@@ -27,7 +30,9 @@ while [ $# -ge 1 ]; do
             VALGRIND=t
             ;;
         *)  
-            echo "jsbuild [-c] [debug] [valgrind] [release]"
+            echo "jsbuild [-c|-C] [debug] [valgrind] [release]"
+            echo "  -c => clean first"
+            echo "  -C => don't clean first (the default)"
             exit 1
             ;;
     esac
