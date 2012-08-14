@@ -6,6 +6,7 @@ echo
 CLEAN=
 DEBUG=
 RELEASE=
+JSAPITEST=
 JITTEST=
 JSTEST=
 
@@ -23,6 +24,9 @@ while [ $# -ge 1 ]; do
         release)
             RELEASE=release
             ;;
+        jsapitest)
+            JSAPITEST=t
+            ;;
         jittest)
             JITTEST=t
             ;;
@@ -30,8 +34,8 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "usage: jstest [-c|-C] [debug|release] [jittest|jstest]"
-            echo "  -c => don'clean first (the default)"
+            echo "usage: jstest [-c|-C] [debug|release] [jsapitest|jittest|jstest]"
+            echo "  -c => clean first (the default)"
             echo "  -C => don't clean first"
             exit 1
             ;;
@@ -48,7 +52,7 @@ if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
     RELEASE=release
 fi
 
-if [ -z "$JITTEST" -a -z "$JSTEST" ]; then
+if [ -z "$JSAPITEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
     JITTEST=t
     JSTEST=t
 fi
@@ -76,48 +80,67 @@ function print-failures()
     fi
 }
 
+function jsapi-test()
+{
+    local NAME=$1
+    local JSDIR=$2
+
+    echo "Run $NAME jsapi tests"
+
+    $JSDIR/jsapi-tests/jsapi-tests >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then
+        # details of failing test not flushed to logfile by the time the command exits
+        echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
+    fi
+}
+
 function jit-test()
 {
     local NAME=$1
-    local JSBIN=$2
+    local JSDIR=$2
 
     echo "Run $NAME jit tests"
 
     rm -f $FAILFILE
-    ./jit-test/jit_test.py --no-progress -w $FAILFILE $JSBIN >> $LOGFILE
+    ./jit-test/jit_test.py --no-progress -w $FAILFILE $JSDIR/js >> $LOGFILE
     print-failures
 }
 
 function js-test()
 {
     local NAME=$1
-    local JSBIN=$2
+    local JSDIR=$2
 
     echo "Run $NAME js tests"
 
     rm -f $FAILFILE
     # --no-progress and --failure-file don't seem to work
-    ./tests/jstests.py -j6 $JSBIN | grep -E "^    " > $FAILFILE
+    ./tests/jstests.py -j6 $JSDIR/js | grep -E "^    " > $FAILFILE
     print-failures
 }
 
 function test()
 {
     local NAME=$1
-    local JSBIN=$2
+    local JSDIR=$2
+
+    if [ -n "$JSAPITEST" ]; then
+        jsapi-test $NAME $JSDIR
+    fi
 
     if [ -n "$JITTEST" ]; then
-        jit-test $NAME $JSBIN
+        jit-test $NAME $JSDIR
     fi
+
     if [ -n "$JSTEST" ]; then
-        js-test $NAME $JSBIN
+        js-test $NAME $JSDIR
     fi
 }
 
 if [ -n "$DEBUG" ]; then
-    test debug ./debug-build/js
+    test debug ./debug-build
 fi
 
 if [ -n "$RELEASE" ]; then
-    test release ./release-build/js
+    test release ./release-build
 fi
