@@ -23,11 +23,11 @@ fi
 wiggle --merge $BASE_FILE $REJ_FILE > $OUT_FILE
 
 if [ $? -ne 0 ]; then
-    echo "wiggle failed, merge in $OUT_FILE"
-    exit $?
+    echo "wiggle failed, must manually merge $BASE_FILE"
+else
+    echo "wiggle succeeded, updating $BASE_FILE"
 fi
 
-echo "wiggle succeeded, updating $BASE_FILE"
 rm -f $ORIG_FILE
 mv $BASE_FILE $ORIG_FILE && \
 mv $OUT_FILE $BASE_FILE && \
