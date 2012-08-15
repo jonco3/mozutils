@@ -5,6 +5,7 @@ echo
 
 CLEAN=
 DEBUG=
+NOTHREAD=
 RELEASE=
 JSAPITEST=
 JITTEST=
@@ -21,6 +22,9 @@ while [ $# -ge 1 ]; do
         debug) 
             DEBUG=debug
             ;;
+        nothread) 
+            NOTHREAD=nothread
+            ;;
         release)
             RELEASE=release
             ;;
@@ -34,7 +38,7 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "usage: jstest [-c|-C] [debug|release] [jsapitest|jittest|jstest]"
+            echo "usage: jstest [-c|-C] [debug|nothread|release] [jsapitest|jittest|jstest]"
             echo "  -c => clean first (the default)"
             echo "  -C => don't clean first"
             exit 1
@@ -47,7 +51,7 @@ if [ -z "$CLEAN" ]; then
     CLEAN=-c
 fi
 
-if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" ]; then
     DEBUG=debug
     RELEASE=release
 fi
@@ -60,7 +64,7 @@ fi
 
 hg log -l 1 || exit 1
 
-jsbuild $CLEAN $DEBUG $RELEASE || exit 1
+jsbuild $CLEAN $DEBUG $NOTHREAD $RELEASE || exit 1
 echo
 
 FAILFILE=jstest.failures.tmp
@@ -140,6 +144,10 @@ function test()
 
 if [ -n "$DEBUG" ]; then
     test debug ./debug-build
+fi
+
+if [ -n "$NOTHREAD" ]; then
+    test nothread ./nothread-build
 fi
 
 if [ -n "$RELEASE" ]; then
