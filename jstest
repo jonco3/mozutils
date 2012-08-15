@@ -53,6 +53,7 @@ if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
 fi
 
 if [ -z "$JSAPITEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
+    JSAPITEST=t
     JITTEST=t
     JSTEST=t
 fi
