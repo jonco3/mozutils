@@ -2,13 +2,21 @@
 
 LOGFILE=jsbuild.log
 
-COMMON_CONFIG="--with-ccache=/usr/local/bin/ccache --with-system-nspr --enable-threadsafe"
-DEBUG_CONFIG="$COMMON_CONFIG --enable-debug --disable-optimize --enable-gczeal" # --enable-more-deterministic currently broken
-VALGRIND_CONFIG="$DEBUG_CONFIG --disable-jemalloc --enable-valgrind"
-RELEASE_CONFIG=$COMMON_CONFIG
+# todo: --enable-more-deterministic currently broken but should be common config
+
+COMMON_OPTS="--with-ccache=/usr/local/bin/ccache"
+THREAD_OPTS="--with-system-nspr --enable-threadsafe"
+DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal" 
+VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
+
+NOTHREAD_CONFIG="$COMNON_OPTS $DEBUG_OPTS"
+DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
+VALGRIND_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS $VALGRIND_OPTS"
+RELEASE_CONFIG="$COMNON_OPTS"
 
 CLEAN=
 DEBUG=
+NOTHREAD=
 VALGRIND=
 RELEASE=
 
@@ -23,6 +31,9 @@ while [ $# -ge 1 ]; do
         debug) 
             DEBUG=t
             ;;
+        nothread) 
+            NOTHREAD=t
+            ;;
         release)
             RELEASE=t
             ;;
@@ -30,7 +41,7 @@ while [ $# -ge 1 ]; do
             VALGRIND=t
             ;;
         *)  
-            echo "jsbuild [-c|-C] [debug] [valgrind] [release]"
+            echo "jsbuild [-c|-C] [debug|nothread|valgrind|release]"
             echo "  -c => clean first"
             echo "  -C => don't clean first (the default)"
             exit 1
@@ -39,7 +50,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
+if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
     DEBUG=debug
     RELEASE=release
 fi
@@ -71,12 +82,13 @@ function build()
         echo Configure $NAME
         mkdir $DIR
         cd $DIR
-        ../configure $CONFIG > ../$LOGFILE 2>&1 || fail
+        echo configure $CONFIG > $LOGFILE
+        ../configure $CONFIG >> $LOGFILE 2>&1 || fail
         cd ..
     fi
 
     echo Build $NAME
-    make -C $DIR -j8 >> $LOGFILE 2>&1 || fail
+    make -C $DIR -j8 >> $DIR/$LOGFILE 2>&1 || fail
 }
 
 rm -f $LOGFILE
@@ -87,6 +99,10 @@ fi
 
 if [ -n "$DEBUG" ]; then
     build debug debug-build "$DEBUG_CONFIG" $CLEAN
+fi
+
+if [ -n "$NOTHREAD" ]; then
+    build nothread nothread-build "$NOTHREAD_CONFIG" $CLEAN
 fi
 
 if [ -n "$VALGRIND" ]; then
