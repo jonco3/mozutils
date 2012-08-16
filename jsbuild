@@ -74,12 +74,12 @@ function build()
     local CLEAN=$4
 
     if [ -n "$CLEAN" ]; then
-        echo Clean $NAME
+        echo "Clean $NAME"
         rm -rf $DIR
     fi
 
     if [ ! -d $DIR ]; then
-        echo Configure $NAME
+        echo "Configure $NAME"
         mkdir $DIR
         cd $DIR
         echo configure $CONFIG > $LOGFILE
@@ -87,28 +87,33 @@ function build()
         cd ..
     fi
 
-    echo Build $NAME
+    echo "Build $NAME"
     make -C $DIR -j8 >> $DIR/$LOGFILE 2>&1 || fail
 }
 
 rm -f $LOGFILE
 
-if [ ! -d debug-build ] && [ ! -d release-build ]; then
-    autoconf213 2>&1 > $LOGFILE || fail
+if [ configure.in -nt configure ]; then
+    echo "Autoconf"
+    autoconf213 || fail
+
+    echo "Clean all"
+    rm -rf debug-build nothread-build valgrind-build release-build
+    CLEAN=
 fi
 
 if [ -n "$DEBUG" ]; then
-    build debug debug-build "$DEBUG_CONFIG" $CLEAN
+    build debug debug-build "$DEBUG_CONFIG" "$CLEAN"
 fi
 
 if [ -n "$NOTHREAD" ]; then
-    build nothread nothread-build "$NOTHREAD_CONFIG" $CLEAN
+    build nothread nothread-build "$NOTHREAD_CONFIG" "$CLEAN"
 fi
 
 if [ -n "$VALGRIND" ]; then
-    build valgrind valgrind-build "$VALGRIND_CONFIG" $CLEAN
+    build valgrind valgrind-build "$VALGRIND_CONFIG" "$CLEAN"
 fi
 
 if [ -n "$RELEASE" ]; then
-    build release release-build "$RELEASE_CONFIG" $CLEAN
+    build release release-build "$RELEASE_CONFIG" "$CLEAN"
 fi
