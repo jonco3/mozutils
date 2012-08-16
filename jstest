@@ -1,13 +1,11 @@
 #!/bin/bash
 
-echo "jstest $PWD $*"
-echo
-
 CLEAN=
 DEBUG=
 NOTHREAD=
 RELEASE=
 JSAPITEST=
+V8TEST=
 JITTEST=
 JSTEST=
 
@@ -31,6 +29,9 @@ while [ $# -ge 1 ]; do
         jsapitest)
             JSAPITEST=t
             ;;
+        v8test)
+            V8TEST=t
+            ;;
         jittest)
             JITTEST=t
             ;;
@@ -38,7 +39,7 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "usage: jstest [-c|-C] [debug|nothread|release] [jsapitest|jittest|jstest]"
+            echo "usage: jstest [-c|-C] [debug|nothread|release] [jsapitest|v8test|jittest|jstest]"
             echo "  -c => clean first (the default)"
             echo "  -C => don't clean first"
             exit 1
@@ -56,11 +57,17 @@ if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" ]; then
     RELEASE=release
 fi
 
-if [ -z "$JSAPITEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
+if [ -z "$JSAPITEST" -a -z "$V8TEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
     JSAPITEST=t
+    V8TEST=t
     JITTEST=t
     JSTEST=t
 fi
+
+echo "jstest $PWD $*"
+echo
+date
+echo
 
 hg log -l 1 || exit 1
 
@@ -99,6 +106,21 @@ function jsapi-test()
     fi
 }
 
+function v8-test()
+{
+    local NAME=$1
+    local JSDIR=$2
+
+    echo "Run $NAME v8 gc stress test"
+
+    cd v8 
+    JS_GC_ZEAL=10,1000 ../$JSDIR/js run.js >> ../$LOGFILE 2>&1
+    if [ $? -ne 0 ]; then
+        echo "  failed"
+    fi
+    cd ..
+}
+
 function jit-test()
 {
     local NAME=$1
@@ -131,6 +153,10 @@ function test()
 
     if [ -n "$JSAPITEST" ]; then
         jsapi-test $NAME $JSDIR
+    fi
+
+    if [ -n "$V8TEST" ]; then
+        v8-test $NAME $JSDIR
     fi
 
     if [ -n "$JITTEST" ]; then
