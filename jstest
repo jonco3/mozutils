@@ -114,7 +114,7 @@ function v8-test()
     echo "Run $NAME v8 gc stress test"
 
     cd v8 
-    JS_GC_ZEAL=10,1000 ../$JSDIR/js run.js >> ../$LOGFILE 2>&1
+    JS_GC_ZEAL=10,1000 ../$JSDIR/js -m -n -a run.js >> ../$LOGFILE 2>&1
     if [ $? -ne 0 ]; then
         echo "  failed"
     fi
