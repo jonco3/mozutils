@@ -1,0 +1,3 @@
+#!/bin/bash
+
+JS_GC_ZEAL=10,1000 gdb -cd v8 --args ../debug-build/js -m -n -a run.js

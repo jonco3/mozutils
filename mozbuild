@@ -1,0 +1,74 @@
+#!/bin/bash
+
+LOGFILE=mozbuild.log
+
+CLEAN=
+DEBUG=
+RELEASE=
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+        -c) 
+            CLEAN=t
+            ;;
+        -C) 
+            CLEAN=
+            ;;
+        debug) 
+            DEBUG=t
+            ;;
+        release) 
+            RELEASE=t
+            ;;
+        *)  
+            echo "jsbuild [-c|-C] [debug|release]"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ ! -e ./client.mk ]; then
+    echo Run mozbuild from the root of the tree
+    exit 1
+fi
+
+function fail()
+{        
+    echo "Build failed, see $LOGFILE"
+    exit 1
+}
+
+rm -f $LOGFILE
+touch $LOGFILE
+
+function build()
+{
+    local NAME=$1
+    local CLEAN=$2
+
+    if [ -n "$DEBUG" ]; then
+        export MOZCONFIG=~/config/work/mozconfig-$NAME
+    else
+        export MOZCONFIG=~/config/work/mozconfig-$NAME
+    fi
+
+    if [ -n "$CLEAN" ]; then
+        echo "Clean $NAME"
+        make -f client.mk clean >> $LOGFILE 2>&1 || fail
+    fi
+
+    echo "Configure $NAME"
+    make -f client.mk configure >> $LOGFILE 2>&1 || fail
+
+    echo "Build $NAME"
+    make -f client.mk build >> $LOGFILE 2>&1 || fail
+}
+
+if [ -n "$DEBUG" ]; then
+    build debug "$CLEAN"
+fi
+
+if [ -n "$RELEASE" ]; then
+    build release "$CLEAN"
+fi
