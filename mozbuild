@@ -55,14 +55,14 @@ function build()
 
     if [ -n "$CLEAN" ]; then
         echo "Clean $NAME"
-        make -f client.mk clean >> $LOGFILE 2>&1 || fail
+        nice make -f client.mk clean >> $LOGFILE 2>&1 || fail
     fi
 
     echo "Configure $NAME"
-    make -f client.mk configure >> $LOGFILE 2>&1 || fail
+    nice make -f client.mk configure >> $LOGFILE 2>&1 || fail
 
     echo "Build $NAME"
-    make -f client.mk build >> $LOGFILE 2>&1 || fail
+    nice make -f client.mk build >> $LOGFILE 2>&1 || fail
 }
 
 if [ -n "$DEBUG" ]; then
