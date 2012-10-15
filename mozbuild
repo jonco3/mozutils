@@ -5,28 +5,59 @@ LOGFILE=mozbuild.log
 CLEAN=
 DEBUG=
 RELEASE=
+DIR=
 
 while [ $# -ge 1 ]; do
     case "$1" in
-        -c) 
+        -c)
             CLEAN=t
             ;;
-        -C) 
+        -C)
             CLEAN=
             ;;
-        debug) 
+        debug)
             DEBUG=t
             ;;
-        release) 
+        release)
             RELEASE=t
             ;;
-        *)  
-            echo "jsbuild [-c|-C] [debug|release]"
-            exit 1
+        *)
+            if [ -d "$1" ]; then
+                DIR=$1
+            else
+                echo "mozbuild [-c|-C] [debug|release] [DIR]"
+                exit 1
+            fi
             ;;
     esac
     shift
 done
+
+if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
+    DEBUG=debug
+fi
+
+if [ -n "$DIR" -a ! -d "$DIR" ]; then
+    echo Directory not found: $DIR
+    exit 1
+fi
+
+if [ -n "$DIR" -a -n "$CLEAN" ]; then
+    echo "Can't specify clean and directory"
+    exit 1
+fi
+
+function onPath
+{
+    command -v $1 > /dev/null
+}
+
+if [ -n "$DIR" ]; then
+    if ! onPath smartmake.py; then
+        echo "Can't find smartmake.py on $PATH"
+        exit 1
+    fi
+fi
 
 if [ ! -e ./client.mk ]; then
     echo Run mozbuild from the root of the tree
@@ -42,7 +73,7 @@ function fail()
 rm -f $LOGFILE
 touch $LOGFILE
 
-function build()
+function fullBuild()
 {
     local NAME=$1
     local CLEAN=$2
@@ -65,10 +96,29 @@ function build()
     nice make -f client.mk build >> $LOGFILE 2>&1 || fail
 }
 
-if [ -n "$DEBUG" ]; then
-    build debug "$CLEAN"
-fi
+function incrBuild()
+{
+    local NAME=$1
+    local DIR=$2
 
-if [ -n "$RELEASE" ]; then
-    build release "$CLEAN"
+    echo "Build $DIR"
+    nice smartmake.py $DIR >> $LOGFILE 2>&1 || fail
+}
+
+if [ -z "$DIR" ]; then
+    if [ -n "$DEBUG" ]; then
+        fullBuild debug "$CLEAN"
+    fi
+
+    if [ -n "$RELEASE" ]; then
+        fullBuild release "$CLEAN"
+    fi
+else
+    if [ -n "$DEBUG" ]; then
+        incrBuild debug "$DIR"
+    fi
+
+    if [ -n "$RELEASE" ]; then
+        incrBuild release "$DIR"
+    fi
 fi
