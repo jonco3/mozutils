@@ -52,7 +52,6 @@ done
 
 if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
     DEBUG=debug
-    RELEASE=release
 fi
 
 if [ ! -e ./jsapi.h ]; then

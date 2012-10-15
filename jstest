@@ -40,8 +40,8 @@ while [ $# -ge 1 ]; do
             ;;
         *)  
             echo "usage: jstest [-c|-C] [debug|nothread|release] [jsapitest|v8test|jittest|jstest]"
-            echo "  -c => clean first (the default)"
-            echo "  -C => don't clean first"
+            echo "  -c => clean first"
+            echo "  -C => don't clean first (the default)"
             exit 1
             ;;
     esac
@@ -49,12 +49,11 @@ while [ $# -ge 1 ]; do
 done
 
 if [ -z "$CLEAN" ]; then
-    CLEAN=-c
+    CLEAN=-C
 fi
 
 if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" ]; then
     DEBUG=debug
-    RELEASE=release
 fi
 
 if [ -z "$JSAPITEST" -a -z "$V8TEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
