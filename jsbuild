@@ -4,7 +4,7 @@ LOGFILE=jsbuild.log
 
 # todo: --enable-more-deterministic currently broken but should be common config
 
-COMMON_OPTS="--with-ccache=/usr/local/bin/ccache"
+COMMON_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal" 
 VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
