@@ -68,7 +68,9 @@ echo
 date
 echo
 
-hg log -l 1 || exit 1
+if [ -d .hg ]; then
+    hg log -l 1 || exit 1
+fi
 
 jsbuild $CLEAN $DEBUG $NOTHREAD $RELEASE || exit 1
 echo
