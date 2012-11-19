@@ -58,7 +58,7 @@ fi
 
 if [ -z "$JSAPITEST" -a -z "$V8TEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
     JSAPITEST=t
-    V8TEST=t
+    V8TEST=
     JITTEST=t
     JSTEST=t
 fi
@@ -74,22 +74,6 @@ jsbuild $CLEAN $DEBUG $NOTHREAD $RELEASE || exit 1
 echo
 
 FAILFILE=jstest.failures.tmp
-LOGFILE=jstest.log
-
-rm -f $LOGFILE
-touch $LOGFILE
-
-function print-failures()
-{
-    if [ -e $FAILFILE ]; then
-        local FAILURES=`sort $FAILFILE`
-        rm $FAILFILE
-
-        for TEST in $FAILURES; do
-            echo "  $TEST failed"
-        done
-    fi
-}
 
 function jsapi-test()
 {
@@ -97,12 +81,11 @@ function jsapi-test()
     local JSDIR=$2
 
     echo "Run $NAME jsapi tests"
-
-    $JSDIR/jsapi-tests/jsapi-tests >> $LOGFILE 2>&1
+    $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-        # details of failing test not flushed to logfile by the time the command exits
         echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
     fi
+    echo
 }
 
 function v8-test()
@@ -112,12 +95,11 @@ function v8-test()
 
     echo "Run $NAME v8 gc stress test"
 
-    cd v8 
-    JS_GC_ZEAL=10,1000 ../$JSDIR/js -m -n -a run.js >> ../$LOGFILE 2>&1
-    if [ $? -ne 0 ]; then
-        echo "  failed"
-    fi
+    cd v8
+    JS_GC_ZEAL=10,1000 ../$JSDIR/js -m -n -a run.js
     cd ..
+
+    echo
 }
 
 function jit-test()
@@ -126,10 +108,8 @@ function jit-test()
     local JSDIR=$2
 
     echo "Run $NAME jit tests"
-
-    rm -f $FAILFILE
-    python jit-test/jit_test.py --no-progress -w $FAILFILE $JSDIR/js >> $LOGFILE
-    print-failures
+    python jit-test/jit_test.py $JSDIR/js
+    echo
 }
 
 function js-test()
@@ -138,11 +118,8 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-
-    rm -f $FAILFILE
-    # --no-progress and --failure-file don't seem to work
-    python tests/jstests.py -j6 $JSDIR/js | grep -E "^    " > $FAILFILE
-    print-failures
+    python tests/jstests.py -j6 $JSDIR/js
+    echo
 }
 
 function test()
