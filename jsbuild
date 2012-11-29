@@ -2,8 +2,6 @@
 
 LOGFILE=jsbuild.log
 
-# todo: --enable-more-deterministic currently broken but should be common config
-
 COMMON_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal" 
@@ -87,7 +85,10 @@ function build()
     fi
 
     echo "Build $NAME"
-    make -C $DIR -j8 >> $DIR/$LOGFILE 2>&1 || fail
+    make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -i warning:
+    if [ ${PIPESTATUS[0]} -ne "0" ]; then
+        fail
+    fi
 }
 
 rm -f $LOGFILE
