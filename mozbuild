@@ -4,7 +4,8 @@ LOGFILE=mozbuild.log
 
 CLEAN=
 DEBUG=
-RELEASE=
+OPT=
+OPTDEBUG=
 DIR=
 
 while [ $# -ge 1 ]; do
@@ -18,14 +19,17 @@ while [ $# -ge 1 ]; do
         debug)
             DEBUG=t
             ;;
-        release)
-            RELEASE=t
+        opt)
+            OPT=t
+            ;;
+        optdebug)
+            OPTDEBUG=t
             ;;
         *)
             if [ -d "$1" ]; then
                 DIR=$1
             else
-                echo "mozbuild [-c|-C] [debug|release] [DIR]"
+                echo "mozbuild [-c|-C] [debug|opt] [DIR]"
                 exit 1
             fi
             ;;
@@ -33,7 +37,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" ]; then
     DEBUG=debug
 fi
 
@@ -70,27 +74,75 @@ function fail()
     exit 1
 }
 
-rm -f $LOGFILE
-touch $LOGFILE
+function createConfig()
+{
+    local NAME=$1
+    local FILE=$2
+    local DEBUG=$3
+    local OPT=$4
+
+    rm -f $FILE
+    echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
+    echo "mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/${NAME}-build" >> $FILE
+    echo "mk_add_options MOZ_MAKE_FLAGS=\"-s -j6\"" >> $FILE
+
+    local AUTOCONF=`which autoconf213`
+    if [ -z "$AUTOCONF" ]; then
+        AUTOCONF=`which autoconf2.13`
+    fi
+    if [ -z "$AUTOCONF" ]; then
+        echo "Can't find autoconf 2.13"
+        exit 1
+    fi
+    echo "mk_add_options AUTOCONF=$AUTOCONF" >> $FILE
+
+    echo "CC=clang" >> $FILE
+    echo "CXX=clang++" >> $FILE
+
+    local CCACHE=`which ccache`
+    if [ -z "$CCACHE" ]; then
+        echo "Can't find ccache"
+        exit 1
+    fi
+    echo "ac_add_options --with-ccache=$CCACHE" >> $FILE
+
+    if [ -n "$DEBUG" ]; then
+        echo "ac_add_options --enable-debug" >> $FILE
+        echo "ac_add_options --enable-debug-symbols" >> $FILE
+    else
+        echo "ac_add_options --disable-debug" >> $FILE
+        echo "ac_add_options --disable-debug-symbols" >> $FILE
+    fi
+
+    if [ -n "$OPT" ]; then
+        echo "ac_add_options --enable-optimize" >> $FILE
+    else
+        echo "ac_add_options --disable-optimize" >> $FILE
+    fi
+
+    echo "ac_add_options --enable-profiling" >> $FILE
+}
 
 function fullBuild()
 {
     local NAME=$1
     local CLEAN=$2
+    local DEBUG=$3
+    local OPT=$4
 
-    if [ -n "$DEBUG" ]; then
-        export MOZCONFIG=~/config/work/mozconfig-$NAME
-    else
-        export MOZCONFIG=~/config/work/mozconfig-$NAME
-    fi
+    local DIR=$NAME-build
+    mkdir -p $DIR
+
+    export MOZCONFIG=$DIR/mozconfig
+    createConfig $NAME $MOZCONFIG $DEBUG $OPT
+
+    echo "Configure $NAME"
+    nice make -f client.mk configure >> $LOGFILE 2>&1 || fail
 
     if [ -n "$CLEAN" ]; then
         echo "Clean $NAME"
         nice make -f client.mk clean >> $LOGFILE 2>&1 || fail
     fi
-
-    echo "Configure $NAME"
-    nice make -f client.mk configure >> $LOGFILE 2>&1 || fail
 
     echo "Build $NAME"
     nice make -f client.mk build >> $LOGFILE 2>&1 || fail
@@ -105,20 +157,27 @@ function incrBuild()
     nice smartmake.py $DIR >> $LOGFILE 2>&1 || fail
 }
 
+rm -f $LOGFILE
+touch $LOGFILE
+
 if [ -z "$DIR" ]; then
     if [ -n "$DEBUG" ]; then
-        fullBuild debug "$CLEAN"
+        fullBuild debug "$CLEAN" "t" ""
     fi
 
-    if [ -n "$RELEASE" ]; then
-        fullBuild release "$CLEAN"
+    if [ -n "$OPT" ]; then
+        fullBuild opt "$CLEAN" "" "t"
+    fi
+
+    if [ -n "$OPTDEBUG" ]; then
+        fullBuild optdebug "$CLEAN" "t" "t"
     fi
 else
     if [ -n "$DEBUG" ]; then
         incrBuild debug "$DIR"
     fi
 
-    if [ -n "$RELEASE" ]; then
-        incrBuild release "$DIR"
+    if [ -n "$OPT" ]; then
+        incrBuild opt "$DIR"
     fi
 fi
