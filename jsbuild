@@ -94,8 +94,17 @@ function build()
 rm -f $LOGFILE
 
 if [ configure.in -nt configure ]; then
+
     echo "Autoconf"
-    autoconf213 || fail
+    AUTOCONF=`which autoconf213`
+    if [ -z "$AUTOCONF" ]; then
+        AUTOCONF=`which autoconf2.13`
+    fi
+    if [ -z "$AUTOCONF" ]; then
+        echo "Can't find autoconf 2.13"
+        exit 1
+    fi
+    $AUTOCONF || fail
 
     echo "Clean all"
     rm -rf debug-build nothread-build valgrind-build release-build
