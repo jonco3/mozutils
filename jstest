@@ -3,6 +3,9 @@
 CLEAN=
 DEBUG=
 NOTHREAD=
+VALGRIND=
+ROOTING=
+NOTHREAD=
 RELEASE=
 JSAPITEST=
 V8TEST=
@@ -20,8 +23,14 @@ while [ $# -ge 1 ]; do
         debug) 
             DEBUG=debug
             ;;
-        nothread) 
+        nothread)
             NOTHREAD=nothread
+            ;;
+        valgrind) 
+            VALGRIND=valgrind
+            ;;
+        rooting) 
+            ROOTING=rooting
             ;;
         release)
             RELEASE=release
@@ -39,7 +48,7 @@ while [ $# -ge 1 ]; do
             JSTEST=t
             ;;
         *)  
-            echo "usage: jstest [-c|-C] [debug|nothread|release] [jsapitest|v8test|jittest|jstest]"
+            echo "usage: jstest [-c|-C] [debug|nothread|valgrind|rooting|release] [jsapitest|v8test|jittest|jstest]"
             echo "  -c => clean first"
             echo "  -C => don't clean first (the default)"
             exit 1
@@ -52,7 +61,7 @@ if [ -z "$CLEAN" ]; then
     CLEAN=-C
 fi
 
-if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" ]; then
     DEBUG=debug
 fi
 
@@ -72,7 +81,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $DEBUG $NOTHREAD $RELEASE || exit 1
+jsbuild $CLEAN $DEBUG $NOTHREAD $VALGRIND $ROOTING $RELEASE || exit 1
 echo
 
 FAILFILE=jstest.failures.tmp
@@ -152,6 +161,14 @@ fi
 
 if [ -n "$NOTHREAD" ]; then
     test nothread ./nothread-build
+fi
+
+if [ -n "$VALGRIND" ]; then
+    test valgrind ./valgrind-build
+fi
+
+if [ -n "$ROOTING" ]; then
+    test rooting ./rooting-build
 fi
 
 if [ -n "$RELEASE" ]; then

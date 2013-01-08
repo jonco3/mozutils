@@ -6,16 +6,19 @@ COMMON_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal" 
 VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
+ROOTING_OPTS="--enable-root-analysis"
 
 NOTHREAD_CONFIG="$COMNON_OPTS $DEBUG_OPTS"
 DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
 VALGRIND_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS $VALGRIND_OPTS"
+ROOTING_CONFIG="$COMNON_OPTS $DEBUG_OPTS $ROOTING_OPTS"
 RELEASE_CONFIG="$COMNON_OPTS"
 
 CLEAN=
 DEBUG=
 NOTHREAD=
 VALGRIND=
+ROOTING=
 RELEASE=
 
 while [ $# -ge 1 ]; do
@@ -38,8 +41,11 @@ while [ $# -ge 1 ]; do
         valgrind)
             VALGRIND=t
             ;;
+        rooting)
+            ROOTING=t
+            ;;
         *)  
-            echo "jsbuild [-c|-C] [debug|nothread|valgrind|release]"
+            echo "jsbuild [-c|-C] [debug|nothread|valgrind|rooting|release]"
             echo "  -c => clean first"
             echo "  -C => don't clean first (the default)"
             exit 1
@@ -48,8 +54,8 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$RELEASE" -a -z "$VALGRIND" ]; then
-    DEBUG=debug
+if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" ]; then
+    DEBUG=t
 fi
 
 if [ ! -e ./jsapi.h ]; then
@@ -121,6 +127,10 @@ fi
 
 if [ -n "$VALGRIND" ]; then
     build valgrind valgrind-build "$VALGRIND_CONFIG" "$CLEAN"
+fi
+
+if [ -n "$ROOTING" ]; then
+    build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
 fi
 
 if [ -n "$RELEASE" ]; then
