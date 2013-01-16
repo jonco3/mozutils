@@ -111,6 +111,14 @@ function build()
 
 rm -f $LOGFILE
 
+# Use clang if it is available
+CLANGCC=`which clang`
+CLANGCXX=`which clang++`
+if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
+    export CC=$CLANGCC
+    export CXX=$CLANGCXX
+fi
+
 if [ configure.in -nt configure ]; then
 
     echo "Autoconf"
