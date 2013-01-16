@@ -1,10 +1,25 @@
 #!/bin/bash
 
+function badUsage()
+{
+    echo "jsbuild OPTIONS BUILDS"
+    echo "  OPTIONS:"
+    echo "    -c => clean first"
+    echo "    -C => don't clean first (default)"
+    echo "  BUILDS:"
+    echo "    debug"
+    echo "    nothread"
+    echo "    valgrind"
+    echo "    rooting"
+    echo "    release"
+    exit 1
+}
+
 LOGFILE=jsbuild.log
 
 COMMON_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
-DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal" 
+DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
 ROOTING_OPTS="--enable-root-analysis"
 
@@ -23,16 +38,16 @@ RELEASE=
 
 while [ $# -ge 1 ]; do
     case "$1" in
-        -c) 
+        -c)
             CLEAN=t
             ;;
-        -C) 
+        -C)
             CLEAN=
             ;;
-        debug) 
+        debug)
             DEBUG=t
             ;;
-        nothread) 
+        nothread)
             NOTHREAD=t
             ;;
         release)
@@ -44,11 +59,8 @@ while [ $# -ge 1 ]; do
         rooting)
             ROOTING=t
             ;;
-        *)  
-            echo "jsbuild [-c|-C] [debug|nothread|valgrind|rooting|release]"
-            echo "  -c => clean first"
-            echo "  -C => don't clean first (the default)"
-            exit 1
+        *)
+            badUsage
             ;;
     esac
     shift
@@ -64,7 +76,7 @@ if [ ! -e ./jsapi.h ]; then
 fi
 
 function fail()
-{        
+{
     echo "Build failed, see $LOGFILE"
     exit 1
 }
