@@ -103,7 +103,7 @@ function build()
     fi
 
     echo "Build $NAME"
-    make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -i warning:
+    make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -iE "warning:|error:"
     if [ ${PIPESTATUS[0]} -ne "0" ]; then
         fail
     fi
@@ -111,12 +111,14 @@ function build()
 
 rm -f $LOGFILE
 
-# Use clang if it is available
+# Find installed compilers
 CLANGCC=`which clang`
 CLANGCXX=`which clang++`
-if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
-    export CC=$CLANGCC
-    export CXX=$CLANGCXX
+GCC=`which gcc`
+GXX=`which g++`
+if [ -z "$CLANGCC" -a -z "$CLANGCXX" -a -z "$GCC" -a -z "$GXX" ]; then
+    echo "Can't find gcc or clang on path"
+    exit 1
 fi
 
 if [ configure.in -nt configure ]; then
@@ -133,8 +135,14 @@ if [ configure.in -nt configure ]; then
     $AUTOCONF || fail
 
     echo "Clean all"
-    rm -rf debug-build nothread-build valgrind-build release-build
+    rm -rf debug-build nothread-build valgrind-build rooting-build release-build
     CLEAN=
+fi
+
+# Use gcc for most builds, if installed
+if [ -n "$GCC" -a -n "$GXX" ]; then
+    export CC=$GCC
+    export CXX=$GXX
 fi
 
 if [ -n "$DEBUG" ]; then
@@ -149,10 +157,16 @@ if [ -n "$VALGRIND" ]; then
     build valgrind valgrind-build "$VALGRIND_CONFIG" "$CLEAN"
 fi
 
-if [ -n "$ROOTING" ]; then
-    build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
-fi
-
 if [ -n "$RELEASE" ]; then
     build release release-build "$RELEASE_CONFIG" "$CLEAN"
+fi
+
+# Use clang for rooting builds, if installed
+if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
+    export CC=$CLANGCC
+    export CXX=$CLANGCXX
+fi
+
+if [ -n "$ROOTING" ]; then
+    build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
 fi

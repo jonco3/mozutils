@@ -1,6 +1,28 @@
 #!/bin/bash
 
+function badUsage()
+{
+    echo "usage: jstest OPTIONS BUILDS TESTS"
+    echo "  OPTIONS:"
+    echo "    -c => clean first"
+    echo "    -C => don't clean first (default)"
+    echo "    -z ZEAL => turn on GC zeal"
+    echo "  BUILDS:"
+    echo "    debug"
+    echo "    nothread"
+    echo "    valgrind"
+    echo "    rooting"
+    echo "    release"
+    echo "  TESTS:"
+    echo "    jsapitest"
+    echo "    v8test"
+    echo "    jittest"
+    echo "    jstest"
+    exit 1
+}
+
 CLEAN=
+ZEAL=
 DEBUG=
 NOTHREAD=
 VALGRIND=
@@ -20,16 +42,20 @@ while [ $# -ge 1 ]; do
         -C)
             CLEAN=-C
             ;;
-        debug) 
+        -z)
+            ZEAL=$2
+            shift
+            ;;
+        debug)
             DEBUG=debug
             ;;
         nothread)
             NOTHREAD=nothread
             ;;
-        valgrind) 
+        valgrind)
             VALGRIND=valgrind
             ;;
-        rooting) 
+        rooting)
             ROOTING=rooting
             ;;
         release)
@@ -47,11 +73,8 @@ while [ $# -ge 1 ]; do
         jstest)
             JSTEST=t
             ;;
-        *)  
-            echo "usage: jstest [-c|-C] [debug|nothread|valgrind|rooting|release] [jsapitest|v8test|jittest|jstest]"
-            echo "  -c => clean first"
-            echo "  -C => don't clean first (the default)"
-            exit 1
+        *)
+            badUsage
             ;;
     esac
     shift
@@ -92,7 +115,7 @@ function jsapi-test()
     local JSDIR=$2
 
     echo "Run $NAME jsapi tests"
-    $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
+    JS_GC_ZEAL=$ZEAL $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
     fi
@@ -107,7 +130,11 @@ function v8-test()
     echo "Run $NAME v8 gc stress test"
 
     cd v8
-    JS_GC_ZEAL=10,1000 ../$JSDIR/js -m -n -a run.js
+    local zeal=$ZEAL
+    if [ -z "$zeal" ]; then
+        zeal=10,1000
+    fi
+    JS_GC_ZEAL=$zeal ../$JSDIR/js -m -n -a run.js
     cd ..
 
     echo
@@ -119,7 +146,7 @@ function jit-test()
     local JSDIR=$2
 
     echo "Run $NAME jit tests"
-    python jit-test/jit_test.py $JSDIR/js
+    JS_GC_ZEAL=$ZEAL python jit-test/jit_test.py $JSDIR/js
     echo
 }
 
@@ -129,7 +156,7 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-    python tests/jstests.py -j6 $JSDIR/js
+    JS_GC_ZEAL=$ZEAL python tests/jstests.py -j6 $JSDIR/js
     echo
 }
 
@@ -137,6 +164,10 @@ function test()
 {
     local NAME=$1
     local JSDIR=$2
+
+    if [ "$NAME" == "release" -a -n "$ZEAL" ]; then
+        echo "Warning: GC zeal not supported in relase builds"
+    fi
 
     if [ -n "$JSAPITEST" ]; then
         jsapi-test $NAME $JSDIR
