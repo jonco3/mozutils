@@ -21,7 +21,7 @@ COMMON_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
-ROOTING_OPTS="--enable-root-analysis"
+ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
 
 NOTHREAD_CONFIG="$COMNON_OPTS $DEBUG_OPTS"
 DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
