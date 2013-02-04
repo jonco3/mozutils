@@ -12,22 +12,24 @@ function badUsage()
     echo "    valgrind"
     echo "    rooting"
     echo "    release"
+    echo "    noccache"
     exit 1
 }
 
 LOGFILE=jsbuild.log
 
-COMMON_OPTS="--with-ccache=`which ccache`"
+CCACHE_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
 ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
 
-NOTHREAD_CONFIG="$COMNON_OPTS $DEBUG_OPTS"
-DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
-VALGRIND_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS $VALGRIND_OPTS"
-ROOTING_CONFIG="$COMNON_OPTS $DEBUG_OPTS $ROOTING_OPTS"
-RELEASE_CONFIG="$COMNON_OPTS"
+NOTHREAD_CONFIG="$CCACHE_OPTS $DEBUG_OPTS"
+DEBUG_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $THREAD_OPTS"
+VALGRIND_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $THREAD_OPTS $VALGRIND_OPTS"
+ROOTING_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $ROOTING_OPTS"
+RELEASE_CONFIG="$CCACHE_OPTS"
+NOCCACHE_CONFIG=""
 
 CLEAN=
 DEBUG=
@@ -35,6 +37,7 @@ NOTHREAD=
 VALGRIND=
 ROOTING=
 RELEASE=
+NOCCACHE=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -59,6 +62,9 @@ while [ $# -ge 1 ]; do
         rooting)
             ROOTING=t
             ;;
+        noccache)
+            NOCCACHE=t
+            ;;
         *)
             badUsage
             ;;
@@ -66,7 +72,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" -a -z "$NOCCACHE" ]; then
     DEBUG=t
 fi
 
@@ -111,16 +117,6 @@ function build()
 
 rm -f $LOGFILE
 
-# Find installed compilers
-CLANGCC=`which clang`
-CLANGCXX=`which clang++`
-GCC=`which gcc`
-GXX=`which g++`
-if [ -z "$CLANGCC" -a -z "$CLANGCXX" -a -z "$GCC" -a -z "$GXX" ]; then
-    echo "Can't find gcc or clang on path"
-    exit 1
-fi
-
 if [ configure.in -nt configure ]; then
 
     echo "Autoconf"
@@ -139,10 +135,13 @@ if [ configure.in -nt configure ]; then
     CLEAN=
 fi
 
-# Use gcc for most builds, if installed
-if [ -n "$GCC" -a -n "$GXX" ]; then
-    export CC=$GCC
-    export CXX=$GXX
+# Clang is preferred for rooting builds (it shows up more problems), and it much
+# faster in general, so use it if possible
+CLANGCC=`which clang`
+CLANGCXX=`which clang++`
+if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
+    export CC=$CLANGCC
+    export CXX=$CLANGCXX
 fi
 
 if [ -n "$DEBUG" ]; then
@@ -161,12 +160,10 @@ if [ -n "$RELEASE" ]; then
     build release release-build "$RELEASE_CONFIG" "$CLEAN"
 fi
 
-# Use clang for rooting builds, if installed
-if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
-    export CC=$CLANGCC
-    export CXX=$CLANGCXX
-fi
-
 if [ -n "$ROOTING" ]; then
     build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
+fi
+
+if [ -n "$NOCCACHE" ]; then
+    build noccache noccache-build "$NOCCACHE_CONFIG" "$CLEAN"
 fi
