@@ -1,3 +1,67 @@
 #!/bin/bash
 
-JS_GC_ZEAL=10,1000 gdb -cd v8 --args ../debug-build/js -m -n -a run.js
+function badUsage()
+{
+    echo "v8test OPTIONS [ BUILDDIR [ SCRIPTDIR ]]"
+    echo "  OPTIONS:"
+    echo "    -g => run in debugger"
+    echo "    -z => use zeal to stress GC"
+    exit 1
+}
+
+GDB=
+ZEAL=
+DEBUG=
+BUILDDIR=debug-build
+SCRIPTDIR=v8
+
+while [ $# -ge 1 ]; do
+    case "$1" in
+        -g)
+            GDB=t
+            ;;
+        -z)
+            ZEAL=t
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+if [ $# -gt 2 ]; then
+    badUsage
+fi
+
+if [ $# -gt 0 ]; then
+    BUILDDIR=$1
+    shift
+fi
+
+if [ $# -gt 0 ]; then
+    SCRIPTDIR=$1
+    shift
+fi
+
+SHELL=$BUILDDIR/js
+if [ ! -e $SHELL ]; then
+    echo "Shell executable not found: $SHELL"
+    exit 1
+fi
+
+if [ ! -e "$SCRIPTDIR/run.js" ]; then
+    echo "Benchmark scripts not found in $SCRIPTDIR"
+    exit 1
+fi
+
+if [ -n "$ZEAL" ]; then
+    export JS_GC_ZEAL=10,1000
+fi
+
+if [ -n "$GDB" ]; then
+    gdb -cd $SCRIPTDIR --args $SHELL -m -n -a run.js
+else
+    cd $SCRIPTDIR
+    $SHELL -m -n -a run.js
+fi
