@@ -6,6 +6,7 @@ function badUsage()
     echo "  OPTIONS:"
     echo "    -c => clean first"
     echo "    -C => don't clean first (default)"
+    echo "    -w => show warnings"
     echo "  BUILDS:"
     echo "    debug"
     echo "    nothread"
@@ -32,6 +33,7 @@ RELEASE_CONFIG="$CCACHE_OPTS"
 NOCCACHE_CONFIG=""
 
 CLEAN=
+WARN=
 DEBUG=
 NOTHREAD=
 VALGRIND=
@@ -46,6 +48,9 @@ while [ $# -ge 1 ]; do
             ;;
         -C)
             CLEAN=
+            ;;
+        -w)
+            WARN=t
             ;;
         debug)
             DEBUG=t
@@ -76,6 +81,11 @@ if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RE
     DEBUG=t
 fi
 
+FILTER="error:"
+if [ -n "$WARN" ]; then
+    FILTER="$FILTER|warning:"
+fi
+
 if [ ! -e ./jsapi.h ]; then
     echo Run jsbuild from the tree/js/src directory
     exit 1
@@ -104,12 +114,15 @@ function build()
         mkdir $DIR
         cd $DIR
         echo configure $CONFIG > $LOGFILE
-        ../configure $CONFIG >> $LOGFILE 2>&1 || fail
+        ../configure $CONFIG 2>&1 | tee -a $LOGFILE | grep -iE $FILTER
+        if [ ${PIPESTATUS[0]} -ne "0" ]; then
+            fail
+        fi
         cd ..
     fi
 
     echo "Build $NAME"
-    make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -iE "warning:|error:"
+    nice make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -iE $FILTER
     if [ ${PIPESTATUS[0]} -ne "0" ]; then
         fail
     fi
