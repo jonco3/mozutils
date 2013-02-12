@@ -109,6 +109,13 @@ echo
 
 FAILFILE=jstest.failures.tmp
 
+EXIT=0
+
+function fail()
+{
+    EXIT=1
+}
+
 function jsapi-test()
 {
     local NAME=$1
@@ -118,6 +125,7 @@ function jsapi-test()
     JS_GC_ZEAL=$ZEAL $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
+        fail
     fi
     echo
 }
@@ -134,7 +142,7 @@ function v8-test()
     if [ -z "$zeal" ]; then
         zeal=10,1000
     fi
-    JS_GC_ZEAL=$zeal ../$JSDIR/js -m -n -a run.js
+    JS_GC_ZEAL=$zeal ../$JSDIR/js -m -n -a run.js || fail
     cd ..
 
     echo
@@ -146,7 +154,7 @@ function jit-test()
     local JSDIR=$2
 
     echo "Run $NAME jit tests"
-    JS_GC_ZEAL=$ZEAL python jit-test/jit_test.py $JSDIR/js
+    JS_GC_ZEAL=$ZEAL python jit-test/jit_test.py $JSDIR/js || fail
     echo
 }
 
@@ -156,7 +164,7 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-    JS_GC_ZEAL=$ZEAL python tests/jstests.py -j6 $JSDIR/js
+    JS_GC_ZEAL=$ZEAL python tests/jstests.py -j6 $JSDIR/js || fail
     echo
 }
 
@@ -205,3 +213,5 @@ fi
 if [ -n "$RELEASE" ]; then
     test release ./release-build
 fi
+
+exit $EXIT
