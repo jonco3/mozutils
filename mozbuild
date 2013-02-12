@@ -6,7 +6,8 @@ CLEAN=
 DEBUG=
 OPT=
 OPTDEBUG=
-DIR=
+INCRDIR=
+SMARTMAKE=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -15,6 +16,9 @@ while [ $# -ge 1 ]; do
             ;;
         -C)
             CLEAN=
+            ;;
+        -s)
+            SMARTMAKE=t
             ;;
         debug)
             DEBUG=t
@@ -26,8 +30,9 @@ while [ $# -ge 1 ]; do
             OPTDEBUG=t
             ;;
         *)
-            if [ -d "$1" ]; then
-                DIR=$1
+            if [ -z "$INCRDIR" -a -d "$1" ]; then
+                INCRDIR=$1
+                SMARTMAKE=t
             else
                 echo "mozbuild [-c|-C] [debug|opt] [DIR]"
                 exit 1
@@ -38,17 +43,7 @@ while [ $# -ge 1 ]; do
 done
 
 if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" ]; then
-    DEBUG=debug
-fi
-
-if [ -n "$DIR" -a ! -d "$DIR" ]; then
-    echo Directory not found: $DIR
-    exit 1
-fi
-
-if [ -n "$DIR" -a -n "$CLEAN" ]; then
-    echo "Can't specify clean and directory"
-    exit 1
+    DEBUG=t
 fi
 
 function onPath
@@ -56,16 +51,26 @@ function onPath
     command -v $1 > /dev/null
 }
 
-if [ -n "$DIR" ]; then
-    if ! onPath smartmake.py; then
-        echo "Can't find smartmake.py on $PATH"
-        exit 1
-    fi
-fi
-
 if [ ! -e ./client.mk ]; then
     echo Run mozbuild from the root of the tree
     exit 1
+fi
+
+if [ -n "$SMARTMAKE" ]; then
+    if ! onPath smartmake.py; then
+        if [ -e ~/software/smartmake/smartmake.py ]; then
+            # todo: this is a hack!
+            PATH=$PATH:~/software/smartmake
+        else
+            echo "Can't find smartmake.py on $PATH"
+            exit 1
+        fi
+    fi
+
+    if [ ! -e .hg/.smartmake ]; then
+        echo "[smartmake]" > .hg/.smartmake
+        echo "cmd=make -j8 -C" >> .hg/.smartmake
+    fi
 fi
 
 function fail()
@@ -84,7 +89,7 @@ function createConfig()
     rm -f $FILE
     echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
     echo "mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/${NAME}-build" >> $FILE
-    echo "mk_add_options MOZ_MAKE_FLAGS=\"-s -j6\"" >> $FILE
+    echo "mk_add_options MOZ_MAKE_FLAGS=\"-s -j8\"" >> $FILE
 
     local AUTOCONF=`which autoconf213`
     if [ -z "$AUTOCONF" ]; then
@@ -123,61 +128,87 @@ function createConfig()
     echo "ac_add_options --enable-profiling" >> $FILE
 }
 
-function fullBuild()
+function run()
 {
-    local NAME=$1
-    local CLEAN=$2
-    local DEBUG=$3
-    local OPT=$4
+    nice "$@" 2>&1 | tee -a $LOGFILE | grep -iE "error:"
+    if [ ${PIPESTATUS[0]} -ne "0" ]; then
+        fail
+    fi
+}
 
-    local DIR=$NAME-build
+function configureBuild()
+{
+    local DIR=$1
+    local DEBUG=$2
+    local OPT=$3
+
+    echo "Configure $NAME"
+
     mkdir -p $DIR
 
     export MOZCONFIG=$DIR/mozconfig
     createConfig $NAME $MOZCONFIG $DEBUG $OPT
+    run make -f client.mk configure
+}
 
-    echo "Configure $NAME"
-    nice make -f client.mk configure >> $LOGFILE 2>&1 || fail
+function fullBuild()
+{
+    local NAME=$1
+    local DIR=$2
+    local DEBUG=$3
+    local OPT=$4
 
-    if [ -n "$CLEAN" ]; then
-        echo "Clean $NAME"
-        nice make -f client.mk clean >> $LOGFILE 2>&1 || fail
-    fi
+    configureBuild "$DIR" "$DEBUG" "$OPT"
 
     echo "Build $NAME"
-    nice make -f client.mk build >> $LOGFILE 2>&1 || fail
+    run make -f client.mk build
 }
 
 function incrBuild()
 {
     local NAME=$1
     local DIR=$2
+    local DEBUG=$3
+    local OPT=$4
 
-    echo "Build $DIR"
-    nice smartmake.py $DIR >> $LOGFILE 2>&1 || fail
+    if [ ! -d $DIR ]; then
+        configureBuild "$DIR" "$DEBUG" "$OPT"
+    fi
+
+    echo "Incrementally build $NAME $INCRDIR"
+    run smartmake.py -o $DIR $INCRDIR
+}
+
+function build()
+{
+    local NAME=$1
+    local DEBUG=$2
+    local OPT=$3
+
+    local DIR=$NAME-build
+    if [ -d "$DIR" -a -n "$CLEAN" ]; then
+        echo "Clean $NAME"
+        run make -f client.mk clean
+    fi
+
+    if [ -z "$SMARTMAKE" ]; then
+        fullBuild "$NAME" "$DIR" "$DEBUG" "$OPT"
+    else
+        incrBuild "$NAME" "$DIR" "$DEBUG" "$OPT"
+    fi
 }
 
 rm -f $LOGFILE
 touch $LOGFILE
 
-if [ -z "$DIR" ]; then
-    if [ -n "$DEBUG" ]; then
-        fullBuild debug "$CLEAN" "t" ""
-    fi
+if [ -n "$DEBUG" ]; then
+    build debug "t" ""
+fi
 
-    if [ -n "$OPT" ]; then
-        fullBuild opt "$CLEAN" "" "t"
-    fi
+if [ -n "$OPT" ]; then
+    build opt "" "t"
+fi
 
-    if [ -n "$OPTDEBUG" ]; then
-        fullBuild optdebug "$CLEAN" "t" "t"
-    fi
-else
-    if [ -n "$DEBUG" ]; then
-        incrBuild debug "$DIR"
-    fi
-
-    if [ -n "$OPT" ]; then
-        incrBuild opt "$DIR"
-    fi
+if [ -n "$OPTDEBUG" ]; then
+    build optdebug "t" "t"
 fi
