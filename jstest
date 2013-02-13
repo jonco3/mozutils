@@ -104,7 +104,8 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $DEBUG $NOTHREAD $VALGRIND $ROOTING $RELEASE || exit 1
+jsbuild $CLEAN $DEBUG $NOTHREAD $VALGRIND $ROOTING $RELEASE || exit 125
+# Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
 FAILFILE=jstest.failures.tmp
