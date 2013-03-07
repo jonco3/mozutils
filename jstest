@@ -4,9 +4,10 @@ function badUsage()
 {
     echo "usage: jstest OPTIONS BUILDS TESTS"
     echo "  OPTIONS:"
-    echo "    -c => clean first"
-    echo "    -C => don't clean first (default)"
+    echo "    -c      => clean first"
+    echo "    -C      => don't clean first (default)"
     echo "    -z ZEAL => turn on GC zeal"
+    echo "    -p      => run tests in Pacific timezone"
     echo "  BUILDS:"
     echo "    debug"
     echo "    nothread"
@@ -23,6 +24,7 @@ function badUsage()
 
 CLEAN=
 ZEAL=
+TIMEZONE=`cat /etc/timezone`
 DEBUG=
 NOTHREAD=
 VALGRIND=
@@ -45,6 +47,10 @@ while [ $# -ge 1 ]; do
         -z)
             ZEAL=$2
             shift
+            ;;
+        -p)
+            TIMEZONE=PST
+            LOCALE=en_US.utf8
             ;;
         debug)
             DEBUG=debug
@@ -123,7 +129,7 @@ function jsapi-test()
     local JSDIR=$2
 
     echo "Run $NAME jsapi tests"
-    JS_GC_ZEAL=$ZEAL $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
         fail
@@ -143,7 +149,7 @@ function v8-test()
     if [ -z "$zeal" ]; then
         zeal=10,1000
     fi
-    JS_GC_ZEAL=$zeal ../$JSDIR/js -m -n -a run.js || fail
+    JS_GC_ZEAL=$zeal TZ=$TIMEZONE ../$JSDIR/js -m -n -a run.js || fail
     cd ..
 
     echo
@@ -155,7 +161,7 @@ function jit-test()
     local JSDIR=$2
 
     echo "Run $NAME jit tests"
-    JS_GC_ZEAL=$ZEAL python jit-test/jit_test.py $JSDIR/js || fail
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python jit-test/jit_test.py $JSDIR/js || fail
     echo
 }
 
@@ -165,7 +171,7 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-    JS_GC_ZEAL=$ZEAL python tests/jstests.py -j6 $JSDIR/js || fail
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py -j6 $JSDIR/js || fail
     echo
 }
 
