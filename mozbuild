@@ -62,7 +62,8 @@ if [ -n "$SMARTMAKE" ]; then
             # todo: this is a hack!
             PATH=$PATH:~/software/smartmake
         else
-            echo "Can't find smartmake.py on $PATH"
+            echo "Can't find smartmake.py on path $PATH"
+            echo "Available here: http://hg.mozilla.org/users/josh_joshmatthews.net/smartmake"
             exit 1
         fi
     fi
