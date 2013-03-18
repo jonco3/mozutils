@@ -10,10 +10,9 @@ function badUsage()
     echo "    -p      => run tests in Pacific timezone"
     echo "  BUILDS:"
     echo "    debug"
-    echo "    nothread"
-    echo "    valgrind"
-    echo "    rooting"
     echo "    release"
+    echo "    rooting"
+    echo "    exact"
     echo "  TESTS:"
     echo "    jsapitest"
     echo "    v8test"
@@ -26,11 +25,9 @@ CLEAN=
 ZEAL=
 TIMEZONE=`cat /etc/timezone`
 DEBUG=
-NOTHREAD=
-VALGRIND=
-ROOTING=
-NOTHREAD=
 RELEASE=
+ROOTING=
+EXACT=
 JSAPITEST=
 V8TEST=
 JITTEST=
@@ -55,17 +52,14 @@ while [ $# -ge 1 ]; do
         debug)
             DEBUG=debug
             ;;
-        nothread)
-            NOTHREAD=nothread
-            ;;
-        valgrind)
-            VALGRIND=valgrind
+        release)
+            RELEASE=release
             ;;
         rooting)
             ROOTING=rooting
             ;;
-        release)
-            RELEASE=release
+        exact)
+            EXACT=exact
             ;;
         jsapitest)
             JSAPITEST=t
@@ -90,7 +84,7 @@ if [ -z "$CLEAN" ]; then
     CLEAN=-C
 fi
 
-if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" ]; then
+if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" ]; then
     DEBUG=debug
 fi
 
@@ -110,7 +104,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $DEBUG $NOTHREAD $VALGRIND $ROOTING $RELEASE || exit 125
+jsbuild $CLEAN $DEBUG $RELEASE $ROOTING $EXACT || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
@@ -205,20 +199,16 @@ if [ -n "$DEBUG" ]; then
     test debug ./debug-build
 fi
 
-if [ -n "$NOTHREAD" ]; then
-    test nothread ./nothread-build
-fi
-
-if [ -n "$VALGRIND" ]; then
-    test valgrind ./valgrind-build
+if [ -n "$RELEASE" ]; then
+    test release ./release-build
 fi
 
 if [ -n "$ROOTING" ]; then
     test rooting ./rooting-build
 fi
 
-if [ -n "$RELEASE" ]; then
-    test release ./release-build
+if [ -n "$EXACT" ]; then
+    test exact ./exact-build
 fi
 
 exit $EXIT

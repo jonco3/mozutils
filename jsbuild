@@ -9,11 +9,9 @@ function badUsage()
     echo "    -w => show warnings"
     echo "  BUILDS:"
     echo "    debug"
-    echo "    nothread"
-    echo "    valgrind"
-    echo "    rooting"
     echo "    release"
-    echo "    noccache"
+    echo "    rooting"
+    echo "    exact"
     exit 1
 }
 
@@ -22,24 +20,20 @@ LOGFILE=jsbuild.log
 CCACHE_OPTS="--with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
-VALGRIND_OPTS="--disable-jemalloc --enable-valgrind"
 ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
+EXACT_OPTS="--enable-exact-rooting --disable-threadsafe"
 
-NOTHREAD_CONFIG="$CCACHE_OPTS $DEBUG_OPTS"
 DEBUG_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $THREAD_OPTS"
-VALGRIND_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $THREAD_OPTS $VALGRIND_OPTS"
-ROOTING_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $ROOTING_OPTS"
 RELEASE_CONFIG="$CCACHE_OPTS"
-NOCCACHE_CONFIG=""
+ROOTING_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $ROOTING_OPTS"
+EXACT_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $EXACT_OPTS"
 
 CLEAN=
 WARN=
 DEBUG=
-NOTHREAD=
-VALGRIND=
-ROOTING=
 RELEASE=
-NOCCACHE=
+ROOTING=
+EXACT=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -55,20 +49,14 @@ while [ $# -ge 1 ]; do
         debug)
             DEBUG=t
             ;;
-        nothread)
-            NOTHREAD=t
-            ;;
         release)
             RELEASE=t
-            ;;
-        valgrind)
-            VALGRIND=t
             ;;
         rooting)
             ROOTING=t
             ;;
-        noccache)
-            NOCCACHE=t
+        exact)
+            EXACT=t
             ;;
         *)
             badUsage
@@ -77,7 +65,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$NOTHREAD" -a -z "$VALGRIND" -a -z "$ROOTING" -a -z "$RELEASE" -a -z "$NOCCACHE" ]; then
+if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" ]; then
     DEBUG=t
 fi
 
@@ -161,14 +149,6 @@ if [ -n "$DEBUG" ]; then
     build debug debug-build "$DEBUG_CONFIG" "$CLEAN"
 fi
 
-if [ -n "$NOTHREAD" ]; then
-    build nothread nothread-build "$NOTHREAD_CONFIG" "$CLEAN"
-fi
-
-if [ -n "$VALGRIND" ]; then
-    build valgrind valgrind-build "$VALGRIND_CONFIG" "$CLEAN"
-fi
-
 if [ -n "$RELEASE" ]; then
     build release release-build "$RELEASE_CONFIG" "$CLEAN"
 fi
@@ -177,6 +157,6 @@ if [ -n "$ROOTING" ]; then
     build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
 fi
 
-if [ -n "$NOCCACHE" ]; then
-    build noccache noccache-build "$NOCCACHE_CONFIG" "$CLEAN"
+if [ -n "$EXACT" ]; then
+    build exact exact-build "$EXACT_CONFIG" "$CLEAN"
 fi
