@@ -127,6 +127,10 @@ function createConfig()
     fi
 
     echo "ac_add_options --enable-profiling" >> $FILE
+
+    echo "ac_add_options --enable-warnings-as-errors" >> $FILE
+    echo "ac_add_options --enable-crypto" >> $FILE
+    echo "export MOZ_PACKAGE_JSSHELL=1" >> $FILE
 }
 
 function run()
@@ -135,49 +139,6 @@ function run()
     if [ ${PIPESTATUS[0]} -ne "0" ]; then
         fail
     fi
-}
-
-function configureBuild()
-{
-    local DIR=$1
-    local DEBUG=$2
-    local OPT=$3
-
-    echo "Configure $NAME"
-
-    mkdir -p $DIR
-
-    export MOZCONFIG=$DIR/mozconfig
-    createConfig $NAME $MOZCONFIG $DEBUG $OPT
-    run make -f client.mk configure
-}
-
-function fullBuild()
-{
-    local NAME=$1
-    local DIR=$2
-    local DEBUG=$3
-    local OPT=$4
-
-    configureBuild "$DIR" "$DEBUG" "$OPT"
-
-    echo "Build $NAME"
-    run make -f client.mk build
-}
-
-function incrBuild()
-{
-    local NAME=$1
-    local DIR=$2
-    local DEBUG=$3
-    local OPT=$4
-
-    if [ ! -d $DIR ]; then
-        configureBuild "$DIR" "$DEBUG" "$OPT"
-    fi
-
-    echo "Incrementally build $NAME $INCRDIR"
-    run smartmake.py -o $DIR $INCRDIR
 }
 
 function build()
@@ -191,11 +152,20 @@ function build()
         echo "Clean $NAME"
         rm -rf $DIR
     fi
+    mkdir -p $DIR
+
+    export MOZCONFIG=$DIR/mozconfig
+    if [ ! -e $MOZCONFIG ]; then
+        echo "Configure $NAME"
+        createConfig $NAME $MOZCONFIG $DEBUG $OPT
+    fi
 
     if [ -z "$SMARTMAKE" ]; then
-        fullBuild "$NAME" "$DIR" "$DEBUG" "$OPT"
+        echo "Build $NAME"
+        run ./mach build
     else
-        incrBuild "$NAME" "$DIR" "$DEBUG" "$OPT"
+        echo "Incrementally build $NAME $INCRDIR"
+        run smartmake.py -o $DIR $INCRDIR
     fi
 }
 
