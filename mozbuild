@@ -189,7 +189,7 @@ function build()
     local DIR=$NAME-build
     if [ -d "$DIR" -a -n "$CLEAN" ]; then
         echo "Clean $NAME"
-        run make -f client.mk clean
+        rm -rf $DIR
     fi
 
     if [ -z "$SMARTMAKE" ]; then
