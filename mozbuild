@@ -8,6 +8,7 @@ OPT=
 OPTDEBUG=
 INCRDIR=
 SMARTMAKE=
+VERBOSE=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -19,6 +20,9 @@ while [ $# -ge 1 ]; do
             ;;
         -s)
             SMARTMAKE=t
+            ;;
+        -v)
+            VERBOSE=t
             ;;
         debug)
             DEBUG=t
@@ -34,7 +38,7 @@ while [ $# -ge 1 ]; do
                 INCRDIR=$1
                 SMARTMAKE=t
             else
-                echo "mozbuild [-c|-C] [debug|opt] [DIR]"
+                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug] [DIR]"
                 exit 1
             fi
             ;;
@@ -135,8 +139,16 @@ function createConfig()
 
 function run()
 {
-    nice "$@" 2>&1 | tee -a $LOGFILE | grep -iE "error:"
-    if [ ${PIPESTATUS[0]} -ne "0" ]; then
+    local STATUS
+    if [ -z "$VERBOSE" ]; then
+        nice "$@" 2>&1 | tee -a $LOGFILE | grep -iE "error:"
+        STATUS=${PIPESTATUS[0]}
+    else
+        nice "$@" 2>&1 | tee -a $LOGFILE
+        STATUS=${PIPESTATUS[0]}
+    fi
+
+    if [ $STATUS -ne 0 ]; then
         fail
     fi
 }
