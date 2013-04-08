@@ -17,16 +17,16 @@ function badUsage()
 
 LOGFILE=jsbuild.log
 
-CCACHE_OPTS="--with-ccache=`which ccache`"
+COMMON_OPTS="--enable-ctypes --with-ccache=`which ccache`"
 THREAD_OPTS="--with-system-nspr --enable-threadsafe"
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
 EXACT_OPTS="--enable-exact-rooting --disable-threadsafe"
 
-DEBUG_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $THREAD_OPTS"
-RELEASE_CONFIG="$CCACHE_OPTS"
-ROOTING_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $ROOTING_OPTS"
-EXACT_CONFIG="$CCACHE_OPTS $DEBUG_OPTS $EXACT_OPTS"
+DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
+RELEASE_CONFIG="$COMMON_OPTS"
+ROOTING_CONFIG="$COMMON_OPTS $DEBUG_OPTS $ROOTING_OPTS"
+EXACT_CONFIG="$COMMON_OPTS $DEBUG_OPTS $EXACT_OPTS"
 
 CLEAN=
 WARN=
