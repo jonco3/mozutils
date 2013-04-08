@@ -7,7 +7,7 @@ function badUsage()
     echo "    -c      => clean first"
     echo "    -C      => don't clean first (default)"
     echo "    -z ZEAL => turn on GC zeal"
-    echo "    -p      => run tests in Pacific timezone"
+    echo "    -l      => run tests in local timezone rather than PST"
     echo "  BUILDS:"
     echo "    debug"
     echo "    release"
@@ -23,7 +23,6 @@ function badUsage()
 
 CLEAN=
 ZEAL=
-TIMEZONE=`cat /etc/timezone`
 DEBUG=
 RELEASE=
 ROOTING=
@@ -32,6 +31,11 @@ JSAPITEST=
 V8TEST=
 JITTEST=
 JSTEST=
+
+ORIGINAL_TIMEZONE=`cat /etc/timezone`
+ORIGINAL_LOCALE=$LOCALE
+TIMEZONE=PST
+LOCALE=en_US.utf8
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -45,9 +49,9 @@ while [ $# -ge 1 ]; do
             ZEAL=$2
             shift
             ;;
-        -p)
-            TIMEZONE=PST
-            LOCALE=en_US.utf8
+        -l)
+            TIMEZONE=$ORIGINAL_TIMEZONE
+            LOCALE=$ORIGINAL_LOCALE
             ;;
         debug)
             DEBUG=debug
