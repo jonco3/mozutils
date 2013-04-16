@@ -17,8 +17,8 @@ function badUsage()
 
 LOGFILE=jsbuild.log
 
-COMMON_OPTS="--enable-ctypes --with-ccache=`which ccache`"
-THREAD_OPTS="--with-system-nspr --enable-threadsafe"
+COMMON_OPTS="--with-ccache=`which ccache`"
+THREAD_OPTS="--with-system-nspr --enable-threadsafe --enable-ctypes" # ctypes requires nspr it seems
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
 EXACT_OPTS="--enable-exact-rooting --disable-threadsafe"
