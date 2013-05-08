@@ -6,9 +6,11 @@ CLEAN=
 DEBUG=
 OPT=
 OPTDEBUG=
+ROOTING=
 INCRDIR=
 SMARTMAKE=
 VERBOSE=
+USEGCC=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -24,6 +26,9 @@ while [ $# -ge 1 ]; do
         -v)
             VERBOSE=t
             ;;
+        -g)
+            USEGCC=t
+            ;;
         debug)
             DEBUG=t
             ;;
@@ -33,12 +38,15 @@ while [ $# -ge 1 ]; do
         optdebug)
             OPTDEBUG=t
             ;;
+        rooting)
+            ROOTING=t
+            ;;
         *)
             if [ -z "$INCRDIR" -a -d "$1" ]; then
                 INCRDIR=$1
                 SMARTMAKE=t
             else
-                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug] [DIR]"
+                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting] [DIR]"
                 exit 1
             fi
             ;;
@@ -46,7 +54,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" ]; then
+if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" ]; then
     DEBUG=t
 fi
 
@@ -90,6 +98,7 @@ function createConfig()
     local FILE=$2
     local DEBUG=$3
     local OPT=$4
+    local ROOTING=$5
 
     rm -f $FILE
     echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
@@ -106,8 +115,13 @@ function createConfig()
     fi
     echo "mk_add_options AUTOCONF=$AUTOCONF" >> $FILE
 
-    echo "CC=clang" >> $FILE
-    echo "CXX=clang++" >> $FILE
+    if [ -n "$USEGCC" ]; then
+        echo "CC=gcc" >> $FILE
+        echo "CXX=g++" >> $FILE
+    else
+        echo "CC=clang" >> $FILE
+        echo "CXX=clang++" >> $FILE
+    fi
 
     local CCACHE=`which ccache`
     if [ -z "$CCACHE" ]; then
@@ -128,6 +142,10 @@ function createConfig()
         echo "ac_add_options --enable-optimize" >> $FILE
     else
         echo "ac_add_options --disable-optimize" >> $FILE
+    fi
+
+    if [ -n "$ROOTING" ]; then
+        echo "ac_add_options --enable-root-analysis" >> $FILE
     fi
 
     echo "ac_add_options --enable-profiling" >> $FILE
@@ -158,6 +176,7 @@ function build()
     local NAME=$1
     local DEBUG=$2
     local OPT=$3
+    local ROOTING=$4
 
     local DIR=$NAME-build
     if [ -d "$DIR" -a -n "$CLEAN" ]; then
@@ -169,7 +188,7 @@ function build()
     export MOZCONFIG=$DIR/mozconfig
     if [ ! -e $MOZCONFIG ]; then
         echo "Configure $NAME"
-        createConfig $NAME $MOZCONFIG $DEBUG $OPT
+        createConfig $NAME $MOZCONFIG $DEBUG $OPT $ROOTING
     fi
 
     if [ -z "$SMARTMAKE" ]; then
@@ -185,13 +204,17 @@ rm -f $LOGFILE
 touch $LOGFILE
 
 if [ -n "$DEBUG" ]; then
-    build debug "t" ""
+    build debug "t" "" ""
 fi
 
 if [ -n "$OPT" ]; then
-    build opt "" "t"
+    build opt "" "t" ""
 fi
 
 if [ -n "$OPTDEBUG" ]; then
-    build optdebug "t" "t"
+    build optdebug "t" "t" ""
+fi
+
+if [ -n "$ROOTING" ]; then
+    build rooting "t" "t" "t"
 fi
