@@ -7,6 +7,7 @@ DEBUG=
 OPT=
 OPTDEBUG=
 ROOTING=
+GGC=
 INCRDIR=
 SMARTMAKE=
 VERBOSE=
@@ -41,12 +42,15 @@ while [ $# -ge 1 ]; do
         rooting)
             ROOTING=t
             ;;
+        ggc)
+            GGC=t
+            ;;
         *)
             if [ -z "$INCRDIR" -a -d "$1" ]; then
                 INCRDIR=$1
                 SMARTMAKE=t
             else
-                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting] [DIR]"
+                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting|ggc] [DIR]"
                 exit 1
             fi
             ;;
@@ -54,7 +58,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" ]; then
+if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" -a -z "$GGC" ]; then
     DEBUG=t
 fi
 
@@ -99,6 +103,7 @@ function createConfig()
     local DEBUG=$3
     local OPT=$4
     local ROOTING=$5
+    local GGC=$6
 
     rm -f $FILE
     echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
@@ -148,6 +153,10 @@ function createConfig()
         echo "ac_add_options --enable-root-analysis" >> $FILE
     fi
 
+    if [ -n "$GGC" ]; then
+        echo "ac_add_options --enable-gcgenerational" >> $FILE
+    fi
+
     echo "ac_add_options --enable-profiling" >> $FILE
 
     echo "ac_add_options --enable-warnings-as-errors" >> $FILE
@@ -177,6 +186,7 @@ function build()
     local DEBUG=$2
     local OPT=$3
     local ROOTING=$4
+    local GGC=$5
 
     local DIR=$NAME-build
     if [ -d "$DIR" -a -n "$CLEAN" ]; then
@@ -188,7 +198,7 @@ function build()
     export MOZCONFIG=$DIR/mozconfig
     if [ ! -e $MOZCONFIG ]; then
         echo "Configure $NAME"
-        createConfig $NAME $MOZCONFIG $DEBUG $OPT $ROOTING
+        createConfig "$NAME" "$MOZCONFIG" "$DEBUG" "$OPT" "$ROOTING" "$GGC"
     fi
 
     if [ -z "$SMARTMAKE" ]; then
@@ -204,17 +214,21 @@ rm -f $LOGFILE
 touch $LOGFILE
 
 if [ -n "$DEBUG" ]; then
-    build debug "t" "" ""
+    build debug "t" "" "" ""
 fi
 
 if [ -n "$OPT" ]; then
-    build opt "" "t" ""
+    build opt "" "t" "" ""
 fi
 
 if [ -n "$OPTDEBUG" ]; then
-    build optdebug "t" "t" ""
+    build optdebug "t" "t" "" ""
 fi
 
 if [ -n "$ROOTING" ]; then
-    build rooting "t" "t" "t"
+    build rooting "t" "t" "t" ""
+fi
+
+if [ -n "$GGC" ]; then
+    build ggc "t" "" "" "t"
 fi

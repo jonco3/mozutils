@@ -12,6 +12,7 @@ function badUsage()
     echo "    release"
     echo "    rooting"
     echo "    exact"
+    echo "    ggc"
     exit 1
 }
 
@@ -22,11 +23,13 @@ THREAD_OPTS="--with-system-nspr --enable-threadsafe --enable-ctypes" # ctypes re
 DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
 ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
 EXACT_OPTS="--enable-exact-rooting --disable-threadsafe"
+GGC_OPTS="--enable-gcgenerational --enable-exact-rooting --disable-threadsafe"
 
 DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
 RELEASE_CONFIG="$COMMON_OPTS"
 ROOTING_CONFIG="$COMMON_OPTS $DEBUG_OPTS $ROOTING_OPTS"
 EXACT_CONFIG="$COMMON_OPTS $DEBUG_OPTS $EXACT_OPTS"
+GGC_CONFIG="$COMMON_OPTS $DEBUG_OPTS $GGC_OPTS"
 
 CLEAN=
 WARN=
@@ -34,6 +37,7 @@ DEBUG=
 RELEASE=
 ROOTING=
 EXACT=
+GGC=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -57,6 +61,9 @@ while [ $# -ge 1 ]; do
             ;;
         exact)
             EXACT=t
+            ;;
+        ggc)
+            GGC=t
             ;;
         *)
             badUsage
@@ -159,4 +166,8 @@ fi
 
 if [ -n "$EXACT" ]; then
     build exact exact-build "$EXACT_CONFIG" "$CLEAN"
+fi
+
+if [ -n "$GGC" ]; then
+    build ggc ggc-build "$GGC_CONFIG" "$CLEAN"
 fi
