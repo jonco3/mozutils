@@ -33,6 +33,7 @@ GGC_CONFIG="$COMMON_OPTS $DEBUG_OPTS $GGC_OPTS"
 
 CLEAN=
 WARN=
+VERBOSE=
 DEBUG=
 RELEASE=
 ROOTING=
@@ -49,6 +50,9 @@ while [ $# -ge 1 ]; do
             ;;
         -w)
             WARN=t
+            ;;
+        -v)
+            VERBOSE=t
             ;;
         debug)
             DEBUG=t
@@ -77,13 +81,20 @@ if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" ]; then
 fi
 
 FILTER="error:"
-if [ -n "$WARN" ]; then
+if [ -n "$VERBOSE" ]; then
+    FILTER="."
+elif [ -n "$WARN" ]; then
     FILTER="$FILTER|warning:"
 fi
 
 if [ ! -e ./jsapi.h ]; then
     echo Run jsbuild from the tree/js/src directory
     exit 1
+fi
+
+CPUS=`nproc 2> /dev/null`
+if [ -z "$CPUS" ]; then
+    CPUS=8
 fi
 
 function fail()
@@ -117,7 +128,7 @@ function build()
     fi
 
     echo "Build $NAME"
-    nice make -C $DIR -j8 2>&1 | tee -a $DIR/$LOGFILE | grep -iE $FILTER
+    nice make -C $DIR -j $CPUS 2>&1 | tee -a $DIR/$LOGFILE | grep -iE $FILTER
     if [ ${PIPESTATUS[0]} -ne "0" ]; then
         fail
     fi
