@@ -154,6 +154,7 @@ function createConfig()
     fi
 
     if [ -n "$GGC" ]; then
+        echo "ac_add_options --enable-exact-rooting" >> $FILE
         echo "ac_add_options --enable-gcgenerational" >> $FILE
     fi
 
