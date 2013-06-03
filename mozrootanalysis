@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ ! -e ./js/src/jsapi.h ]; then
+    echo Run jsrootanalysis from the mozilla tree root
+    exit 1
+fi
+
+export SIXGILL=~/software/xgill
+if [ ! -d $SIXGILL ]; then
+    echo "Can't find sixgill installation at $SIXGILL"
+    exit 1
+fi
+
+export JS=~/work/inbound/js/src/release-build/shell/js
+if [ ! -f $JS ]; then
+    echo "Can't find optimised js shell at $JS"
+    exit 1
+fi
+
+export JOBS=8
+
+NAME=analysis
+DIR=$NAME-build
+export MOZCONFIG=$DIR/mozconfig
+ 
+if [ -d $DIR ]; then
+    cd $DIR
+    make clean
+else
+    mkdir $DIR
+
+    echo ". \$topsrcdir/browser/config/mozconfig" >> $MOZCONFIG
+    echo "mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/${NAME}-build" >> $MOZCONFIG
+    echo "mk_add_options MOZ_MAKE_FLAGS=\"-s -j8\"" >> $MOZCONFIG
+
+    AUTOCONF=`which autoconf213`
+    if [ -z "$AUTOCONF" ]; then
+        AUTOCONF=`which autoconf2.13`
+    fi
+    if [ -z "$AUTOCONF" ]; then
+        echo "Can't find autoconf 2.13"
+        exit 1
+    fi
+    echo "mk_add_options AUTOCONF=$AUTOCONF" >> $MOZCONFIG
+
+    echo "CC=gcc" >> $MOZCONFIG
+    echo "CXX=g++" >> $MOZCONFIG
+
+    echo "ac_add_options --disable-debug" >> $MOZCONFIG
+    echo "ac_add_options --disable-debug-symbols" >> $MOZCONFIG
+
+    ./mach configure
+    cd $DIR
+fi
+
+cd js/src/devtools/rootAnalysis
+rm -f *.log rootingHazards.* *.xdb *.lst *.sort *.txt *.tmp
+make

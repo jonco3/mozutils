@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ ! -e ./jsapi.h ]; then
+    echo Run jsrootanalysis from the tree/js/src directory
+    exit 1
+fi
+
+export SIXGILL=~/software/xgill
+if [ ! -d $SIXGILL ]; then
+    echo "Can't find sixgill installation at $SIXGILL"
+    exit 1
+fi
+
+export JS=~/work/inbound/js/src/release-build/shell/js
+if [ ! -f $JS ]; then
+    echo "Can't find optimised js shell at $JS"
+    exit 1
+fi
+
+export JOBS=8
+
+if [ -d analysis-build ]; then
+    cd analysis-build
+else
+    mkdir analysis-build
+    cd analysis-build
+    ../configure --disable-optimize --with-system-nspr --enable-threadsafe --enable-ctypes || exit 1
+fi
+
+make clean
+cd devtools/rootAnalysis
+rm -f *.log rootingHazards.* *.xdb *.lst *.sort *.txt
+make
