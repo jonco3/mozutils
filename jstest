@@ -112,6 +112,11 @@ jsbuild $CLEAN $DEBUG $RELEASE $ROOTING $EXACT || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
+CPUS=`nproc 2> /dev/null`
+if [ -z "$CPUS" ]; then
+    CPUS=8
+fi
+
 FAILFILE=jstest.failures.tmp
 
 EXIT=0
@@ -169,7 +174,7 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py -j6 $JSDIR/js || fail
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py -j$CPUS $JSDIR/js || fail
     echo
 }
 
