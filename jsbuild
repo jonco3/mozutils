@@ -1,184 +1,149 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-function badUsage()
-{
-    echo "jsbuild OPTIONS BUILDS"
-    echo "  OPTIONS:"
-    echo "    -c => clean first"
-    echo "    -C => don't clean first (default)"
-    echo "    -w => show warnings"
-    echo "  BUILDS:"
-    echo "    debug"
-    echo "    release"
-    echo "    rooting"
-    echo "    exact"
-    echo "    ggc"
-    exit 1
+# Python script to build SpiderMonkey
+
+import os
+import os.path
+import sys
+import shutil
+import argparse
+import subprocess
+
+build_options = {
+    'common':  '--with-ccache=`which ccache`',
+    'thread':  '--with-system-nspr --enable-threadsafe',
+    'ctypes':  '--enable-ctypes --with-system-nspr --enable-threadsafe',
+    'debug':   '--enable-debug --disable-optimize --enable-gczeal',
+    'rooting': '--enable-root-analysis --disable-threadsafe',
+    'exact':   '--enable-exact-rooting --disable-threadsafe',
+    'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe'
 }
 
-LOGFILE=jsbuild.log
-
-COMMON_OPTS="--with-ccache=`which ccache`"
-THREAD_OPTS="--with-system-nspr --enable-threadsafe --enable-ctypes" # ctypes requires nspr it seems
-DEBUG_OPTS="--enable-debug --disable-optimize --enable-gczeal"
-ROOTING_OPTS="--enable-root-analysis --disable-threadsafe"
-EXACT_OPTS="--enable-exact-rooting --disable-threadsafe"
-GGC_OPTS="--enable-gcgenerational --enable-exact-rooting --disable-threadsafe"
-
-DEBUG_CONFIG="$COMMON_OPTS $DEBUG_OPTS $THREAD_OPTS"
-RELEASE_CONFIG="$COMMON_OPTS"
-ROOTING_CONFIG="$COMMON_OPTS $DEBUG_OPTS $ROOTING_OPTS"
-EXACT_CONFIG="$COMMON_OPTS $DEBUG_OPTS $EXACT_OPTS"
-GGC_CONFIG="$COMMON_OPTS $DEBUG_OPTS $GGC_OPTS"
-
-CLEAN=
-WARN=
-VERBOSE=
-DEBUG=
-RELEASE=
-ROOTING=
-EXACT=
-GGC=
-
-while [ $# -ge 1 ]; do
-    case "$1" in
-        -c)
-            CLEAN=t
-            ;;
-        -C)
-            CLEAN=
-            ;;
-        -w)
-            WARN=t
-            ;;
-        -v)
-            VERBOSE=t
-            ;;
-        debug)
-            DEBUG=t
-            ;;
-        release)
-            RELEASE=t
-            ;;
-        rooting)
-            ROOTING=t
-            ;;
-        exact)
-            EXACT=t
-            ;;
-        ggc)
-            GGC=t
-            ;;
-        *)
-            badUsage
-            ;;
-    esac
-    shift
-done
-
-if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" ]; then
-    DEBUG=t
-fi
-
-FILTER="error:"
-if [ -n "$VERBOSE" ]; then
-    FILTER="."
-elif [ -n "$WARN" ]; then
-    FILTER="$FILTER|warning:"
-fi
-
-if [ ! -e ./jsapi.h ]; then
-    echo Run jsbuild from the tree/js/src directory
-    exit 1
-fi
-
-CPUS=`nproc 2> /dev/null`
-if [ -z "$CPUS" ]; then
-    CPUS=8
-fi
-
-function fail()
-{
-    echo "Build failed, see $LOGFILE"
-    exit 1
+build_configs = {
+    'debug':   ['common', 'thread', 'debug'],
+    'opt':     ['common'],
+    'rooting': ['common', 'debug', 'rooting'],
+    'exact':   ['common', 'debug', 'exact'],
+    'ggc':     ['common', 'debug', 'ggc']
 }
 
-function build()
-{
-    local NAME=$1
-    local DIR=$2
-    local CONFIG=$3
-    local CLEAN=$4
+parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
+parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
+parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
+parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
+parser.add_argument('-x', '--crossCompile', action='store_true', help = 'Cross compile for ARM')
+parser.add_argument('build', nargs ='?', choices = build_configs.keys().sort(), 
+                    default = 'debug', help = 'Build config to use')
+args = parser.parse_args()
 
-    if [ -n "$CLEAN" ]; then
-        echo "Clean $NAME"
-        rm -rf $DIR
-    fi
+def which(name):
+    try:
+        return subprocess.check_output('which ' + name, shell = True).splitlines()[0]
+    except subprocess.CalledProcessError:
+        return None
 
-    if [ ! -d $DIR ]; then
-        echo "Configure $NAME"
-        mkdir $DIR
-        cd $DIR
-        echo configure $CONFIG > $LOGFILE
-        ../configure $CONFIG 2>&1 | tee -a $LOGFILE | grep -iE $FILTER
-        if [ ${PIPESTATUS[0]} -ne "0" ]; then
-            fail
-        fi
-        cd ..
-    fi
+ccache = which('ccache')
 
-    echo "Build $NAME"
-    nice make -C $DIR -j $CPUS 2>&1 | tee -a $DIR/$LOGFILE | grep -iE $FILTER
-    if [ ${PIPESTATUS[0]} -ne "0" ]; then
-        fail
-    fi
-}
+try:
+    nproc = int(subprocess.check_output('nproc').splitlines()[0])
+except subprocess.CalledProcessError:
+    nproc = 8
 
-rm -f $LOGFILE
+if not os.path.isfile("jsapi.h"):
+    sys.exit('Run jsbuild from the js/src directory')
 
-if [ configure.in -nt configure ]; then
+if os.path.getmtime('configure.in') > os.path.getmtime('configure'):
+    print('Autoconf')
+    autoconf = which('autoconf213') or which('autoconf2.13')
+    if not autoconf:
+        sys.exit('Can\'t find autoconf 2.13')
+    subprocess.check_call(autoconf)
 
-    echo "Autoconf"
-    AUTOCONF=`which autoconf213`
-    if [ -z "$AUTOCONF" ]; then
-        AUTOCONF=`which autoconf2.13`
-    fi
-    if [ -z "$AUTOCONF" ]; then
-        echo "Can't find autoconf 2.13"
-        exit 1
-    fi
-    $AUTOCONF || fail
+    print('Clean all')
+    args.clean = False
+    for build in build_configs.keys():
+        if os.path.isdir(build):
+            shutil.rmtree(build)
 
-    echo "Clean all"
-    rm -rf debug-build nothread-build valgrind-build rooting-build release-build
-    CLEAN=
-fi
+clang_cc = which('clang')
+clang_cxx = which('clang++')
 
-# Clang is preferred for rooting builds (it shows up more problems), and it much
-# faster in general, so use it if possible
-CLANGCC=`which clang`
-CLANGCXX=`which clang++`
-if [ -n "$CLANGCC" -a -n "$CLANGCXX" ]; then
-    export CC=$CLANGCC
-    export CXX=$CLANGCXX
-fi
+arm_cc = which('arm-linux-gnueabi-gcc')
+arm_cxx = which('arm-linux-gnueabi-g++')
+if args.crossCompile and not (arm_cc and arm_cxx):
+    sys.exit("ARM cross compiler not found on PATH")
 
-if [ -n "$DEBUG" ]; then
-    build debug debug-build "$DEBUG_CONFIG" "$CLEAN"
-fi
+def run_command(command):
+    if args.verbose:
+        print(command)
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, 
+                            shell = True)
+    while proc.poll() == None:
+        line = proc.stdout.readline()
+        if not line:
+            break
+        if args.verbose or "error:" in line or (args.warnings and "warning:" in line):
+            print(line.rstrip())
+    if proc.returncode:
+        sys.exit('Command failed with returncode ' + str(proc.returncode))
 
-if [ -n "$RELEASE" ]; then
-    build release release-build "$RELEASE_CONFIG" "$CLEAN"
-fi
+def build(name, clean, crossCompile = False):
+    if crossCompile:
+        nonCrossDir = name + '-build'
+        name += '-arm'
+    dir = name + '-build'
 
-if [ -n "$ROOTING" ]; then
-    build rooting rooting-build "$ROOTING_CONFIG" "$CLEAN"
-fi
+    if clean:
+        print('Clean ' + name)
+        if os.path.isdir(dir):
+            shutil.rmtree(dir)
 
-if [ -n "$EXACT" ]; then
-    build exact exact-build "$EXACT_CONFIG" "$CLEAN"
-fi
+    if args.verbose:
+        filter = '.'
+    elif args.warnings:
+        filter = 'Entering\\ directory|error:|warning:'
+    else:
+        filter = 'Entering\\ directory|error:'
 
-if [ -n "$GGC" ]; then
-    build ggc ggc-build "$GGC_CONFIG" "$CLEAN"
-fi
+    if not os.path.isdir(dir):
+        print('Configure ' + name)
+        os.mkdir(dir)
+        os.chdir(dir)
+
+        config = ' '.join([build_options[opt] for opt in build_configs[args.build]])
+        if crossCompile:
+            config += ' --build=i686 --host=arm-linux-gnueabi --target=arm-linux-gnueabi --enable-static --enable-js-static-build --disable-shared --disable-intl-api --with-cross-lib=/usr/arm-linux-gnueabi/lib'
+
+        if crossCompile:
+            os.environ['CC'] = 'arm-linux-gnueabi-gcc'
+            os.environ['CXX'] = 'arm-linux-gnueabi-g++'
+            os.environ['LD'] = 'arm-linux-gnueabi-ld'
+        elif clang_cc and clang_cxx:
+            # Clang is preferred for rooting builds (it shows up more problems), and it much
+            # faster in general, so use it if possible
+            os.environ['CC'] = clang_cc
+            os.environ['CXX'] = clang_cxx
+        else:
+            os.environ['CC'] = ''
+            os.environ['CXX'] = ''
+
+        run_command('../configure ' + config)
+        os.chdir('..')
+
+    if crossCompile:
+        # Some binaries get run on the build computer, but they get
+        # built for the target so this doesn't work.  Copy those
+        # binaries from a previous non-cross build
+        print('Bodging ' + name)
+        shutil.copy(nonCrossDir + '/config/nsinstall', dir + '/config')
+        shutil.copy(nonCrossDir + '/config/nsinstall_real', dir + '/config')
+        shutil.copy(nonCrossDir + '/host_jskwgen', dir)
+        shutil.copy(nonCrossDir + '/host_jsoplengen', dir)
+
+    print('Build ' + name)
+    run_command('nice make -C %s -j%d' % (dir, nproc))
+
+build(args.build, False, False)
+if args.crossCompile:
+    build(args.build, args.clean, True)
