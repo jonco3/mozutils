@@ -8,6 +8,7 @@ OPT=
 OPTDEBUG=
 ROOTING=
 GGC=
+EXACT=
 INCRDIR=
 SMARTMAKE=
 VERBOSE=
@@ -45,12 +46,15 @@ while [ $# -ge 1 ]; do
         ggc)
             GGC=t
             ;;
+        exact)
+            EXACT=t
+            ;;
         *)
             if [ -z "$INCRDIR" -a -d "$1" ]; then
                 INCRDIR=$1
                 SMARTMAKE=t
             else
-                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting|ggc] [DIR]"
+                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting|ggc|exact] [DIR]"
                 exit 1
             fi
             ;;
@@ -58,7 +62,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" -a -z "$GGC" ]; then
+if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" -a -z "$GGC" -a -z "$EXACT" ]; then
     DEBUG=t
 fi
 
@@ -103,7 +107,8 @@ function createConfig()
     local DEBUG=$3
     local OPT=$4
     local ROOTING=$5
-    local GGC=$6
+    local EXACT=$6
+    local GGC=$7
 
     rm -f $FILE
     echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
@@ -153,16 +158,23 @@ function createConfig()
         echo "ac_add_options --enable-root-analysis" >> $FILE
     fi
 
-    if [ -n "$GGC" ]; then
+    if [ -n "$EXACT" ]; then
         echo "ac_add_options --enable-exact-rooting" >> $FILE
+    fi
+
+    if [ -n "$GGC" ]; then
         echo "ac_add_options --enable-gcgenerational" >> $FILE
     fi
 
     echo "ac_add_options --enable-profiling" >> $FILE
 
     echo "ac_add_options --enable-warnings-as-errors" >> $FILE
-    echo "ac_add_options --enable-crypto" >> $FILE
+    echo "ac_add_options --enable-crypto" >> $FILEl
     echo "export MOZ_PACKAGE_JSSHELL=1" >> $FILE
+
+    # for some reason this builds started demanding installation of gstreamer
+    # packages
+    echo "ac_add_options --disable-gstreamer" >> $FILE
 }
 
 function run()
@@ -187,7 +199,8 @@ function build()
     local DEBUG=$2
     local OPT=$3
     local ROOTING=$4
-    local GGC=$5
+    local EXACT=$5
+    local GGC=$6
 
     local DIR=$NAME-build
     if [ -d "$DIR" -a -n "$CLEAN" ]; then
@@ -199,7 +212,7 @@ function build()
     export MOZCONFIG=$DIR/mozconfig
     if [ ! -e $MOZCONFIG ]; then
         echo "Configure $NAME"
-        createConfig "$NAME" "$MOZCONFIG" "$DEBUG" "$OPT" "$ROOTING" "$GGC"
+        createConfig "$NAME" "$MOZCONFIG" "$DEBUG" "$OPT" "$ROOTING" "$EXACT" "$GGC"
     fi
 
     if [ -z "$SMARTMAKE" ]; then
@@ -219,17 +232,21 @@ if [ -n "$DEBUG" ]; then
 fi
 
 if [ -n "$OPT" ]; then
-    build opt "" "t" "" ""
+    build opt "" "t" "" "" ""
 fi
 
 if [ -n "$OPTDEBUG" ]; then
-    build optdebug "t" "t" "" ""
+    build optdebug "t" "t" "" "" ""
 fi
 
 if [ -n "$ROOTING" ]; then
-    build rooting "t" "t" "t" ""
+    build rooting "t" "t" "t" "" ""
+fi
+
+if [ -n "$EXACT" ]; then
+    build exact "t" "" "" "t" ""
 fi
 
 if [ -n "$GGC" ]; then
-    build ggc "t" "" "" "t"
+    build ggc "t" "" "" "t" "t"
 fi
