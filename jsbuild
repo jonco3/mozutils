@@ -8,33 +8,49 @@ import sys
 import shutil
 import argparse
 import subprocess
+import glob
+
+# --with-system-nspr doesn't work with crosscompilation, because it
+# tries to link with the host library
 
 build_options = {
     'common':  '--with-ccache=`which ccache`',
-    'thread':  '--with-system-nspr --enable-threadsafe',
+    'threads': '--with-system-nspr --enable-threadsafe',
     'ctypes':  '--enable-ctypes --with-system-nspr --enable-threadsafe',
     'debug':   '--enable-debug --disable-optimize --enable-gczeal',
     'rooting': '--enable-root-analysis --disable-threadsafe',
     'exact':   '--enable-exact-rooting --disable-threadsafe',
-    'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe'
+    'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe',
+    'arm':     '--with-arch=armv7-a --with-thumb --disable-intl-api'
 }
 
 build_configs = {
-    'debug':   ['common', 'thread', 'debug'],
-    'opt':     ['common'],
-    'rooting': ['common', 'debug', 'rooting'],
-    'exact':   ['common', 'debug', 'exact'],
-    'ggc':     ['common', 'debug', 'ggc']
+    'opt':       ['common'],
+    'nothreads': ['common', 'debug'],
+    'debug':     ['common', 'debug', 'threads'],
+    'rooting':   ['common', 'debug', 'rooting'],
+    'exact':     ['common', 'debug', 'exact'],
+    'ggc':       ['common', 'debug', 'ggc']
 }
+build_names = build_configs.keys()
+
+compilers = {
+    'clang': (None, 'clang', 'clang++'),
+    'gcc':   (None, 'gcc', 'g++'),
+    'armsf': ('arm-linux-gnueabi', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
+    'armhf': ('arm-linux-gnueabihf', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
+}
+compiler_names = compilers.keys()
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
-parser.add_argument('-x', '--crossCompile', action='store_true', help = 'Cross compile for ARM')
-parser.add_argument('build', nargs ='?', choices = build_configs.keys().sort(), 
-                    default = 'debug', help = 'Build config to use')
+parser.add_argument('build', nargs ='?', choices = build_names, default = 'debug', 
+                    help = 'Build config to use')
+parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None, 
+                    help = 'Compiler to use')
 args = parser.parse_args()
 
 def which(name):
@@ -42,37 +58,6 @@ def which(name):
         return subprocess.check_output('which ' + name, shell = True).splitlines()[0]
     except subprocess.CalledProcessError:
         return None
-
-ccache = which('ccache')
-
-try:
-    nproc = int(subprocess.check_output('nproc').splitlines()[0])
-except subprocess.CalledProcessError:
-    nproc = 8
-
-if not os.path.isfile("jsapi.h"):
-    sys.exit('Run jsbuild from the js/src directory')
-
-if os.path.getmtime('configure.in') > os.path.getmtime('configure'):
-    print('Autoconf')
-    autoconf = which('autoconf213') or which('autoconf2.13')
-    if not autoconf:
-        sys.exit('Can\'t find autoconf 2.13')
-    subprocess.check_call(autoconf)
-
-    print('Clean all')
-    args.clean = False
-    for build in build_configs.keys():
-        if os.path.isdir(build):
-            shutil.rmtree(build)
-
-clang_cc = which('clang')
-clang_cxx = which('clang++')
-
-arm_cc = which('arm-linux-gnueabi-gcc')
-arm_cxx = which('arm-linux-gnueabi-g++')
-if args.crossCompile and not (arm_cc and arm_cxx):
-    sys.exit("ARM cross compiler not found on PATH")
 
 def run_command(command):
     if args.verbose:
@@ -88,62 +73,68 @@ def run_command(command):
     if proc.returncode:
         sys.exit('Command failed with returncode ' + str(proc.returncode))
 
-def build(name, clean, crossCompile = False):
-    if crossCompile:
-        nonCrossDir = name + '-build'
-        name += '-arm'
-    dir = name + '-build'
+if not os.path.isfile("jsapi.h"):
+    sys.exit('Run jsbuild from the js/src directory')
 
-    if clean:
-        print('Clean ' + name)
-        if os.path.isdir(dir):
-            shutil.rmtree(dir)
+if os.path.getmtime('configure.in') > os.path.getmtime('configure'):
+    print('Autoconf')
+    autoconf = which('autoconf213') or which('autoconf2.13')
+    if not autoconf:
+        sys.exit('Can\'t find autoconf 2.13')
+    subprocess.check_call(autoconf)
 
-    if args.verbose:
-        filter = '.'
-    elif args.warnings:
-        filter = 'Entering\\ directory|error:|warning:'
-    else:
-        filter = 'Entering\\ directory|error:'
+    print('Clean all')
+    args.clean = False
+    for build in glob.glob('*-build'):
+        if os.path.isdir(build):
+            shutil.rmtree(build)
 
-    if not os.path.isdir(dir):
-        print('Configure ' + name)
-        os.mkdir(dir)
-        os.chdir(dir)
+name = args.build
 
-        config = ' '.join([build_options[opt] for opt in build_configs[args.build]])
-        if crossCompile:
-            config += ' --build=i686 --host=arm-linux-gnueabi --target=arm-linux-gnueabi --enable-static --enable-js-static-build --disable-shared --disable-intl-api --with-cross-lib=/usr/arm-linux-gnueabi/lib'
+if args.compiler:
+    name += '-' + args.compiler
+    target = compilers[args.compiler][0]
+    cc = which(compilers[args.compiler][1])
+    cxx = which(compilers[args.compiler][2])
+    if not cc or not cxx:
+        sys.exit("Compiler for %s build not found on path" % args.compiler)
+    if not target:
+        os.environ['CC'] = cc
+        os.environ['CXX'] = cxx
+else:
+    # Clang is preferred for rooting builds (it shows up more problems), and it is
+    # faster in general, so use it if possible
+    target = None
+    clang_cc = which('clang')
+    clang_cxx = which('clang++')
+    if clang_cc and clang_cxx:
+        os.environ['CC'] = clang_cc
+        os.environ['CXX'] = clang_cxx
 
-        if crossCompile:
-            os.environ['CC'] = 'arm-linux-gnueabi-gcc'
-            os.environ['CXX'] = 'arm-linux-gnueabi-g++'
-            os.environ['LD'] = 'arm-linux-gnueabi-ld'
-        elif clang_cc and clang_cxx:
-            # Clang is preferred for rooting builds (it shows up more problems), and it much
-            # faster in general, so use it if possible
-            os.environ['CC'] = clang_cc
-            os.environ['CXX'] = clang_cxx
-        else:
-            os.environ['CC'] = ''
-            os.environ['CXX'] = ''
+dir = name + '-build'
 
-        run_command('../configure ' + config)
-        os.chdir('..')
+if args.clean:
+    print('Clean ' + name)
+    if os.path.isdir(dir):
+        shutil.rmtree(dir)
 
-    if crossCompile:
-        # Some binaries get run on the build computer, but they get
-        # built for the target so this doesn't work.  Copy those
-        # binaries from a previous non-cross build
-        print('Bodging ' + name)
-        shutil.copy(nonCrossDir + '/config/nsinstall', dir + '/config')
-        shutil.copy(nonCrossDir + '/config/nsinstall_real', dir + '/config')
-        shutil.copy(nonCrossDir + '/host_jskwgen', dir)
-        shutil.copy(nonCrossDir + '/host_jsoplengen', dir)
+if not os.path.isdir(dir):
+    print('Configure ' + name)
+    os.mkdir(dir)
+    os.chdir(dir)
 
-    print('Build ' + name)
-    run_command('nice make -C %s -j%d' % (dir, nproc))
+    config = ' '.join([build_options[opt] for opt in build_configs[args.build]])
+    if target:
+        config += ' --target=' + target
+    if args.compiler and args.compiler.startswith('arm'):
+        config += ' ' + build_options['arm']
+        
+    run_command('../configure ' + config)
+    os.chdir('..')
 
-build(args.build, False, False)
-if args.crossCompile:
-    build(args.build, args.clean, True)
+print('Build ' + name)
+try:
+    nproc = int(subprocess.check_output('nproc').splitlines()[0])
+except subprocess.CalledProcessError:
+    nproc = 8
+run_command('nice make -C %s -j%d' % (dir, nproc))
