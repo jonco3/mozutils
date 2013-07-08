@@ -68,7 +68,10 @@ def run_command(command):
         line = proc.stdout.readline()
         if not line:
             break
-        if args.verbose or "error:" in line or (args.warnings and "warning:" in line):
+        if args.verbose or \
+                "Entering directory" in line or \
+                "error:" in line or \
+                (args.warnings and "warning:" in line):
             print(line.rstrip())
     if proc.returncode:
         sys.exit('Command failed with returncode ' + str(proc.returncode))
