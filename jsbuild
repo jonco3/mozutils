@@ -21,12 +21,13 @@ build_options = {
     'rooting': '--enable-root-analysis --disable-threadsafe',
     'exact':   '--enable-exact-rooting --disable-threadsafe',
     'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe',
-    'arm':     '--with-arch=armv7-a --with-thumb --disable-intl-api'
+    'arm':     '--with-arch=armv7-a --with-thumb',
+    'min':     '--disable-intl-api'
 }
 
 build_configs = {
     'opt':       ['common'],
-    'nothreads': ['common', 'debug'],
+    'min':       ['common', 'debug', 'min'],
     'debug':     ['common', 'debug', 'threads'],
     'rooting':   ['common', 'debug', 'rooting'],
     'exact':     ['common', 'debug', 'exact'],
