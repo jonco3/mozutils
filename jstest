@@ -13,6 +13,7 @@ function badUsage()
     echo "    release"
     echo "    rooting"
     echo "    exact"
+    echo "    ggc"
     echo "  TESTS:"
     echo "    jsapitest"
     echo "    v8test"
@@ -27,6 +28,7 @@ DEBUG=
 RELEASE=
 ROOTING=
 EXACT=
+GGC=
 JSAPITEST=
 V8TEST=
 JITTEST=
@@ -65,6 +67,9 @@ while [ $# -ge 1 ]; do
         exact)
             EXACT=exact
             ;;
+        ggc)
+            GGC=ggc
+            ;;
         jsapitest)
             JSAPITEST=t
             ;;
@@ -88,7 +93,7 @@ if [ -z "$CLEAN" ]; then
     CLEAN=-C
 fi
 
-if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" ]; then
+if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" ]; then
     DEBUG=debug
 fi
 
@@ -108,7 +113,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $DEBUG $RELEASE $ROOTING $EXACT || exit 125
+jsbuild $CLEAN $DEBUG $RELEASE $ROOTING $EXACT $GGC || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
@@ -218,6 +223,10 @@ fi
 
 if [ -n "$EXACT" ]; then
     test exact ./exact-build
+fi
+
+if [ -n "$GGC" ]; then
+    test ggc ./ggc-build
 fi
 
 exit $EXIT
