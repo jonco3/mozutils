@@ -13,6 +13,7 @@ INCRDIR=
 SMARTMAKE=
 VERBOSE=
 USEGCC=
+SKIP_B2G=
 
 while [ $# -ge 1 ]; do
     case "$1" in
@@ -30,6 +31,9 @@ while [ $# -ge 1 ]; do
             ;;
         -g)
             USEGCC=t
+            ;;
+        -B)
+            SKIP_B2G=t
             ;;
         debug)
             DEBUG=t
@@ -175,6 +179,13 @@ function createConfig()
     # for some reason this builds started demanding installation of gstreamer
     # packages
     echo "ac_add_options --disable-gstreamer" >> $FILE
+
+    # build b2g stuff unless -B is passed
+    if [ -z "$SKIP_B2G" ]; then
+        echo "ac_add_options --enable-b2g-bt" >> $FILE
+        echo "ac_add_options --enable-b2g-camera" >> $FILE
+        echo "ac_add_options --enable-b2g-ril" >> $FILE  # regurgitated insect larvae
+    fi
 }
 
 function run()
