@@ -184,7 +184,7 @@ function createConfig()
     echo "ac_add_options --disable-gstreamer" >> $FILE
 
     # build b2g stuff
-    if [ -z "$B2G" ]; then
+    if [ -n "$B2G" ]; then
         echo "ac_add_options --enable-b2g-bt" >> $FILE
         echo "ac_add_options --enable-b2g-camera" >> $FILE
         echo "ac_add_options --enable-b2g-ril" >> $FILE  # regurgitated insect larvae
