@@ -59,20 +59,27 @@ def which(name):
     except subprocess.CalledProcessError:
         return None
 
+directory_line = None
 def run_command(command):
     if args.verbose:
         print(command)
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT, 
                             shell = True)
     while proc.poll() == None:
-        line = proc.stdout.readline()
+        line = proc.stdout.readline().rstrip()
         if not line:
-            break
-        if args.verbose or \
-                "Entering directory" in line or \
-                "error:" in line or \
-                (args.warnings and "warning:" in line):
-            print(line.rstrip())
+            continue
+
+        if args.verbose:
+            print(line)
+        elif "Entering directory" in line:
+            directory_line = line
+        elif "error:" in line or (args.warnings and "warning:" in line):
+            if directory_line:
+                print(directory_line)
+                directory_line = None
+            print(line)
+
     if proc.returncode:
         sys.exit('Command failed with returncode ' + str(proc.returncode))
 
