@@ -22,6 +22,8 @@ build_options = {
     'exact':   '--enable-exact-rooting --disable-threadsafe',
     'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe',
     'arm':     '--with-arch=armv7-a --with-thumb --disable-intl-api',
+    'armsf':   '--target=arm-linux-gnueabi --with-float-abi=softfp',
+    'armhf':   '--target=arm-linux-gnueabihf --with-float-abi=hard'
 }
 
 build_configs = {
@@ -37,8 +39,8 @@ build_names = build_configs.keys()
 compilers = {
     'clang': (None, 'clang', 'clang++'),
     'gcc':   (None, 'gcc', 'g++'),
-    'armsf': ('arm-linux-gnueabi', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
-    'armhf': ('arm-linux-gnueabihf', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
+    'armsf': ('arm', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
+    'armhf': ('arm', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
 }
 compiler_names = compilers.keys()
 
@@ -103,18 +105,17 @@ name = args.build
 
 if args.compiler:
     name += '-' + args.compiler
-    target = compilers[args.compiler][0]
+    arch = compilers[args.compiler][0]
     cc = which(compilers[args.compiler][1])
     cxx = which(compilers[args.compiler][2])
     if not cc or not cxx:
         sys.exit("Compiler for %s build not found on path" % args.compiler)
-    if not target:
-        os.environ['CC'] = cc
-        os.environ['CXX'] = cxx
+    os.environ['CC'] = cc
+    os.environ['CXX'] = cxx
 else:
     # Clang is preferred for rooting builds (it shows up more problems), and it is
     # faster in general, so use it if possible
-    target = None
+    arch = None
     clang_cc = which('clang')
     clang_cxx = which('clang++')
     if clang_cc and clang_cxx:
@@ -134,10 +135,10 @@ if not os.path.isdir(dir):
     os.chdir(dir)
 
     config = ' '.join([build_options[opt] for opt in build_configs[args.build]])
-    if target:
-        config += ' --target=' + target
-    if args.compiler and args.compiler.startswith('arm'):
-        config += ' ' + build_options['arm']
+    if arch:
+        config += ' ' + build_options[arch]
+    if args.compiler and args.compiler in build_options:
+        config += ' ' + build_options[args.compiler]
         
     run_command('../configure ' + config)
     os.chdir('..')
