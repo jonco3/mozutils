@@ -176,7 +176,7 @@ function createConfig()
     echo "ac_add_options --enable-profiling" >> $FILE
 
     echo "ac_add_options --enable-warnings-as-errors" >> $FILE
-    echo "ac_add_options --enable-crypto" >> $FILEl
+    echo "ac_add_options --enable-crypto" >> $FILE
     echo "export MOZ_PACKAGE_JSSHELL=1" >> $FILE
 
     # for some reason this builds started demanding installation of gstreamer
