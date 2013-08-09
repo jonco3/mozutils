@@ -1,266 +1,129 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-LOGFILE=mozbuild.log
+# Python script to build Firefox
 
-CLEAN=
-DEBUG=
-OPT=
-OPTDEBUG=
-ROOTING=
-GGC=
-EXACT=
-INCRDIR=
-SMARTMAKE=
-VERBOSE=
-USEGCC=
-B2G=
+import os
+import os.path
+import sys
+import shutil
+import argparse
 
-while [ $# -ge 1 ]; do
-    case "$1" in
-        -c)
-            CLEAN=t
-            ;;
-        -C)
-            CLEAN=
-            ;;
-        -s)
-            SMARTMAKE=t
-            ;;
-        -v)
-            VERBOSE=t
-            ;;
-        -g)
-            USEGCC=t
-            ;;
-        -b)
-            B2G=t
-            ;;
-        debug)
-            DEBUG=t
-            ;;
-        opt)
-            OPT=t
-            ;;
-        optdebug)
-            OPTDEBUG=t
-            ;;
-        rooting)
-            ROOTING=t
-            ;;
-        ggc)
-            GGC=t
-            ;;
-        exact)
-            EXACT=t
-            ;;
-        *)
-            if [ -z "$INCRDIR" -a -d "$1" ]; then
-                INCRDIR=$1
-                SMARTMAKE=t
-            else
-                echo "mozbuild [-c|-C] [-s] [-v] [debug|opt|optdebug|rooting|ggc|exact] [DIR]"
-                exit 1
-            fi
-            ;;
-    esac
-    shift
-done
+# Import common functions
+install_dir = os.path.dirname(__file__)
+sys.path.append(install_dir)
+from mozutils import *
 
-if [ -z "$DEBUG" -a -z "$OPT" -a -z "$OPTDEBUG" -a -z "$ROOTING" -a -z "$GGC" -a -z "$EXACT" ]; then
-    DEBUG=t
-fi
-
-function onPath
-{
-    command -v $1 > /dev/null
+build_options = {
+    'debug':   '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling',
+    'rooting': '--enable-root-analysis',
+    'exact':   '--enable-exact-rooting',
+    'ggc':     '--enable-gcgenerational',
+    'opt':     '--disable-debug --disable-debug-symbols --enable-optimize',
+    'b2g':     '--enable-b2g-bt --enable-b2g-camera --enable-b2g-ril'
 }
 
-if [ ! -e ./client.mk ]; then
-    echo Run mozbuild from the root of the tree
-    exit 1
-fi
-
-if [ -n "$SMARTMAKE" ]; then
-    if ! onPath smartmake.py; then
-        if [ -e ~/software/smartmake/smartmake.py ]; then
-            # todo: this is a hack!
-            PATH=$PATH:~/software/smartmake
-        else
-            echo "Can't find smartmake.py on path $PATH"
-            echo "Available here: http://hg.mozilla.org/users/josh_joshmatthews.net/smartmake"
-            exit 1
-        fi
-    fi
-
-    if [ ! -e .hg/.smartmake ]; then
-        echo "[smartmake]" > .hg/.smartmake
-        echo "cmd=make -j8 -C" >> .hg/.smartmake
-    fi
-fi
-
-function fail()
-{        
-    echo "Build failed, see $LOGFILE"
-    exit 1
+build_configs = {
+    'debug':     ['debug'],
+    'rooting':   ['debug', 'rooting'],
+    'exact':     ['debug', 'exact'],
+    'ggc':       ['debug', 'exact', 'ggc'],
+    'opt':       ['opt']
 }
+build_names = build_configs.keys()
 
-function createConfig()
-{
-    local NAME=$1
-    local FILE=$2
-    local DEBUG=$3
-    local OPT=$4
-    local ROOTING=$5
-    local EXACT=$6
-    local GGC=$7
+parser = argparse.ArgumentParser(description = 'Build Firefox')
+parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
+parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
+parser.add_argument('-b', '--b2g', action='store_true', help = 'Attempt to build B2G source')
+parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
+parser.add_argument('build', nargs ='?', choices = build_names, default = 'debug',
+                    help = 'Build config to use')
+parser.add_argument('incr_dir', nargs ='?', default = None,
+                    help = 'Directory for incremental build')
+args = parser.parse_args()
 
-    rm -f $FILE
-    echo ". \$topsrcdir/browser/config/mozconfig" >> $FILE
-    echo "mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/${NAME}-build" >> $FILE
-    echo "mk_add_options MOZ_MAKE_FLAGS=\"-s -j8\"" >> $FILE
+if not os.path.isfile("client.mk"):
+    sys.exit('Please run mozbuild from the root of the source tree')
 
-    local AUTOCONF=`which autoconf213`
-    if [ -z "$AUTOCONF" ]; then
-        AUTOCONF=`which autoconf2.13`
-    fi
-    if [ -z "$AUTOCONF" ]; then
-        echo "Can't find autoconf 2.13"
-        exit 1
-    fi
-    echo "mk_add_options AUTOCONF=$AUTOCONF" >> $FILE
+if args.incr_dir:
+    if not which("smartmake.py"):
+        sys.exit("Can't find smartmake.py on path")
 
-    if [ -n "$B2G" ]; then
-        echo "CC=gcc-4.6" >> $FILE
-        echo "CXX=g++-4.6" >> $FILE
-    elif [ -n "$USEGCC" ]; then
-        echo "CC=gcc" >> $FILE
-        echo "CXX=g++" >> $FILE
-    else
-        echo "CC=clang" >> $FILE
-        echo "CXX=clang++" >> $FILE
-    fi
+    config_file = ".hg/.smartmake"
+    if not os.path.exists(config_file):
+        with open(config_file, 'w') as f:
+            f.write("[smartmake]\n")
+            f.write("cmd=make -j8 -C\n")
 
-    local CCACHE=`which ccache`
-    if [ -z "$CCACHE" ]; then
-        echo "Can't find ccache"
-        exit 1
-    fi
-    echo "ac_add_options --with-ccache=$CCACHE" >> $FILE
+build_name = args.build
+build_dir = build_name + "-build"
 
-    if [ -n "$DEBUG" ]; then
-        echo "ac_add_options --enable-debug" >> $FILE
-        echo "ac_add_options --enable-debug-symbols" >> $FILE
-    else
-        echo "ac_add_options --disable-debug" >> $FILE
-        echo "ac_add_options --disable-debug-symbols" >> $FILE
-    fi
+if args.clean and os.path.exists(build_dir):
+    print("Clean " + build_name)
+    shutil.rmtree(build_dir)
 
-    if [ -n "$OPT" ]; then
-        echo "ac_add_options --enable-optimize" >> $FILE
-    else
-        echo "ac_add_options --disable-optimize" >> $FILE
-    fi
+if not os.path.exists(build_dir):
+    os.makedirs(build_dir)
 
-    if [ -n "$ROOTING" ]; then
-        echo "ac_add_options --enable-root-analysis" >> $FILE
-    fi
+mozconfig_file = build_dir + "/mozconfig"
+os.environ['MOZCONFIG'] = mozconfig_file
+if not os.path.exists(mozconfig_file):
 
-    if [ -n "$EXACT" ]; then
-        echo "ac_add_options --enable-exact-rooting" >> $FILE
-    fi
+    autoconf_path = which("autoconf213") or which("autoconf2.13")
+    if not autoconf_path:
+        sys.exit("Can't find autoconf 2.13 on path")
 
-    if [ -n "$GGC" ]; then
-        echo "ac_add_options --enable-gcgenerational" >> $FILE
-    fi
+    ccache_path = which("ccache")
+    if not ccache_path:
+        sys.exit("Can't find ccache on path")
 
-    echo "ac_add_options --enable-profiling" >> $FILE
+    if args.b2g:
+        if not which("gcc-4.6"):
+            sys.exit("Can't find gcc-4.6 on path, which is required for B2G")
+    elif args.gcc:
+        if not which("gcc"):
+            sys.exit("Can't find gcc on path")
+    else:
+        if not which("clang"):
+            sys.exit("Can't find clang on path")
 
-    echo "ac_add_options --enable-warnings-as-errors" >> $FILE
-    echo "ac_add_options --enable-crypto" >> $FILE
-    echo "export MOZ_PACKAGE_JSSHELL=1" >> $FILE
+    with open(mozconfig_file, 'w') as f:
+        f.write(". $topsrcdir/browser/config/mozconfig\n")
+        f.write("mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/%s-build\n" % build_name)
+        f.write("mk_add_options MOZ_MAKE_FLAGS=\"-s -j8\"\n")  # todo: num cores
+        f.write("mk_add_options AUTOCONF=%s\n" % autoconf_path)
+        f.write("ac_add_options --with-ccache=%s\n" % ccache_path)
+        f.write("ac_add_options --enable-warnings-as-errors\n")
+        f.write("ac_add_options --enable-crypto\n")
+        f.write("ac_add_options --disable-gstreamer\n")
+        f.write("ac_add_options --disable-crashreporter\n")
 
-    # for some reason this builds started demanding installation of gstreamer
-    # packages
-    echo "ac_add_options --disable-gstreamer" >> $FILE
+        if args.b2g:
+            f.write("CC=gcc-4.6\n")
+            f.write("CXX=g++-4.6\n")
+        elif args.gcc:
+            f.write("CC=gcc\n")
+            f.write("CXX=g++\n")
+        else:
+            f.write("CC=clang\n")
+            f.write("CXX=clang++\n")
 
-    # build b2g stuff
-    if [ -n "$B2G" ]; then
-        echo "ac_add_options --enable-b2g-bt" >> $FILE
-        echo "ac_add_options --enable-b2g-camera" >> $FILE
-        echo "ac_add_options --enable-b2g-ril" >> $FILE  # regurgitated insect larvae
-    fi
-}
+        f.write("\n")
+        f.write("\n")
+        f.write("\n")
 
-function run()
-{
-    local STATUS
-    if [ -z "$VERBOSE" ]; then
-        nice "$@" 2>&1 | tee -a $LOGFILE | grep -iE "error:"
-        STATUS=${PIPESTATUS[0]}
-    else
-        nice "$@" 2>&1 | tee -a $LOGFILE
-        STATUS=${PIPESTATUS[0]}
-    fi
+        for config in build_configs[args.build]:
+            for option in build_options[config].split(' '):
+                f.write("ac_add_options %s\n" % option)
 
-    if [ $STATUS -ne 0 ]; then
-        fail
-    fi
-}
+        if args.b2g:
+            for option in build_options['b2g'].split(' '):
+                f.write("ac_add_options %s\n" % option)
 
-function build()
-{
-    local NAME=$1
-    local DEBUG=$2
-    local OPT=$3
-    local ROOTING=$4
-    local EXACT=$5
-    local GGC=$6
-
-    local DIR=$NAME-build
-    if [ -d "$DIR" -a -n "$CLEAN" ]; then
-        echo "Clean $NAME"
-        rm -rf $DIR
-    fi
-    mkdir -p $DIR
-
-    export MOZCONFIG=$DIR/mozconfig
-    if [ ! -e $MOZCONFIG ]; then
-        echo "Configure $NAME"
-        createConfig "$NAME" "$MOZCONFIG" "$DEBUG" "$OPT" "$ROOTING" "$EXACT" "$GGC"
-    fi
-
-    if [ -z "$SMARTMAKE" ]; then
-        echo "Build $NAME"
-        run ./mach build
-    else
-        echo "Incrementally build $NAME $INCRDIR"
-        run smartmake.py -o $DIR $INCRDIR
-    fi
-}
-
-rm -f $LOGFILE
-touch $LOGFILE
-
-if [ -n "$DEBUG" ]; then
-    build debug "t" "" "" ""
-fi
-
-if [ -n "$OPT" ]; then
-    build opt "" "t" "" "" ""
-fi
-
-if [ -n "$OPTDEBUG" ]; then
-    build optdebug "t" "t" "" "" ""
-fi
-
-if [ -n "$ROOTING" ]; then
-    build rooting "t" "t" "t" "" ""
-fi
-
-if [ -n "$EXACT" ]; then
-    build exact "t" "" "" "t" ""
-fi
-
-if [ -n "$GGC" ]; then
-    build ggc "t" "" "" "t" "t"
-fi
+if args.incr_dir:
+    print("Incrementally build %s %s" % (build_name, args.incr_dir))
+    run_command("smartmake.py -o %s %s" % (build_dir, args.incr_dir), args.verbose, args.warnings)
+else:
+    print("Build %s" % build_name)
+    run_command("./mach build", args.verbose, args.warnings)
