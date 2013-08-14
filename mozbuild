@@ -43,8 +43,13 @@ parser.add_argument('incr_dir', nargs ='?', default = None,
                     help = 'Directory for incremental build')
 args = parser.parse_args()
 
-if not os.path.isfile("client.mk"):
-    sys.exit('Please run mozbuild from the root of the source tree')
+lastDir = os.getcwd()
+while not os.path.isfile("client.mk") or not os.path.isdir("mfbt"):
+    os.chdir("..")
+    currentDir = os.getcwd()
+    if currentDir == lastDir:
+        sys.exit('Please run mozbuild from within the source tree')
+    lastDir = currentDir
 
 if args.incr_dir:
     if not which("smartmake.py"):

@@ -10,6 +10,11 @@ import argparse
 import subprocess
 import glob
 
+# Import common functions
+install_dir = os.path.dirname(__file__)
+sys.path.append(install_dir)
+from mozutils import *
+
 # --with-system-nspr doesn't work with crosscompilation, because it
 # tries to link with the host library
 
@@ -57,38 +62,13 @@ parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = 
                     help = 'Compiler to use')
 args = parser.parse_args()
 
-def which(name):
-    try:
-        return subprocess.check_output('which ' + name, shell = True).splitlines()[0]
-    except subprocess.CalledProcessError:
-        return None
-
-def run_command(command):
-    if args.verbose:
-        print(command)
-    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT,
-                            shell = True)
-    directory_line = None
-    while proc.poll() == None:
-        line = proc.stdout.readline().rstrip()
-        if not line:
-            continue
-
-        if args.verbose:
-            print(line)
-        elif "Entering directory" in line:
-            directory_line = line
-        elif "error:" in line or (args.warnings and "warning:" in line):
-            if directory_line:
-                print(directory_line)
-                directory_line = None
-            print(line)
-
-    if proc.returncode:
-        sys.exit('Command failed with returncode ' + str(proc.returncode))
-
-if not os.path.isfile("jsapi.h"):
-    sys.exit('Run jsbuild from the js/src directory')
+lastDir = os.getcwd()
+while not os.path.isfile("jsapi.h") or not os.path.isdir("jit"):
+    os.chdir("..")
+    currentDir = os.getcwd()
+    if currentDir == lastDir:
+        sys.exit('Please run jsbuild from within js/src')
+    lastDir = currentDir
 
 if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path.getmtime('configure'):
     print('Autoconf')
@@ -142,7 +122,7 @@ if not os.path.isdir(dir):
     if args.compiler and args.compiler in build_options:
         config += ' ' + build_options[args.compiler]
 
-    run_command('../configure ' + config)
+    run_command('../configure ' + config, args.verbose, args.warnings)
     os.chdir('..')
 
 print('Build ' + name)
@@ -150,4 +130,4 @@ try:
     nproc = int(subprocess.check_output('nproc').splitlines()[0])
 except subprocess.CalledProcessError:
     nproc = 8
-run_command('nice make -C %s -j%d' % (dir, nproc))
+run_command('nice make -C %s -j%d' % (dir, nproc), args.verbose, args.warnings)
