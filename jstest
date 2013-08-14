@@ -10,7 +10,7 @@ function badUsage()
     echo "    -l      => run tests in local timezone rather than PST"
     echo "  BUILDS:"
     echo "    debug"
-    echo "    release"
+    echo "    opt"
     echo "    rooting"
     echo "    exact"
     echo "    ggc"
@@ -25,7 +25,7 @@ function badUsage()
 CLEAN=
 ZEAL=
 DEBUG=
-RELEASE=
+OPT=
 ROOTING=
 EXACT=
 GGC=
@@ -58,8 +58,8 @@ while [ $# -ge 1 ]; do
         debug)
             DEBUG=debug
             ;;
-        release)
-            RELEASE=release
+        opt)
+            OPT=opt
             ;;
         rooting)
             ROOTING=rooting
@@ -93,7 +93,7 @@ if [ -z "$CLEAN" ]; then
     CLEAN=-C
 fi
 
-if [ -z "$DEBUG" -a -z "$RELEASE" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" ]; then
+if [ -z "$DEBUG" -a -z "$OPT" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" ]; then
     DEBUG=debug
 fi
 
@@ -113,7 +113,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $DEBUG $RELEASE $ROOTING $EXACT $GGC || exit 125
+jsbuild $CLEAN $DEBUG $OPT $ROOTING $EXACT $GGC || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
@@ -188,7 +188,7 @@ function test()
     local NAME=$1
     local JSDIR=$2
 
-    if [ "$NAME" == "release" -a -n "$ZEAL" ]; then
+    if [ "$NAME" == "opt" -a -n "$ZEAL" ]; then
         echo "Warning: GC zeal not supported in relase builds"
     fi
 
@@ -213,8 +213,8 @@ if [ -n "$DEBUG" ]; then
     test debug ./debug-build
 fi
 
-if [ -n "$RELEASE" ]; then
-    test release ./release-build
+if [ -n "$OPT" ]; then
+    test opt ./opt-build
 fi
 
 if [ -n "$ROOTING" ]; then
