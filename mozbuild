@@ -14,31 +14,26 @@ install_dir = os.path.dirname(__file__)
 sys.path.append(install_dir)
 from mozutils import *
 
-build_options = {
-    'debug':   '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling',
-    'rooting': '--enable-root-analysis',
-    'exact':   '--enable-exact-rooting',
-    'ggc':     '--enable-gcgenerational',
-    'opt':     '--disable-debug --disable-debug-symbols --enable-optimize',
-    'b2g':     '--enable-b2g-bt --enable-b2g-camera --enable-b2g-ril'
-}
+common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreamer --disable-crashreporter'
+debug_options = '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling'
+opt_options = '--disable-debug --disable-debug-symbols --enable-optimize'
+b2g_options = '--enable-b2g-bt --enable-b2g-camera --enable-b2g-ril'
 
 build_configs = {
-    'debug':     ['debug'],
-    'rooting':   ['debug', 'rooting'],
-    'exact':     ['debug', 'exact'],
-    'ggc':       ['debug', 'exact', 'ggc'],
-    'opt':       ['opt']
+    'default': '',
+    'rooting': '--enable-root-analysis',
+    'exact':   '--enable-exact-rooting',
+    'ggc':     '--enable-exact-rooting --enable-gcgenerational',
 }
-build_names = build_configs.keys()
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
+parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-b', '--b2g', action='store_true', help = 'Attempt to build B2G source')
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
-parser.add_argument('build', nargs ='?', choices = build_names, default = 'debug',
+parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
                     help = 'Build config to use')
 parser.add_argument('incr_dir', nargs ='?', default = None,
                     help = 'Directory for incremental build')
@@ -53,8 +48,7 @@ while not os.path.isfile("client.mk") or not os.path.isdir("mfbt"):
     lastDir = currentDir
 
 if args.incr_dir:
-    if not which("smartmake.py"):
-        sys.exit("Can't find smartmake.py on path")
+    ensureExe("smartmake.py")
 
     config_file = ".hg/.smartmake"
     if not os.path.exists(config_file):
@@ -62,7 +56,9 @@ if args.incr_dir:
             f.write("[smartmake]\n")
             f.write("cmd=make -j%d -C\n" % multiprocessing.cpu_count())
 
-build_name = args.build
+build_name = args.config
+if args.opt:
+    build_name += "-opt"
 build_dir = build_name + "-build"
 
 if args.clean and os.path.exists(build_dir):
@@ -80,52 +76,41 @@ if not os.path.exists(mozconfig_file):
     if not autoconf_path:
         sys.exit("Can't find autoconf 2.13 on path")
 
-    ccache_path = which("ccache")
-    if not ccache_path:
-        sys.exit("Can't find ccache on path")
-
-    if args.b2g:
-        if not which("gcc-4.6"):
-            sys.exit("Can't find gcc-4.6 on path, which is required for B2G")
-    elif args.gcc:
-        if not which("gcc"):
-            sys.exit("Can't find gcc on path")
-    else:
-        if not which("clang"):
-            sys.exit("Can't find clang on path")
+    ccache_path = ensureExe("ccache")
 
     with open(mozconfig_file, 'w') as f:
         f.write(". $topsrcdir/browser/config/mozconfig\n")
-        f.write("mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/%s-build\n" % build_name)
-        f.write("mk_add_options MOZ_MAKE_FLAGS=\"-s -j%d\"\n" % multiprocessing.cpu_count())
-        f.write("mk_add_options AUTOCONF=%s\n" % autoconf_path)
-        f.write("ac_add_options --with-ccache=%s\n" % ccache_path)
-        f.write("ac_add_options --enable-warnings-as-errors\n")
-        f.write("ac_add_options --enable-crypto\n")
-        f.write("ac_add_options --disable-gstreamer\n")
-        f.write("ac_add_options --disable-crashreporter\n")
+
+        def setCompiler(c_name, cpp_name):
+            ensureExe(c_name)
+            ensureExe(cpp_name)
+            f.write("CC=%s\n" % c_name)
+            f.write("CXX=%s\n" % cpp_name)
+
+        def addMakeOption(option):
+            f.write("mk_add_options %s\n" % option)
+
+        def addOptions(options_string):
+            for option in options_string.split(' '):
+                f.write("ac_add_options %s\n" % option)
 
         if args.b2g:
-            f.write("CC=gcc-4.6\n")
-            f.write("CXX=g++-4.6\n")
+            setCompiler("gcc-4.6", "g++-4.6")
         elif args.gcc:
-            f.write("CC=gcc\n")
-            f.write("CXX=g++\n")
+            setCompiler("gcc", "g++")
         else:
-            f.write("CC=clang\n")
-            f.write("CXX=clang++\n")
+            setCompiler("clang", "clang++")
 
-        f.write("\n")
-        f.write("\n")
-        f.write("\n")
+        addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
+        addMakeOption("MOZ_MAKE_FLAGS=\"-s -j%d\"" % multiprocessing.cpu_count())
+        addMakeOption("AUTOCONF=%s" % autoconf_path)
+        addOptions("--with-ccache=%s" % ccache_path)
+        addOptions(common_options)
 
-        for config in build_configs[args.build]:
-            for option in build_options[config].split(' '):
-                f.write("ac_add_options %s\n" % option)
-
+        addOptions(opt_options if args.opt else debug_options)
+        addOptions(build_configs[args.config])
         if args.b2g:
-            for option in build_options['b2g'].split(' '):
-                f.write("ac_add_options %s\n" % option)
+            addOptions(b2g_options)
 
 if args.incr_dir:
     print("Incrementally build %s %s" % (build_name, args.incr_dir))

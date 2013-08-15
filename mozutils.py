@@ -10,6 +10,12 @@ def which(name):
     except subprocess.CalledProcessError:
         return None
 
+def ensureExe(name):
+    path = which(name)
+    if not path:
+        sys.exit("Can't find %s on path" % name)
+    return path
+
 timeStampRe = re.compile(" *[\d\.:]+ (.+)")
 
 def stripTimestamp(line):
