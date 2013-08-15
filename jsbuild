@@ -9,6 +9,7 @@ import shutil
 import argparse
 import subprocess
 import glob
+import multiprocessing
 
 # Import common functions
 install_dir = os.path.dirname(__file__)
@@ -126,8 +127,5 @@ if not os.path.isdir(dir):
     os.chdir('..')
 
 print('Build ' + name)
-try:
-    nproc = int(subprocess.check_output('nproc').splitlines()[0])
-except subprocess.CalledProcessError:
-    nproc = 8
-run_command('nice make -C %s -j%d' % (dir, nproc), args.verbose, args.warnings)
+run_command('nice make -C %s -j%d' % (dir, multiprocessing.cpu_count()),
+            args.verbose, args.warnings)

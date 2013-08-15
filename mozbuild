@@ -7,6 +7,7 @@ import os.path
 import sys
 import shutil
 import argparse
+import multiprocessing
 
 # Import common functions
 install_dir = os.path.dirname(__file__)
@@ -59,7 +60,7 @@ if args.incr_dir:
     if not os.path.exists(config_file):
         with open(config_file, 'w') as f:
             f.write("[smartmake]\n")
-            f.write("cmd=make -j8 -C\n")
+            f.write("cmd=make -j%d -C\n" % multiprocessing.cpu_count())
 
 build_name = args.build
 build_dir = build_name + "-build"
@@ -96,7 +97,7 @@ if not os.path.exists(mozconfig_file):
     with open(mozconfig_file, 'w') as f:
         f.write(". $topsrcdir/browser/config/mozconfig\n")
         f.write("mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/%s-build\n" % build_name)
-        f.write("mk_add_options MOZ_MAKE_FLAGS=\"-s -j8\"\n")  # todo: num cores
+        f.write("mk_add_options MOZ_MAKE_FLAGS=\"-s -j%d\"\n" % multiprocessing.cpu_count())
         f.write("mk_add_options AUTOCONF=%s\n" % autoconf_path)
         f.write("ac_add_options --with-ccache=%s\n" % ccache_path)
         f.write("ac_add_options --enable-warnings-as-errors\n")
