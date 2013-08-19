@@ -28,7 +28,7 @@ build_options = {
     'rooting': '--enable-root-analysis --disable-threadsafe',
     'exact':   '--enable-exact-rooting --disable-threadsafe',
     'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe',
-    'arm':     '--with-arch=armv7-a --with-fpu=vfp --with-thumb --disable-intl-api',
+    'arm':     '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api',
     'armsf':   '--target=arm-linux-gnueabi --with-float-abi=softfp',
     'armhf':   '--target=arm-linux-gnueabihf --with-float-abi=hard'
 }
