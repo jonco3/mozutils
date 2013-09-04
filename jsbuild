@@ -19,28 +19,34 @@ from mozutils import *
 # --with-system-nspr doesn't work with crosscompilation, because it
 # tries to link with the host library
 
-build_options = {
-    'common':  '--with-ccache=`which ccache`',
-    'threads': '--with-system-nspr --enable-threadsafe',
-    'ctypes':  '--enable-ctypes --with-system-nspr --enable-threadsafe',
-    'debug':   '--enable-debug --disable-optimize --enable-gczeal',
-    'optmin':  '--enable-debug',
-    'rooting': '--enable-root-analysis --disable-threadsafe',
-    'exact':   '--enable-exact-rooting --disable-threadsafe',
-    'ggc':     '--enable-gcgenerational --enable-exact-rooting --disable-threadsafe',
+common_options = '--with-ccache=`which ccache`'
+no_opt_options = '--disable-optimize'
+debug_options = '--enable-debug --enable-gczeal'
+
+arch_options = {
     'arm':     '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api',
+}
+
+compiler_options = {
     'armsf':   '--target=arm-linux-gnueabi --with-float-abi=softfp',
     'armhf':   '--target=arm-linux-gnueabihf --with-float-abi=hard'
 }
 
+build_options = {
+    'threads': '--with-system-nspr --enable-threadsafe',
+    'ctypes':  '--enable-ctypes',
+    'rooting': '--enable-optimize --enable-gczeal --enable-root-analysis',
+    'exact':   '--enable-exact-rooting',
+    'ggc':     '--enable-gcgenerational',
+}
+
 build_configs = {
-    'opt':       ['common'],
-    'optmin':    ['common', 'optmin'],
-    'min':       ['common', 'debug'],
-    'debug':     ['common', 'debug', 'threads'],
-    'rooting':   ['common', 'debug', 'rooting'],
-    'exact':     ['common', 'debug', 'exact'],
-    'ggc':       ['common', 'debug', 'ggc']
+    'min':       [],
+    'default':   ['threads', 'ctypes'],
+    'rooting':   ['rooting'],
+    'exact':     ['exact'],
+    'ggc':       ['exact', 'ggc'],
+    'ggct':      ['exact', 'ggc', 'threads']
 }
 build_names = build_configs.keys()
 
@@ -53,11 +59,12 @@ compilers = {
 compiler_names = compilers.keys()
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
+parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
-parser.add_argument('build', nargs ='?', choices = build_names, default = 'debug',
+parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
                     help = 'Build config to use')
 parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
                     help = 'Compiler to use')
@@ -105,6 +112,9 @@ else:
         os.environ['CC'] = clang_cc
         os.environ['CXX'] = clang_cxx
 
+if args.opt:
+    name += '-opt'
+
 dir = name + '-build'
 
 if args.clean:
@@ -117,11 +127,18 @@ if not os.path.isdir(dir):
     os.mkdir(dir)
     os.chdir(dir)
 
-    config = ' '.join([build_options[opt] for opt in build_configs[args.build]])
-    if arch:
-        config += ' ' + build_options[arch]
-    if args.compiler and args.compiler in build_options:
-        config += ' ' + build_options[args.compiler]
+    opts = [common_options] + [build_options[opt] for opt in build_configs[args.build]]
+    config = ' '.join(opts)
+    if arch and arch in arch_options:
+        config += ' ' + arch_options[arch]
+    if args.compiler and args.compiler in compiler_options:
+        config += ' ' + compiler_options[args.compiler]
+    if not args.opt:
+        config += ' ' + debug_options
+    if not args.opt and '--enable-optimize' not in config:
+        config += ' ' + no_opt_options
+    if '--enable-threadsafe' not in config:
+        config += ' ' + '--disable-threadsafe'
 
     run_command('../configure ' + config, args.verbose, args.warnings)
     os.chdir('..')
