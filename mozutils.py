@@ -1,6 +1,7 @@
 # Common functions for python build scripts
 
 import re
+import os
 import sys
 import subprocess
 
@@ -58,3 +59,12 @@ def run_command(command, verbose, warnings):
 
     if proc.returncode:
         sys.exit('Command failed with returncode ' + str(proc.returncode))
+
+def chdir_to_source_root():
+    lastDir = os.getcwd()
+    while not os.path.isdir(".hg") or not os.path.isfile("client.mk") or not os.path.isdir("mfbt"):
+        os.chdir("..")
+        currentDir = os.getcwd()
+        if currentDir == lastDir:
+            sys.exit('Please run from within the mozilla source tree')
+        lastDir = currentDir

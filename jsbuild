@@ -71,13 +71,8 @@ parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = 
                     help = 'Compiler to use')
 args = parser.parse_args()
 
-lastDir = os.getcwd()
-while not os.path.isfile("jsapi.h") or not os.path.isdir("jit"):
-    os.chdir("..")
-    currentDir = os.getcwd()
-    if currentDir == lastDir:
-        sys.exit('Please run jsbuild from within js/src')
-    lastDir = currentDir
+chdir_to_source_root()
+os.chdir("js/src")
 
 if args.dry_run:
     sys.exit(0)
