@@ -64,6 +64,7 @@ parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
+parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
                     help = 'Build config to use')
 parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
@@ -77,6 +78,9 @@ while not os.path.isfile("jsapi.h") or not os.path.isdir("jit"):
     if currentDir == lastDir:
         sys.exit('Please run jsbuild from within js/src')
     lastDir = currentDir
+
+if args.dry_run:
+    sys.exit(0)
 
 if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path.getmtime('configure'):
     print('Autoconf')
