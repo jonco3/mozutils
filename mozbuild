@@ -60,6 +60,8 @@ if args.incr_dir:
 build_name = args.config
 if args.opt:
     build_name += "-opt"
+if args.gcc:
+    build_name += "-gcc"
 build_dir = build_name + "-build"
 
 if args.dry_run:
