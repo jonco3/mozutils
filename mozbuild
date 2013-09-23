@@ -14,7 +14,7 @@ install_dir = os.path.dirname(__file__)
 sys.path.append(install_dir)
 from mozutils import *
 
-common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreamer --disable-crashreporter'
+common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreamer'
 debug_options = '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling'
 opt_options = '--disable-debug --disable-debug-symbols --enable-optimize'
 b2g_options = '--enable-b2g-bt --enable-b2g-camera --enable-b2g-ril'
