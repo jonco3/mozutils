@@ -24,6 +24,7 @@ no_opt_options = '--disable-optimize'
 debug_options = '--enable-debug --enable-gczeal'
 
 arch_options = {
+    'x86':     '--target=i686-pc-linux',
     'arm':     '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api',
 }
 
@@ -53,6 +54,7 @@ build_names = build_configs.keys()
 compilers = {
     'clang': (None, 'clang', 'clang++'),
     'gcc':   (None, 'gcc', 'g++'),
+    'gcc32': ('x86', 'gcc -m32', 'g++ -m32', { 'PKG_CONFIG_LIBDIR': '/usr/lib/pkgconfig', 'AR': 'ar' }),
     'armsf': ('arm', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
     'armhf': ('arm', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
 }
@@ -94,13 +96,17 @@ name = args.build
 
 if args.compiler:
     name += '-' + args.compiler
-    arch = compilers[args.compiler][0]
-    cc = which(compilers[args.compiler][1])
-    cxx = which(compilers[args.compiler][2])
+    info = compilers[args.compiler]
+    arch = info[0]
+    cc = which(info[1].split()[0])
+    cxx = which(info[2].split()[0])
     if not cc or not cxx:
         sys.exit("Compiler for %s build not found on path" % args.compiler)
-    os.environ['CC'] = cc
-    os.environ['CXX'] = cxx
+    os.environ['CC'] = info[1]
+    os.environ['CXX'] = info[2]
+    if info[3]:
+        for var in info[3]:
+            os.environ[var] = info[3][var]
 else:
     # Clang is preferred for rooting builds (it shows up more problems), and it is
     # faster in general, so use it if possible
