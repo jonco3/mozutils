@@ -80,6 +80,7 @@ if not os.path.exists(mozconfig_file):
 
     with open(mozconfig_file, 'w') as f:
         f.write(". $topsrcdir/browser/config/mozconfig\n")
+        f.write("export MOZ_PSEUDO_DERECURSE=1\n")
 
         def setCompiler(c_name, cpp_name):
             ensureExe(c_name)
