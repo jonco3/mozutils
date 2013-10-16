@@ -13,6 +13,7 @@ function badUsage()
     echo "    rooting"
     echo "    exact"
     echo "    ggc"
+    echo "    min"
     echo "  TESTS:"
     echo "    jsapitest"
     echo "    v8test"
@@ -34,6 +35,7 @@ DEFAULT=
 ROOTING=
 EXACT=
 GGC=
+MIN=
 
 JSAPITEST=
 V8TEST=
@@ -68,6 +70,9 @@ while [ $# -ge 1 ]; do
         ggc)
             GGC=ggc
             ;;
+        min)
+            MIN=min
+            ;;
         jsapitest)
             JSAPITEST=t
             ;;
@@ -87,7 +92,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ -z "$DEFAULT" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" ]; then
+if [ -z "$DEFAULT" -a -z "$ROOTING" -a -z "$EXACT" -a -z "$GGC" -a -z "$MIN" ]; then
     DEFAULT=default
 fi
 
@@ -107,7 +112,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $OPT $DEFAULT $ROOTING $EXACT $GGC || exit 125
+jsbuild $CLEAN $OPT $DEFAULT $ROOTING $EXACT $GGC $MIN || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
@@ -213,6 +218,10 @@ fi
 
 if [ -n "$GGC" ]; then
     test ggc
+fi
+
+if [ -n "$MIN" ]; then
+    test min
 fi
 
 exit $EXIT
