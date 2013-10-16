@@ -34,6 +34,7 @@ compiler_options = {
 }
 
 build_options = {
+    'nothreads': '--disable-threadsafe',
     'threads': '--with-system-nspr --enable-threadsafe',
     'ctypes':  '--enable-ctypes',
     'rooting': '--enable-optimize --enable-gczeal --enable-root-analysis',
@@ -42,12 +43,11 @@ build_options = {
 }
 
 build_configs = {
-    'min':       [],
+    'min':       ['nothreads'],
     'default':   ['threads', 'ctypes'],
     'rooting':   ['rooting'],
     'exact':     ['exact'],
-    'ggc':       ['exact', 'ggc'],
-    'ggct':      ['exact', 'ggc', 'threads']
+    'ggc':       ['exact', 'ggc', 'threads'],
 }
 build_names = build_configs.keys()
 
