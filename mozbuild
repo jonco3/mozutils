@@ -8,6 +8,7 @@ import sys
 import shutil
 import argparse
 import multiprocessing
+import time
 
 # Import common functions
 install_dir = os.path.dirname(__file__)
@@ -63,6 +64,7 @@ if args.dry_run:
 
 if args.clean and os.path.exists(build_dir):
     print("Clean " + build_name)
+    time.sleep(2);  # so I can hit ^C after I accidentally do this
     shutil.rmtree(build_dir)
 
 if not os.path.exists(build_dir):
