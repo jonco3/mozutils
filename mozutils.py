@@ -5,11 +5,14 @@ import os
 import sys
 import subprocess
 
-def which(name):
-    try:
-        return subprocess.check_output('which ' + name, shell = True).splitlines()[0]
-    except subprocess.CalledProcessError:
-        return None
+# based on http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    for path in os.environ["PATH"].split(os.pathsep):
+        path = path.strip('"')
+        file = os.path.join(path, program)
+        if os.path.isfile(file) and os.access(file, os.X_OK):
+            return file
+    return None
 
 def ensureExe(name):
     path = which(name)
