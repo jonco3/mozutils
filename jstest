@@ -144,13 +144,15 @@ function v8-test()
     local NAME=$1
     local JSDIR=$2
 
-    echo "Run $NAME v8 gc stress test"
+    local zeal=$ZEAL
+    if [ -z "$zeal" ] && [ -z "$OPT" ]; then
+        echo "Run $NAME v8 gc stress test"
+        zeal=10,1000
+    else
+        echo "Run $NAME v8 benchmark"
+    fi
 
     cd v8
-    local zeal=$ZEAL
-    if [ -z "$zeal" ]; then
-        zeal=10,1000
-    fi
     JS_GC_ZEAL=$zeal TZ=$TIMEZONE ../$JSDIR/js -m -n -a run.js || fail
     cd ..
 
