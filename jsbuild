@@ -19,7 +19,7 @@ from mozutils import *
 # --with-system-nspr doesn't work with crosscompilation, because it
 # tries to link with the host library
 
-common_options = '--with-ccache=`which ccache`'
+common_options = '--with-ccache=`which ccache` --enable-ctypes'
 no_opt_options = '--disable-optimize'
 debug_options = '--enable-debug --enable-gczeal'
 
@@ -37,7 +37,7 @@ build_options = {
     'nothreads': '--disable-threadsafe',
     'threads': '--with-system-nspr --enable-threadsafe',
     'ctypes':  '--enable-ctypes',
-    'rooting': '--enable-optimize --enable-gczeal --enable-root-analysis',
+    'rooting': '--enable-debug --enable-gczeal --enable-optimize',
     'exact':   '--enable-exact-rooting',
     'ggc':     '--enable-gcgenerational',
 }
@@ -45,7 +45,7 @@ build_options = {
 build_configs = {
     'min':       ['nothreads'],
     'default':   ['threads', 'ctypes'],
-    'rooting':   ['rooting'],
+    'rooting':   ['rooting', 'exact', 'ggc', 'threads'],
     'exact':     ['exact'],
     'ggc':       ['exact', 'ggc', 'threads'],
 }
