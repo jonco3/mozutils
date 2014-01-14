@@ -131,9 +131,9 @@ function jsapi-test()
     local JSDIR=$2
 
     echo "Run $NAME jsapi tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE $JSDIR/jsapi-tests/jsapi-tests > /dev/null 2>&1
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE $JSDIR/jsapi-tests > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "  failed; run with $JSDIR/jsapi-tests/jsapi-tests to see failures"
+        echo "  failed; run with $JSDIR/jsapi-tests to see failures"
         fail
     fi
     echo
@@ -153,7 +153,7 @@ function v8-test()
     fi
 
     cd v8
-    JS_GC_ZEAL=$zeal TZ=$TIMEZONE ../$JSDIR/js -m -n -a run.js || fail
+    JS_GC_ZEAL=$zeal TZ=$TIMEZONE ../$JSDIR/shell -m -n -a run.js || fail
     cd ..
 
     echo
@@ -165,7 +165,7 @@ function jit-test()
     local JSDIR=$2
 
     echo "Run $NAME jit tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python jit-test/jit_test.py $JSDIR/js || fail
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python jit-test/jit_test.py $JSDIR/shell || fail
     echo
 }
 
@@ -175,7 +175,7 @@ function js-test()
     local JSDIR=$2
 
     echo "Run $NAME js tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py $JSDIR/js || fail
+    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py $JSDIR/shell || fail
     echo
 }
 

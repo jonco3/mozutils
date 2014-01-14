@@ -148,5 +148,10 @@ if not os.path.isdir(dir):
     os.chdir('..')
 
 print('Build ' + name)
-run_command('nice make -C %s -j%d' % (dir, multiprocessing.cpu_count()),
+os.chdir(dir)
+run_command('nice make -j%d' % multiprocessing.cpu_count(),
             args.verbose, args.warnings)
+if not os.path.lexists('shell'):
+    os.symlink('dist/bin/js', 'shell')
+if not os.path.lexists('jsapi-tests'):
+    os.symlink('js/src/jsapi-tests/jsapi-tests', 'jsapi-tests')
