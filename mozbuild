@@ -15,7 +15,7 @@ install_dir = os.path.dirname(__file__)
 sys.path.append(install_dir)
 from mozutils import *
 
-common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreamer'
+common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreamer --enable-exact-rooting'
 debug_options = '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling'
 opt_options = '--disable-debug --disable-debug-symbols --enable-optimize --disable-profiling'
 optdebug_options = '--enable-debug --enable-debug-symbols --enable-optimize --enable-profiling'
@@ -24,9 +24,7 @@ valgrind_options = '--disable-jemalloc --enable-valgrind'
 
 build_configs = {
     'default': '',
-    'rooting': '--enable-root-analysis',
-    'exact':   '--enable-exact-rooting',
-    'ggc':     '--enable-exact-rooting --enable-gcgenerational',
+    'ggc':     '--enable-gcgenerational',
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')

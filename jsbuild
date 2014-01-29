@@ -19,9 +19,10 @@ from mozutils import *
 # --with-system-nspr doesn't work with crosscompilation, because it
 # tries to link with the host library
 
-common_options = '--with-ccache=`which ccache` --enable-ctypes'
-no_opt_options = '--disable-optimize'
-debug_options = '--enable-debug --enable-gczeal'
+common_options = '--with-ccache=`which ccache` --enable-ctypes --enable-exact-rooting'
+debug_options = '--enable-gczeal --enable-debug --disable-optimize'
+optdebug_options = '--enable-gczeal --enable-debug --enable-optimize'
+opt_options = '--disable-gczeal --disable-debug --disable-optimize'
 
 arch_options = {
     'x86':     '--target=i686-pc-linux',
@@ -34,19 +35,14 @@ compiler_options = {
 }
 
 build_options = {
-    'nothreads': '--disable-threadsafe',
     'threads':   '--with-system-nspr --enable-threadsafe',
-    'exact':     '--enable-exact-rooting',
     'ggc':       '--enable-gcgenerational',
-    'optdebug':  '--enable-debug --enable-optimize'
 }
 
 build_configs = {
-    'min':       ['nothreads'],
+    'min':       [],
     'default':   ['threads'],
-    'exact':     ['threads', 'exact'],
-    'ggc':       ['threads', 'exact', 'ggc'],
-    'rooting':   ['threads', 'exact', 'ggc', 'optdebug'],
+    'ggc':       ['threads', 'ggc'],
 }
 build_names = build_configs.keys()
 
@@ -61,6 +57,7 @@ compiler_names = compilers.keys()
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
+parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
@@ -71,6 +68,8 @@ parser.add_argument('build', nargs ='?', choices = build_names, default = 'defau
 parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
                     help = 'Compiler to use')
 args = parser.parse_args()
+if args.opt and args.optdebug:
+    sys.exit("Can't specify both --opt and --optdebug")
 
 chdir_to_source_root()
 os.chdir("js/src")
@@ -116,6 +115,8 @@ else:
         os.environ['CC'] = clang_cc
         os.environ['CXX'] = clang_cxx
 
+if args.optdebug:
+    name += "-optdebug"
 if args.opt:
     name += '-opt'
 
@@ -137,10 +138,14 @@ if not os.path.isdir(dir):
         config += ' ' + arch_options[arch]
     if args.compiler and args.compiler in compiler_options:
         config += ' ' + compiler_options[args.compiler]
-    if not args.opt:
+
+    if args.opt:
+        config += ' ' + opt_options
+    elif args.optdebug:
+        config += ' ' + optdebug_options
+    else:
         config += ' ' + debug_options
-    if not args.opt and '--enable-optimize' not in config:
-        config += ' ' + no_opt_options
+
     if '--enable-threadsafe' not in config:
         config += ' ' + '--disable-threadsafe'
 
