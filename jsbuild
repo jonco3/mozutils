@@ -49,6 +49,7 @@ build_names = build_configs.keys()
 compilers = {
     'clang': (None, 'clang', 'clang++'),
     'gcc':   (None, 'gcc', 'g++'),
+    'gcc47': (None, 'gcc-4.7', 'g++-4.7'),
     'gcc32': ('x86', 'gcc -m32', 'g++ -m32', { 'PKG_CONFIG_LIBDIR': '/usr/lib/pkgconfig', 'AR': 'ar' }),
     'armsf': ('arm', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
     'armhf': ('arm', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
