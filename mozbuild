@@ -19,7 +19,7 @@ common_options = '--enable-warnings-as-errors --enable-crypto --disable-gstreame
 debug_options = '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling'
 opt_options = '--disable-debug --disable-debug-symbols --enable-optimize --disable-profiling'
 optdebug_options = '--enable-debug --enable-debug-symbols --enable-optimize --enable-profiling'
-b2g_options = '--enable-b2g-bt --enable-b2g-camera --enable-b2g-ril'
+b2g_options = '--enable-b2g-bt --enable-b2g-camera' # --enable-b2g-ril
 valgrind_options = '--disable-jemalloc --enable-valgrind'
 
 build_configs = {
@@ -63,6 +63,8 @@ elif args.opt:
     build_name += "-opt"
 if args.valgrind:
     build_name += "-valgrind"
+if args.b2g:
+    build_name += "-b2g"
 if args.gcc:
     build_name += "-gcc"
 build_dir = build_name + "-build"
@@ -89,8 +91,10 @@ if not os.path.exists(mozconfig_file):
     ccache_path = ensureExe("ccache")
 
     with open(mozconfig_file, 'w') as f:
-        f.write(". $topsrcdir/browser/config/mozconfig\n")
-        #f.write("export MOZ_PSEUDO_DERECURSE=1\n")
+        if args.b2g:
+            f.write(". $topsrcdir/b2g/config/mozconfigs/common\n")
+        else:
+            f.write(". $topsrcdir/browser/config/mozconfig\n")
 
         def setCompiler(c_name, cpp_name):
             ensureExe(c_name)
