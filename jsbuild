@@ -64,6 +64,8 @@ parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
+parser.add_argument('-U', '--no-unified-compilation', dest='unified', action='store_false', default=True,
+                    help = 'Disable unified compilation')
 parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
                     help = 'Build config to use')
 parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
@@ -148,7 +150,12 @@ if not os.path.isdir(dir):
         config += ' ' + debug_options
 
     if '--enable-threadsafe' not in config:
-        config += ' ' + '--disable-threadsafe'
+        config += ' --disable-threadsafe'
+
+    if args.unified:
+        config += ' --enable-unified-compilation'
+    else:
+        config += ' --disable-unified-compilation'
 
     run_command('../configure ' + config, args.verbose, args.warnings)
     os.chdir('..')
