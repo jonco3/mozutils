@@ -87,6 +87,11 @@ while [ $# -ge 1 ]; do
     shift
 done
 
+if [ -n "$OPT" -a -n "$OPTDEBUG" ]; then
+    echo "Can't specify both -d and -o flags"
+    exit 1
+fi
+
 if [ -z "$DEFAULT" -a -z "$GGC" -a -z "$MIN" ]; then
     DEFAULT=default
 fi
@@ -140,7 +145,7 @@ function v8-test()
     local JSDIR=$2
 
     local zeal=$ZEAL
-    if [ -z "$zeal" ] && [ -z "$OPT" ]; then
+    if [ -z "$zeal" ] && [ -z "$OPT" ] && [ -z "$OPTDEBUG" ]; then
         echo "Run $NAME v8 gc stress test"
         zeal=10,1000
     else
