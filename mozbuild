@@ -85,7 +85,7 @@ mozconfig_file = build_dir + "/mozconfig"
 if not os.path.exists(mozconfig_file):
     autoconf_path = which("autoconf213") or which("autoconf2.13")
     if not autoconf_path:
-        sys.exit("Can't find autoconf 2.13 on path")
+        exit_fatal("Can't find autoconf 2.13 on path")
 
     ccache_path = ensureExe("ccache")
 

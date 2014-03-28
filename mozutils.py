@@ -30,6 +30,18 @@ def stripTimestamp(line):
 
 objectFileRe = re.compile("( *[\d\.:]+ )?\w+\.o")
 
+def exit_with_code(code, message):
+    sys.stderr.write(message + "\n")
+    sys.exit(code)
+
+# Exit with a message, skipping this revision for bisection
+def exit_build_failed(message):
+    exit_with_code(125, message)
+
+# Exit with a message, aborting any bisection
+def exit_fatal(message):
+    exit_with_code(127, message)
+
 def run_command(command, verbose, warnings):
     if verbose:
         print(command)
@@ -61,7 +73,7 @@ def run_command(command, verbose, warnings):
             print(line)
 
     if proc.returncode:
-        sys.exit('Command failed with returncode ' + str(proc.returncode))
+        exit_build_failed("Command failed with returncode %d" % proc.returncode)
 
 def chdir_to_source_root():
     lastDir = os.getcwd()
