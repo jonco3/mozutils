@@ -36,7 +36,7 @@ touch $LOG
     cd v8
     for i in `seq 1 $N`; do
         echo "Run $i" | tee -a ../$LOG
-        ../$DIR/shell run.js | tee -a ../$LOG
+        nice -20 ../$DIR/shell run.js | tee -a ../$LOG
         echo
     done
 )
