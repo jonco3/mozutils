@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+    echo "usage: v8bench BUILD-DIR [ N ]"
+    exit 1
+fi
+
+DIR=$1
+
+N=5
+if [ $# -ge 2 ]; then
+    N=$2
+fi
+
+LOG=v8bench.txt
+
+if [ ! -f jsapi.h ]; then
+   echo "Please run from js/src directory"
+   exit 1
+fi
+
+if [ ! -d $DIR ]; then
+   echo "Build directory $DIR not found"
+   exit 1
+fi
+
+echo "v8bench $PWD $DIR $N"
+echo
+date
+echo
+
+rm -f $LOG
+touch $LOG
+
+(
+    cd v8
+    for i in `seq 1 $N`; do
+        echo "Run $i" | tee -a ../$LOG
+        ../$DIR/shell run.js | tee -a ../$LOG
+        echo
+    done
+)
+
+collate $LOG
