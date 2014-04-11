@@ -16,10 +16,13 @@ sys.path.append(install_dir)
 from mozutils import *
 
 
-common_options = '--enable-crypto --disable-gstreamer --enable-exact-rooting' #--enable-warnings-as-errors
-debug_options = '--enable-debug --enable-debug-symbols --disable-optimize --enable-profiling'
-opt_options = '--disable-debug --disable-debug-symbols --enable-optimize --disable-profiling'
-optdebug_options = '--enable-debug --enable-debug-symbols --enable-optimize --enable-profiling'
+common_options = '--enable-crypto --disable-gstreamer --enable-exact-rooting'
+debug_options = ('--enable-debug --enable-debug-symbols --enable-gczeal ' +
+                 '--disable-optimize --enable-profiling')
+optdebug_options = ('--enable-debug --enable-debug-symbols --enable-gczeal ' +
+                    '--enable-optimize --enable-profiling')
+opt_options = ('--disable-debug --disable-debug-symbols --enable-optimize ' +
+               '--disable-profiling')
 b2g_options = '--enable-b2g-bt --enable-b2g-camera' # --enable-b2g-ril
 valgrind_options = '--disable-jemalloc --enable-valgrind'
 
