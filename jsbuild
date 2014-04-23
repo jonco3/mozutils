@@ -22,7 +22,7 @@ from mozutils import *
 common_options = '--with-ccache=`which ccache` --enable-exact-rooting'
 debug_options = '--enable-gczeal --enable-debug --disable-optimize'
 optdebug_options = '--enable-gczeal --enable-debug --enable-optimize'
-opt_options = '--disable-gczeal --disable-debug --enable-optimize --enable-more-deterministic'
+opt_options = '--disable-gczeal --disable-debug --enable-optimize'
 
 arch_options = {
     'x86':     '--target=i686-pc-linux',
@@ -35,14 +35,18 @@ compiler_options = {
 }
 
 build_options = {
-    'threads':   '--with-system-nspr --enable-threadsafe --enable-ctypes',
-    'ggc':       '--enable-gcgenerational',
+    'threads': '--with-system-nspr --enable-threadsafe --enable-ctypes',
+    'noggc':   '--disable-gcgenerational',
+    'bench':   '--enable-more-deterministic',
+    'armsim':  '--enable-arm-simulator'
 }
 
 build_configs = {
-    'min':       [],
-    'default':   ['threads'],
-    'ggc':       ['threads', 'ggc'],
+    'min':     [],
+    'default': ['threads'],
+    'noggc':   ['threads', 'noggc'],
+    'bench':   ['threads', 'bench'],
+    'armsim':  ['threads', 'armsim']
 }
 build_names = build_configs.keys()
 
