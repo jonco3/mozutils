@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-    echo "usage: v8bench BUILD-DIR [ N ]"
+    echo "usage: v8bench BUILD-DIR [ N [ TEST ] ]"
     exit 1
 fi
 
@@ -12,7 +12,17 @@ if [ $# -ge 2 ]; then
     N=$2
 fi
 
-LOG=v8bench.txt
+TEST=run.js
+if [ $# -ge 3 ]; then
+    TEST=run-$3.js
+fi
+
+if [ ! -f v8/$TEST ]; then
+    echo "Test $TEST not found"
+    exit 1
+fi
+
+LOG=$DIR/v8bench.txt
 
 if [ ! -f jsapi.h ]; then
    echo "Please run from js/src directory"
@@ -38,7 +48,7 @@ touch $LOG
         sync
         sleep 1
         echo "Run $i" | tee -a ../$LOG
-        nice -20 ../$DIR/shell run.js | tee -a ../$LOG
+        nice -20 ../$DIR/shell $TEST | tee -a ../$LOG
         echo
     done
 )
