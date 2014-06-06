@@ -65,7 +65,8 @@ parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
-parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
+parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings', default=True,
+                    help = 'Hide warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('-U', '--no-unified-compilation', dest='unified', action='store_false', default=True,
