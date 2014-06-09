@@ -23,9 +23,14 @@ opt_options = '--disable-debug --enable-optimize --disable-profiling'
 b2g_options = '--enable-b2g-bt --enable-b2g-camera' # --enable-b2g-ril
 valgrind_options = '--disable-jemalloc --enable-valgrind'
 
+android_home = os.path.expanduser('~/software/android')
+fennec_options = ' '.join(['--enable-application=mobile/android',
+                           '--target=arm-linux-androideabi',
+                           '--with-android-ndk="%s/android-ndk-r8e"' % android_home,
+                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-17"' % android_home])
+
 build_configs = {
     'default': '',
-    'ggc':     '--enable-gcgenerational',
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
@@ -36,26 +41,18 @@ parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-b', '--b2g', action='store_true', help = 'Attempt to build B2G source')
+parser.add_argument('-f', '--fennec', action='store_true', help = 'Build Fennec')
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
                     help = 'Build config to use')
-parser.add_argument('incr_dir', nargs ='?', default = None,
-                    help = 'Directory for incremental build')
 args = parser.parse_args()
 if args.opt and args.optdebug:
     sys.exit("Can't specify both --opt and --optdebug")
+if args.b2g and args.fennec:
+    sys.exit("Can't specify both --b2g and --fennec")
 
 chdir_to_source_root()
-
-if args.incr_dir:
-    ensureExe("smartmake.py")
-
-    config_file = ".hg/.smartmake"
-    if not os.path.exists(config_file):
-        with open(config_file, 'w') as f:
-            f.write("[smartmake]\n")
-            f.write("cmd=make -j%d -C\n" % multiprocessing.cpu_count())
 
 build_name = args.config
 if args.optdebug:
@@ -66,6 +63,8 @@ if args.valgrind:
     build_name += "-valgrind"
 if args.b2g:
     build_name += "-b2g"
+if args.fennec:
+    build_name += "-fennec"
 if args.gcc:
     build_name += "-gcc"
 build_dir = build_name + "-build"
@@ -92,7 +91,7 @@ if not os.path.exists(mozconfig_file):
     with open(mozconfig_file, 'w') as f:
         if args.b2g:
             f.write(". $topsrcdir/b2g/config/mozconfigs/common\n")
-        else:
+        elif not args.fennec:
             f.write(". $topsrcdir/browser/config/mozconfig\n")
 
         def setCompiler(c_name, cpp_name):
@@ -112,7 +111,7 @@ if not os.path.exists(mozconfig_file):
             setCompiler("gcc-4.6", "g++-4.6")
         elif args.gcc:
             setCompiler("gcc", "g++")
-        else:
+        elif not args.fennec:
             setCompiler("clang", "clang++")
 
         addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
@@ -129,11 +128,11 @@ if not os.path.exists(mozconfig_file):
         else:
             addOptions(debug_options)
 
-        if not args.opt:
-            f.write("export CFLAGS=\"-gdwarf-2\"")
-            f.write("export CXXFLAGS=\"-gdwarf-2\"")
-            f.write("export MOZ_DEBUG_SYMBOLS=1\n")
-            addOptions("--enable-debug-symbols=\"-gdwarf-2\"")
+        #if not args.opt and not args.fennec:
+        #    f.write("export CFLAGS=\"-gdwarf-2\"")
+        #    f.write("export CXXFLAGS=\"-gdwarf-2\"")
+        #    f.write("export MOZ_DEBUG_SYMBOLS=1\n")
+        #    addOptions("--enable-debug-symbols=\"-gdwarf-2\"")
 
         if args.valgrind:
             addOptions(valgrind_options)
@@ -141,12 +140,10 @@ if not os.path.exists(mozconfig_file):
         addOptions(build_configs[args.config])
         if args.b2g:
             addOptions(b2g_options)
+        if args.fennec:
+            addOptions(fennec_options)
 
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
-if args.incr_dir:
-    print("Incrementally build %s %s" % (build_name, args.incr_dir))
-    run_command("smartmake.py -o %s %s" % (build_dir, args.incr_dir), args.verbose, args.warnings)
-else:
-    print("Build %s" % build_name)
-    run_command("./mach build", args.verbose, args.warnings)
+print("Build %s" % build_name)
+run_command("./mach build", args.verbose, args.warnings)
