@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+    echo "usage: octane BUILD-DIR [ N [ TEST ] ]"
+    exit 1
+fi
+
+if [ ! -f jsapi.h ]; then
+   echo "Please run from js/src directory"
+   exit 1
+fi
+
+if [ ! -d $1 ]; then
+   echo "Build directory $1 not found"
+   exit 1
+fi
+BUILD=../$1
+
+N=5
+if [ $# -ge 2 ]; then
+    N=$2
+fi
+
+TEST=run.js
+if [ $# -ge 3 ]; then
+    TEST=run-$3.js
+fi
+
+cd octane
+
+if [ ! -f $TEST ]; then
+    echo "File $TEST not found"
+    exit 1
+fi
+
+sync
+sleep 1
+
+LOG=$BUILD/octane.txt
+(
+    echo "octane $PWD $BUILD $N"
+    echo
+    date
+    echo
+
+    for i in `seq 1 $N`; do
+        echo "Run $i"
+        nice -20 $BUILD/shell $TEST
+        echo
+    done
+) | tee $LOG
+
+if [ $N -gt 1 ]; then
+    collate $LOG
+fi
