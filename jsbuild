@@ -36,17 +36,19 @@ compiler_options = {
 
 build_options = {
     'threads': '--with-system-nspr --enable-threadsafe --enable-ctypes',
+    'noexact': '--disable-exact-rooting',
     'noggc':   '--disable-gcgenerational',
     'bench':   '--enable-more-deterministic',
     'armsim':  '--enable-arm-simulator'
 }
 
 build_configs = {
-    'min':     [],
-    'default': ['threads'],
-    'noggc':   ['threads', 'noggc'],
-    'bench':   ['threads', 'bench'],
-    'armsim':  ['threads', 'armsim']
+    'min':          [],
+    'default':      ['threads'],
+    'noggc':        ['threads', 'noggc'],
+    'conservative': ['threads', 'noexact', 'noggc'],
+    'bench':        ['threads', 'bench'],
+    'armsim':       ['threads', 'armsim']
 }
 build_names = build_configs.keys()
 
