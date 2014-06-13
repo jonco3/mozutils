@@ -15,7 +15,6 @@ install_dir = os.path.dirname(__file__)
 sys.path.append(install_dir)
 from mozutils import *
 
-
 common_options = '--enable-crypto --disable-gstreamer --enable-exact-rooting'
 debug_options = '--enable-debug --enable-gczeal --disable-optimize --enable-profiling --enable-js-diagnostics'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize --enable-profiling --enable-js-diagnostics'
