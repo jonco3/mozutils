@@ -77,7 +77,7 @@ def run_command(command, verbose, warnings):
 
 def chdir_to_source_root():
     lastDir = os.getcwd()
-    while not os.path.isdir(".hg") or not os.path.isfile("client.mk") or not os.path.isdir("mfbt"):
+    while not os.path.isfile("client.mk") or not os.path.isdir("mfbt") or not os.path.isdir("js"):
         os.chdir("..")
         currentDir = os.getcwd()
         if currentDir == lastDir:
