@@ -48,7 +48,7 @@ LOG=$BUILD/octane.txt
         nice -20 $BUILD/shell $TEST
         echo
     done
-) | tee $LOG
+) 2>&1 | tee $LOG
 
 if [ $N -gt 1 ]; then
     collate $LOG
