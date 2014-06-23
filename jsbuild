@@ -73,6 +73,7 @@ parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all bui
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('-U', '--no-unified-compilation', dest='unified', action='store_false', default=True,
                     help = 'Disable unified compilation')
+parser.add_argument('-g', '--gc-trace', action='store_true', help = 'Enable GC tracing')
 parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
                     help = 'Build config to use')
 parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
@@ -163,6 +164,9 @@ if not os.path.isdir(dir):
         config += ' --enable-unified-compilation'
     else:
         config += ' --disable-unified-compilation'
+
+    if args.gc_trace:
+        config += ' --enable-gc-trace'
 
     run_command('../configure ' + config, args.verbose, args.warnings)
     os.chdir('..')
