@@ -128,11 +128,11 @@ if not os.path.exists(mozconfig_file):
         else:
             addOptions(debug_options)
 
-        #if not args.opt and not args.fennec:
-        #    f.write("export CFLAGS=\"-gdwarf-2\"")
-        #    f.write("export CXXFLAGS=\"-gdwarf-2\"")
-        #    f.write("export MOZ_DEBUG_SYMBOLS=1\n")
-        #    addOptions("--enable-debug-symbols=\"-gdwarf-2\"")
+        if not args.opt and not args.fennec:
+            f.write("export CFLAGS=\"-gdwarf-2\"\n")
+            f.write("export CXXFLAGS=\"-gdwarf-2\"\n")
+            f.write("export MOZ_DEBUG_SYMBOLS=1\n")
+            addOptions("--enable-debug-symbols=\"-gdwarf-2\"")
 
         if args.valgrind:
             addOptions(valgrind_options)
