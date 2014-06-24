@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -lt 1 ]; then
-    echo "usage: octane BUILD-DIR [ N [ TEST ] ]"
+    echo "usage: octane BUILD-DIR [ ITERATIONS [ TEST ] ]"
     exit 1
 fi
 
@@ -16,9 +16,9 @@ if [ ! -d $1 ]; then
 fi
 BUILD=../$1
 
-N=5
+ITERATIONS=1
 if [ $# -ge 2 ]; then
-    N=$2
+    ITERATIONS=$2
 fi
 
 TEST=run.js
@@ -38,18 +38,18 @@ sleep 1
 
 LOG=$BUILD/octane.txt
 (
-    echo "octane $PWD $BUILD $N"
+    echo "octane $PWD $BUILD $ITERATIONS"
     echo
     date
     echo
 
-    for i in `seq 1 $N`; do
+    for i in `seq 1 $ITERATIONS`; do
         echo "Run $i"
         nice -20 $BUILD/shell $TEST
         echo
     done
 ) 2>&1 | tee $LOG
 
-if [ $N -gt 1 ]; then
+if [ $ITERATIONS -gt 1 ]; then
     collate $LOG
 fi
