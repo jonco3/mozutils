@@ -20,9 +20,9 @@ from mozutils import *
 # tries to link with the host library
 
 common_options = '--with-ccache=`which ccache` --enable-exact-rooting'
-debug_options = '--enable-gczeal --enable-debug --disable-optimize'
-optdebug_options = '--enable-gczeal --enable-debug --enable-optimize'
-opt_options = '--disable-gczeal --disable-debug --enable-optimize'
+debug_options = '--enable-gczeal --enable-debug --disable-optimize --enable-js-diagnostics'
+optdebug_options = '--enable-gczeal --enable-debug --enable-optimize --enable-js-diagnostics'
+opt_options = '--enable-gczeal --disable-debug --enable-optimize --disable-js-diagnostics'
 
 arch_options = {
     'x86':     '--target=i686-pc-linux',
