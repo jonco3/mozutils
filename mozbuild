@@ -26,8 +26,7 @@ android_home = os.path.expanduser('~/software/android')
 fennec_options = ' '.join(['--enable-application=mobile/android',
                            '--target=arm-linux-androideabi',
                            '--with-android-ndk="%s/android-ndk-r8e"' % android_home,
-                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-19"' % android_home,
-                           '--with-arch=armv6'])
+                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-19"' % android_home])
 
 build_configs = {
     'default': '',
@@ -108,7 +107,7 @@ if not os.path.exists(mozconfig_file):
             setCompiler("gcc-4.6", "g++-4.6")
         elif args.gcc:
             setCompiler("gcc", "g++")
-        elif not args.config != 'fennec':
+        elif 'fennec' not in args.config:
             setCompiler("clang", "clang++")
 
         addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
