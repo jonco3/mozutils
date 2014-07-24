@@ -26,10 +26,14 @@ android_home = os.path.expanduser('~/software/android')
 fennec_options = ' '.join(['--enable-application=mobile/android',
                            '--target=arm-linux-androideabi',
                            '--with-android-ndk="%s/android-ndk-r8e"' % android_home,
-                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-17"' % android_home])
+                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-19"' % android_home,
+                           '--with-arch=armv6'])
 
 build_configs = {
     'default': '',
+    'fennec': fennec_options,
+    'fennec6': fennec_options + ' --with-arch=armv6',
+    'b2g': b2g_options
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
@@ -39,8 +43,6 @@ parser.add_argument('-V', '--valgrind', action='store_true', help = 'Build with 
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
-parser.add_argument('-b', '--b2g', action='store_true', help = 'Attempt to build B2G source')
-parser.add_argument('-f', '--fennec', action='store_true', help = 'Build Fennec')
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
@@ -48,8 +50,6 @@ parser.add_argument('config', nargs ='?', choices = build_configs.keys(), defaul
 args = parser.parse_args()
 if args.opt and args.optdebug:
     sys.exit("Can't specify both --opt and --optdebug")
-if args.b2g and args.fennec:
-    sys.exit("Can't specify both --b2g and --fennec")
 
 chdir_to_source_root()
 
@@ -60,10 +60,6 @@ elif args.opt:
     build_name += "-opt"
 if args.valgrind:
     build_name += "-valgrind"
-if args.b2g:
-    build_name += "-b2g"
-if args.fennec:
-    build_name += "-fennec"
 if args.gcc:
     build_name += "-gcc"
 build_dir = build_name + "-build"
@@ -89,9 +85,9 @@ if not os.path.exists(mozconfig_file):
     ccache_path = ensureExe("ccache")
 
     with open(mozconfig_file, 'w') as f:
-        if args.b2g:
+        if args.config == 'b2g':
             f.write(". $topsrcdir/b2g/config/mozconfigs/common\n")
-        elif not args.fennec:
+        elif args.config != 'fennec':
             f.write(". $topsrcdir/browser/config/mozconfig\n")
 
         def setCompiler(c_name, cpp_name):
@@ -104,14 +100,15 @@ if not os.path.exists(mozconfig_file):
             f.write("mk_add_options %s\n" % option)
 
         def addOptions(options_string):
-            for option in options_string.split(' '):
-                f.write("ac_add_options %s\n" % option)
+            if options_string:
+                for option in options_string.split(' '):
+                    f.write("ac_add_options %s\n" % option)
 
-        if args.b2g:
+        if args.config == 'b2g':
             setCompiler("gcc-4.6", "g++-4.6")
         elif args.gcc:
             setCompiler("gcc", "g++")
-        elif not args.fennec:
+        elif not args.config != 'fennec':
             setCompiler("clang", "clang++")
 
         addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
@@ -128,7 +125,7 @@ if not os.path.exists(mozconfig_file):
         else:
             addOptions(debug_options)
 
-        if not args.opt and not args.fennec:
+        if not args.opt and not args.config == 'fennec':
             f.write("export CFLAGS=\"-gdwarf-2\"\n")
             f.write("export CXXFLAGS=\"-gdwarf-2\"\n")
             f.write("export MOZ_DEBUG_SYMBOLS=1\n")
@@ -138,10 +135,6 @@ if not os.path.exists(mozconfig_file):
             addOptions(valgrind_options)
 
         addOptions(build_configs[args.config])
-        if args.b2g:
-            addOptions(b2g_options)
-        if args.fennec:
-            addOptions(fennec_options)
 
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
