@@ -73,6 +73,8 @@ parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all bui
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('-U', '--no-unified-compilation', dest='unified', action='store_false', default=True,
                     help = 'Disable unified compilation')
+parser.add_argument('-I', '--disable-ion', dest='ion', action='store_false', default=True,
+                    help = 'Disable IonMonkey JIT')
 parser.add_argument('-g', '--gc-trace', action='store_true', help = 'Enable GC tracing')
 parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
                     help = 'Build config to use')
@@ -102,6 +104,9 @@ if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path
             shutil.rmtree(build)
 
 name = args.build
+
+if not args.ion:
+    name += '-noion'
 
 if args.compiler:
     name += '-' + args.compiler
@@ -156,6 +161,9 @@ if not os.path.isdir(dir):
         config += ' ' + optdebug_options
     else:
         config += ' ' + debug_options
+
+    if not args.ion:
+        config += ' --disable-ion'
 
     if '--enable-threadsafe' not in config:
         config += ' --disable-threadsafe'
