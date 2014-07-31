@@ -39,7 +39,8 @@ build_options = {
     'noexact': '--disable-exact-rooting',
     'noggc':   '--disable-gcgenerational',
     'bench':   '--enable-more-deterministic',
-    'armsim':  '--enable-arm-simulator'
+    'armsim':  '--enable-arm-simulator',
+    'cgc':     '--enable-gccompacting'
 }
 
 build_configs = {
@@ -48,7 +49,8 @@ build_configs = {
     'noggc':        ['threads', 'noggc'],
     'conservative': ['threads', 'noexact', 'noggc'],
     'bench':        ['threads', 'bench'],
-    'armsim':       ['threads', 'armsim']
+    'armsim':       ['threads', 'armsim'],
+    'cgc':          ['threads', 'cgc']
 }
 build_names = build_configs.keys()
 
