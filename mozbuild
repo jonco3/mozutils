@@ -26,7 +26,7 @@ android_home = os.path.expanduser('~/software/android')
 fennec_options = ' '.join(['--enable-application=mobile/android',
                            '--target=arm-linux-androideabi',
                            '--with-android-ndk="%s/android-ndk-r8e"' % android_home,
-                           '--with-android-sdk="%s/adt-bundle-mac-x86_64-20140321/sdk/platforms/android-19"' % android_home])
+                           '--with-android-sdk="%s/adt-bundle/sdk/platforms/android-19"' % android_home])
 
 build_configs = {
     'default': '',
