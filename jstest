@@ -11,7 +11,7 @@ function badUsage()
     echo "    -l      => run tests in local timezone rather than PST"
     echo "  BUILDS:"
     echo "    default"
-    echo "    ggc"
+    echo "    cgc"
     echo "    min"
     echo "  TESTS:"
     echo "    jsapitest"
@@ -32,7 +32,7 @@ CLEAN=-C
 ZEAL=
 
 DEFAULT=
-GGC=
+CGC=
 MIN=
 
 JSAPITEST=
@@ -62,8 +62,8 @@ while [ $# -ge 1 ]; do
         default)
             DEFAULT=default
             ;;
-        ggc)
-            GGC=ggc
+        cgc)
+            CGC=cgc
             ;;
         min)
             MIN=min
@@ -92,7 +92,7 @@ if [ -n "$OPT" -a -n "$OPTDEBUG" ]; then
     exit 1
 fi
 
-if [ -z "$DEFAULT" -a -z "$GGC" -a -z "$MIN" ]; then
+if [ -z "$DEFAULT" -a -z "$CGC" -a -z "$MIN" ]; then
     DEFAULT=default
 fi
 
@@ -112,7 +112,7 @@ if [ -d .hg ]; then
     hg log -l 1 || exit 1
 fi
 
-jsbuild $CLEAN $OPT $OPTDEBUG $DEFAULT $GGC $MIN || exit 125
+jsbuild $CLEAN $OPT $OPTDEBUG $DEFAULT $CGC $MIN || exit 125
 # Exit status 125 tells bisect to skip the revision if we can't build it
 echo
 
@@ -212,8 +212,8 @@ if [ -n "$DEFAULT" ]; then
     test default
 fi
 
-if [ -n "$GGC" ]; then
-    test ggc
+if [ -n "$CGC" ]; then
+    test cgc
 fi
 
 if [ -n "$MIN" ]; then
