@@ -32,7 +32,8 @@ build_configs = {
     'default': '',
     'fennec': fennec_options,
     'fennec6': fennec_options + ' --with-arch=armv6',
-    'b2g': b2g_options
+    'b2g': b2g_options,
+    'cgc': '--enable-gccompacting'
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
