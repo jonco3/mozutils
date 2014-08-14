@@ -12,8 +12,7 @@ import glob
 import multiprocessing
 
 # Import common functions
-install_dir = os.path.dirname(__file__)
-sys.path.append(install_dir)
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 
 # --with-system-nspr doesn't work with crosscompilation, because it
