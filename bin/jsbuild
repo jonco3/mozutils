@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Python script to build SpiderMonkey
+# jsbuild: Build SpiderMonkey
 
 import os
 import os.path
@@ -14,57 +14,10 @@ import multiprocessing
 # Import common functions
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
-
-# --with-system-nspr doesn't work with crosscompilation, because it
-# tries to link with the host library
-
-common_options = '--with-ccache=`which ccache` --enable-exact-rooting'
-debug_options = '--enable-gczeal --enable-debug --disable-optimize --enable-js-diagnostics'
-optdebug_options = '--enable-gczeal --enable-debug --enable-optimize --enable-js-diagnostics'
-opt_options = '--enable-gczeal --disable-debug --enable-optimize --disable-js-diagnostics'
-
-arch_options = {
-    'x86':     '--target=i686-pc-linux',
-    'arm':     '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api',
-}
-
-compiler_options = {
-    'armsf':   '--target=arm-linux-gnueabi --with-float-abi=softfp',
-    'armhf':   '--target=arm-linux-gnueabihf --with-float-abi=hard'
-}
-
-build_options = {
-    'threads': '--with-system-nspr --enable-threadsafe --enable-ctypes',
-    'noexact': '--disable-exact-rooting',
-    'noggc':   '--disable-gcgenerational',
-    'bench':   '--enable-more-deterministic',
-    'armsim':  '--enable-arm-simulator',
-    'cgc':     '--enable-gccompacting'
-}
-
-build_configs = {
-    'min':          [],
-    'default':      ['threads'],
-    'noggc':        ['threads', 'noggc'],
-    'conservative': ['threads', 'noexact', 'noggc'],
-    'bench':        ['threads', 'bench'],
-    'armsim':       ['threads', 'armsim'],
-    'cgc':          ['threads', 'cgc']
-}
-build_names = build_configs.keys()
-
-compilers = {
-    'clang': (None, 'clang', 'clang++'),
-    'gcc':   (None, 'gcc', 'g++'),
-    'gcc47': (None, 'gcc-4.7', 'g++-4.7'),
-    'gcc32': ('x86', 'gcc -m32', 'g++ -m32', { 'PKG_CONFIG_LIBDIR': '/usr/lib/pkgconfig', 'AR': 'ar' }),
-    'armsf': ('arm', 'arm-linux-gnueabi-gcc', 'arm-linux-gnueabi-g++'),
-    'armhf': ('arm', 'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
-}
-compiler_names = compilers.keys()
+from jsconfigs import *
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
-parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
+parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
@@ -72,18 +25,13 @@ parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings'
                     help = 'Hide warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('-U', '--no-unified-compilation', dest='unified', action='store_false', default=True,
-                    help = 'Disable unified compilation')
-parser.add_argument('-I', '--disable-ion', dest='ion', action='store_false', default=True,
-                    help = 'Disable IonMonkey JIT')
-parser.add_argument('-g', '--gc-trace', action='store_true', help = 'Enable GC tracing')
-parser.add_argument('build', nargs ='?', choices = build_names, default = 'default',
-                    help = 'Build config to use')
-parser.add_argument('compiler', nargs ='?', choices = compiler_names, default = None,
-                    help = 'Compiler to use')
+parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
+                    help = 'Build configurations to use')
 args = parser.parse_args()
-if args.opt and args.optdebug:
-    exit_fatal("Can't specify both --opt and --optdebug")
+
+configs = get_configs_from_args(args)
+name = get_build_name(configs)
+dir = name + '-build'
 
 chdir_to_source_root()
 os.chdir("js/src")
@@ -104,41 +52,6 @@ if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path
         if os.path.isdir(build):
             shutil.rmtree(build)
 
-name = args.build
-
-if not args.ion:
-    name += '-noion'
-
-if args.compiler:
-    name += '-' + args.compiler
-    info = compilers[args.compiler]
-    arch = info[0]
-    cc = which(info[1].split()[0])
-    cxx = which(info[2].split()[0])
-    if not cc or not cxx:
-        exit_fatal("Compiler for %s build not found on path" % args.compiler)
-    os.environ['CC'] = info[1]
-    os.environ['CXX'] = info[2]
-    if len(info) >= 4:
-        for var in info[3]:
-            os.environ[var] = info[3][var]
-else:
-    # Clang is preferred for rooting builds (it shows up more problems), and it is
-    # faster in general, so use it if possible
-    arch = None
-    clang_cc = which('clang')
-    clang_cxx = which('clang++')
-    if clang_cc and clang_cxx:
-        os.environ['CC'] = clang_cc
-        os.environ['CXX'] = clang_cxx
-
-if args.optdebug:
-    name += "-optdebug"
-if args.opt:
-    name += '-opt'
-
-dir = name + '-build'
-
 if args.clean:
     print('Clean ' + name)
     if os.path.isdir(dir):
@@ -149,35 +62,21 @@ if not os.path.isdir(dir):
     os.mkdir(dir)
     os.chdir(dir)
 
-    opts = [common_options] + [build_options[opt] for opt in build_configs[args.build]]
-    config = ' '.join(opts)
-    if arch and arch in arch_options:
-        config += ' ' + arch_options[arch]
-    if args.compiler and args.compiler in compiler_options:
-        config += ' ' + compiler_options[args.compiler]
+    opts = common_options
+    for config in configs:
+        opts += ' ' + config_options[config]
+        if config in config_compiler_exes:
+            c_exe, cpp_exe = config_compiler_exes[config]
+            os.environ['CC'] = ensureExe(c_exe)
+            os.environ['CXX'] = ensureExe(cpp_exe)
+        if config in config_env_vars:
+            env_vars = config_env_vars[config]
+            for var in env_vars:
+                os.environ[var] = env_vars[var]
 
-    if args.opt:
-        config += ' ' + opt_options
-    elif args.optdebug:
-        config += ' ' + optdebug_options
-    else:
-        config += ' ' + debug_options
-
-    if not args.ion:
-        config += ' --disable-ion'
-
-    if '--enable-threadsafe' not in config:
-        config += ' --disable-threadsafe'
-
-    if args.unified:
-        config += ' --enable-unified-compilation'
-    else:
-        config += ' --disable-unified-compilation'
-
-    if args.gc_trace:
-        config += ' --enable-gc-trace'
-
-    run_command('../configure ' + config, args.verbose, args.warnings)
+    if args.verbose:
+        print('configure ' + opts)
+    run_command('../configure ' + opts, args.verbose, args.warnings)
     os.chdir('..')
 
 print('Build ' + name)

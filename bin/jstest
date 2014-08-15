@@ -1,223 +1,77 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-function badUsage()
-{
-    echo "usage: jstest OPTIONS BUILDS TESTS"
-    echo "  OPTIONS:"
-    echo "    -o      => opt build"
-    echo "    -d      => optdebug build"
-    echo "    -c      => clean first"
-    echo "    -z ZEAL => turn on GC zeal"
-    echo "    -l      => run tests in local timezone rather than PST"
-    echo "  BUILDS:"
-    echo "    default"
-    echo "    cgc"
-    echo "    min"
-    echo "  TESTS:"
-    echo "    jsapitest"
-    echo "    v8test"
-    echo "    jittest"
-    echo "    jstest"
-    exit 1
-}
+# jstest: Run SpiderMonkey tests
 
-ORIGINAL_TIMEZONE=`cat /etc/timezone`
-ORIGINAL_LOCALE=$LOCALE
-TIMEZONE=PST
-LOCALE=en_US.utf8
+import os
+import os.path
+import sys
+import shutil
+import argparse
+import subprocess
+import glob
+import multiprocessing
 
-OPT=
-OPTDEBUG=
-CLEAN=-C
-ZEAL=
+# Import common functions
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
+from mozutils import *
+from jsconfigs import *
 
-DEFAULT=
-CGC=
-MIN=
+parser = argparse.ArgumentParser(description = 'Run SpiderMonkey tests')
+parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
+parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
+parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 
-JSAPITEST=
-V8TEST=
-JITTEST=
-JSTEST=
+parser.add_argument('-i', '--jsapitest', action='store_true', help = 'Run jsapi tests')
+parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit tests')
+parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
+parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
-while [ $# -ge 1 ]; do
-    case "$1" in
-        -o)
-            OPT=-o
-            ;;
-        -d)
-            OPTDEBUG=-d
-            ;;
-        -c)
-            CLEAN=-c
-            ;;
-        -z)
-            ZEAL=$2
-            shift
-            ;;
-        -l)
-            TIMEZONE=$ORIGINAL_TIMEZONE
-            LOCALE=$ORIGINAL_LOCALE
-            ;;
-        default)
-            DEFAULT=default
-            ;;
-        cgc)
-            CGC=cgc
-            ;;
-        min)
-            MIN=min
-            ;;
-        jsapitest)
-            JSAPITEST=t
-            ;;
-        v8test)
-            V8TEST=t
-            ;;
-        jittest)
-            JITTEST=t
-            ;;
-        jstest)
-            JSTEST=t
-            ;;
-        *)
-            badUsage
-            ;;
-    esac
-    shift
-done
+parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
+                    help = 'Build configurations to use')
+args = parser.parse_args()
 
-if [ -n "$OPT" -a -n "$OPTDEBUG" ]; then
-    echo "Can't specify both -d and -o flags"
-    exit 1
-fi
+configs = get_configs_from_args(args)
+name = get_build_name(configs)
+dir = name + '-build'
 
-if [ -z "$DEFAULT" -a -z "$CGC" -a -z "$MIN" ]; then
-    DEFAULT=default
-fi
+def run_test(test_name, command):
+    print("Run %s %s tests" % (name, test_name))
+    rc = subprocess.call(command, shell = True)
+    if rc != 0:
+        sys.exit("Test failed")
+    print('')
 
-if [ -z "$JSAPITEST" -a -z "$V8TEST" -a -z "$JITTEST" -a -z "$JSTEST" ]; then
-    JSAPITEST=t
-    V8TEST=
-    JITTEST=t
-    JSTEST=t
-fi
+chdir_to_source_root()
+os.chdir("js/src")
 
-echo "jstest $PWD $*"
-echo
-date
-echo
+os.environ['TIMEZONE'] = 'PST'
+os.environ['LOCALE'] = 'en_US.utf8'
+if args.gczeal:
+    os.environ['JS_GC_ZEAL'] = str(args.gczeal)
 
-if [ -d .hg ]; then
-    hg log -l 1 || exit 1
-fi
+try:
+    run_command('jsbuild ' + ' '.join(configs), True, False)
+    print('')
 
-jsbuild $CLEAN $OPT $OPTDEBUG $DEFAULT $CGC $MIN || exit 125
-# Exit status 125 tells bisect to skip the revision if we can't build it
-echo
+    test_all = not args.jsapitest and not args.jittest and not args.jstest and not args.octane
 
-FAILFILE=jstest.failures.tmp
+    if args.jsapitest or test_all:
+        print("Run %s jsapi tests" % name)
+        run_command(os.path.join(dir, 'jsapi-tests'), False, False)
+        print('')
 
-EXIT=0
+    if args.jittest or test_all:
+        run_test('jit', 'python jit-test/jit_test.py %s/shell' % dir)
 
-function fail()
-{
-    EXIT=1
-}
+    if args.jstest or test_all:
+        run_test('js', 'python tests/jstests.py %s/shell' % dir)
 
-function jsapi-test()
-{
-    local NAME=$1
-    local JSDIR=$2
-
-    echo "Run $NAME jsapi tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE $JSDIR/jsapi-tests > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo "  failed; run with $JSDIR/jsapi-tests to see failures"
-        fail
-    fi
-    echo
-}
-
-function v8-test()
-{
-    local NAME=$1
-    local JSDIR=$2
-
-    local zeal=$ZEAL
-    if [ -z "$zeal" ] && [ -z "$OPT" ] && [ -z "$OPTDEBUG" ]; then
-        echo "Run $NAME v8 gc stress test"
-        zeal=10,1000
-    else
-        echo "Run $NAME v8 benchmark"
-    fi
-
-    cd v8
-    JS_GC_ZEAL=$zeal TZ=$TIMEZONE ../$JSDIR/shell run.js || fail
-    cd ..
-
-    echo
-}
-
-function jit-test()
-{
-    local NAME=$1
-    local JSDIR=$2
-
-    echo "Run $NAME jit tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python jit-test/jit_test.py $JSDIR/shell || fail
-    echo
-}
-
-function js-test()
-{
-    local NAME=$1
-    local JSDIR=$2
-
-    echo "Run $NAME js tests"
-    JS_GC_ZEAL=$ZEAL TZ=$TIMEZONE python tests/jstests.py $JSDIR/shell || fail
-    echo
-}
-
-function test()
-{
-    local NAME=$1
-
-    if [ -n "$OPT" ]; then
-        NAME=$NAME-opt
-    elif [ -n "$OPTDEBUG" ]; then
-        NAME=$NAME-optdebug
-    fi
-
-    local JSDIR=./$NAME-build
-
-    if [ -n "$JSAPITEST" ]; then
-        jsapi-test $NAME $JSDIR
-    fi
-
-    if [ -n "$V8TEST" ]; then
-        v8-test $NAME $JSDIR
-    fi
-
-    if [ -n "$JITTEST" ]; then
-        jit-test $NAME $JSDIR
-    fi
-
-    if [ -n "$JSTEST" ]; then
-        js-test $NAME $JSDIR
-    fi
-}
-
-if [ -n "$DEFAULT" ]; then
-    test default
-fi
-
-if [ -n "$CGC" ]; then
-    test cgc
-fi
-
-if [ -n "$MIN" ]; then
-    test min
-fi
-
-exit $EXIT
+    if args.octane:
+        os.chdir('octane')
+        run_test('octane', os.path.join('..', dir, 'shell') + ' run.js')
+        os.chdir('..')
+except KeyboardInterrupt:
+    print('')
+    print('Interrupted')
+    sys.exit(1)
