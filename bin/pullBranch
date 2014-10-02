@@ -44,6 +44,6 @@ BRANCH=${PWD##*/}
 echo "Syncing $REMOTE $BRANCH"
 rsync \
     --recursive --rsh=ssh --times --delete --links \
-    --exclude '*-build/' --exclude .hg/ --exclude __pycache__/ \
+    --exclude '*-build/' --exclude .hg/ --exclude __pycache__/  --exclude .cloned-from \
     $REMOTE:work/$BRANCH/ . || exit $?
 
