@@ -34,10 +34,14 @@ name = get_build_name(configs)
 dir = name + '-build'
 
 chdir_to_source_root()
-os.chdir("js/src")
 
 if args.dry_run:
     sys.exit(0)
+
+if os.path.isfile('.cloned-from'):
+    subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
+
+os.chdir("js/src")
 
 if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path.getmtime('configure'):
     print('Autoconf')

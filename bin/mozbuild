@@ -66,6 +66,9 @@ build_dir = build_name + "-build"
 if args.dry_run:
     sys.exit(0)
 
+if os.path.isfile('.cloned-from'):
+    subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
+
 if args.clean and os.path.exists(build_dir):
     print("Clean " + build_name)
     print("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
