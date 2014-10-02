@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Sync a source repo from a remote machine
+
+if [ $# -gt 0 ]; then
+    echo "usage: pullBranch"
+    echo "Sync a previously cloned source repository"
+    exit 1
+fi
+
+# Find root of source tree
+while [ ! -f client.mk ] || [ ! -d mfbt ] || [ ! -d js/src ]; do
+    cd ..
+    if [ $OLDPWD == $PWD ]; then
+        echo "Run pullBranch from within the cloned repository"
+        exit 1
+    fi
+done
+
+if [ -d .hg ]; then
+    echo "Refusing to overwrite mercurial repo"
+    exit 1
+fi
+
+if [ ! -f .cloned-from ]; then
+    echo "Remote hostname not set in .cloned-from"
+    exit 1
+fi
+
+REMOTE=`cat .cloned-from`
+if ! [[ $REMOTE =~ ^[[:alnum:]]+$ ]]; then
+    echo "Bad remote hostname set in .cloned-from: $REMOTE"
+    exit 1
+fi
+
+ping -c 1 $REMOTE > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Can't resolve remote hostname: $REMOTE"
+    exit 1
+fi
+
+BRANCH=${PWD##*/}
+
+echo "Syncing $REMOTE $BRANCH"
+rsync \
+    --recursive --rsh=ssh --times --delete --links \
+    --exclude '*-build/' --exclude .hg/ --exclude __pycache__/ \
+    $REMOTE:work/$BRANCH/ . || exit $?
+
