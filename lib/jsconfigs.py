@@ -25,6 +25,7 @@ add_config('armsim',       None, '--enable-arm-simulator')
 add_config('nounified',    None, '--disable-unified-compilation')
 add_config('noion',        None, '--disable-ion')
 add_config('gctrace',      None, '--enable-gc-trace')
+add_config('valgrind',     None, '--enable-valgrind')
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
 add_config('conservative', 'gc', '--disable-exact-rooting --disable-gcgenerational')
