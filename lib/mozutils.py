@@ -57,16 +57,16 @@ def run_command(command, verbose, warnings):
         if verbose:
             print(line)
         elif "Entering directory" in line:
-            directory_line = line
+            directory_line = stripTimestamp(line)
         elif "error:" in line or sawError:
             if directory_line:
-                print(stripTimestamp(directory_line))
+                print(directory_line)
                 directory_line = None
             print(stripTimestamp(line))
             sawError = True
         elif warnings and "warning:" in line:
             if directory_line:
-                print(stripTimestamp(directory_line))
+                print(directory_line)
                 directory_line = None
             print(stripTimestamp(line))
         elif objectFileRe.match(line):
