@@ -18,7 +18,7 @@ common_options = '--enable-crypto --disable-gstreamer --enable-exact-rooting'
 debug_options = '--enable-debug --enable-gczeal --disable-optimize --enable-profiling --enable-js-diagnostics'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize --enable-profiling --enable-js-diagnostics'
 opt_options = '--disable-debug --enable-optimize --disable-profiling'
-b2g_options = '--enable-b2g-bt --enable-b2g-camera' # --enable-b2g-ril
+b2g_options = '--enable-application=b2g --disable-libjpeg-turbo --enable-tests --enable-b2g-bt --enable-b2g-camera' # --enable-b2g-ril
 valgrind_options = '--disable-jemalloc --enable-valgrind'
 
 android_home = os.path.expanduser('~/software/android')
@@ -89,6 +89,7 @@ if not os.path.exists(mozconfig_file):
     with open(mozconfig_file, 'w') as f:
         if args.config == 'b2g':
             f.write(". $topsrcdir/b2g/config/mozconfigs/common\n")
+            f.write("ENABLE_MARIONETTE=1\n")
         elif args.config != 'fennec':
             f.write(". $topsrcdir/browser/config/mozconfig\n")
 
