@@ -9,21 +9,16 @@ if [ $# -gt 0 ]; then
 fi
 
 # Find root of source tree
-while [ ! -f client.mk ] || [ ! -d mfbt ] || [ ! -d js/src ]; do
+while [ ! -f .cloned-from ]; do
     cd ..
     if [ $OLDPWD == $PWD ]; then
-        echo "Run pullBranch from within the cloned repository"
+        echo "Run pullBranch from within a cloned directory"
         exit 1
     fi
 done
 
 if [ -d .hg ]; then
     echo "Refusing to overwrite mercurial repo"
-    exit 1
-fi
-
-if [ ! -f .cloned-from ]; then
-    echo "Remote hostname not set in .cloned-from"
     exit 1
 fi
 
