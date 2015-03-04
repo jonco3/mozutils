@@ -27,9 +27,9 @@ add_config('noion',        None, '--disable-ion')
 add_config('gctrace',      None, '--enable-gc-trace')
 add_config('valgrind',     None, '--enable-valgrind')
 add_config('smallchunk',   None, '--enable-small-chunk-size')
+add_config('nointl',       None, '--without-intl-api')
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
-add_config('conservative', 'gc', '--disable-exact-rooting --disable-gcgenerational')
 add_config('cgc',          'gc', '--enable-gccompacting')
 
 add_config('debug',        'opt', ('--enable-gczeal --enable-js-diagnostics ' +
@@ -52,11 +52,11 @@ add_config('armhf',        'compiler',
            'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
 config_group_defaults['compiler'] = 'clang'
 
+add_config('ctypes',       'ctypes', '--enable-ctypes')
+add_config('noctypes',     'ctypes', '--disable-ctypes')
+config_group_defaults['ctypes'] = 'ctypes'
 
-# todo: --with-system-nspr doesn't work with crosscompilation, because
-# it tries to link with the host library
-common_options = '--with-ccache=`which ccache` --with-system-nspr --enable-ctypes ' + \
-                 '--enable-warnings-as-errors'
+common_options = '--with-ccache=`which ccache` --with-system-nspr --enable-warnings-as-errors'
 
 def get_configs_from_args(args):
     """
