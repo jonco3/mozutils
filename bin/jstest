@@ -21,6 +21,7 @@ parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build'
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
+parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
 
 parser.add_argument('-i', '--jsapitest', action='store_true', help = 'Run jsapi tests')
 parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit tests')
@@ -52,6 +53,8 @@ os.environ['LOCALE'] = 'en_US.utf8'
 if args.gczeal:
     os.environ['JS_GC_ZEAL'] = str(args.gczeal)
 
+testOptions = '--tbpl' if args.tbpl else ''
+
 try:
     if args.build:
         run_command('jsbuild ' + ' '.join(configs), True, False)
@@ -65,10 +68,10 @@ try:
         print('')
 
     if args.jittest or test_all:
-        run_test('jit', 'python jit-test/jit_test.py %s/shell' % dir)
+        run_test('jit', 'python jit-test/jit_test.py %s %s/shell' % (testOptions, dir))
 
     if args.jstest or test_all:
-        run_test('js', 'python tests/jstests.py %s/shell' % dir)
+        run_test('js', 'python tests/jstests.py %s %s/shell' % (testOptions, dir))
 
     if args.octane:
         os.chdir('octane')
