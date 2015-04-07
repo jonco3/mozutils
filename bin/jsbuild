@@ -10,6 +10,7 @@ import argparse
 import subprocess
 import glob
 import multiprocessing
+import time
 
 # Import common functions
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
@@ -58,8 +59,10 @@ if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path
         if os.path.isdir(build):
             shutil.rmtree(build)
 
-if args.clean:
+if args.clean and os.path.exists(dir):
     print('Clean ' + name)
+    print("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
+    time.sleep(5);  # so I can hit ^C after I accidentally do this
     if os.path.isdir(dir):
         shutil.rmtree(dir)
 
