@@ -2,14 +2,15 @@
 
 # jsbuild: Build SpiderMonkey
 
-import os
-import os.path
-import sys
-import shutil
 import argparse
-import subprocess
 import glob
 import multiprocessing
+import os
+import os.path
+import platform
+import shutil
+import subprocess
+import sys
 import time
 
 # Import common functions
@@ -96,3 +97,5 @@ if not os.path.lexists('shell'):
     os.symlink('dist/bin/js', 'shell')
 if not os.path.lexists('jsapi-tests'):
     os.symlink('js/src/jsapi-tests/jsapi-tests', 'jsapi-tests')
+if platform.system() == 'Darwin' and not os.path.lexists('libmozglue.dylib'):
+    os.symlink('mozglue/build/libmozglue.dylib', 'libmozglue.dylib')
