@@ -30,7 +30,6 @@ add_config('smallchunk',   None, '--enable-small-chunk-size')
 add_config('nointl',       None, '--without-intl-api')
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
-add_config('cgc',          'gc', '--enable-gccompacting')
 
 add_config('debug',        'opt', ('--enable-gczeal --enable-js-diagnostics ' +
                                   '--enable-debug --disable-optimize'))
@@ -54,9 +53,13 @@ config_group_defaults['compiler'] = 'clang'
 
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
-config_group_defaults['ctypes'] = 'ctypes'
+config_group_defaults['ctypes'] = 'noctypes'
 
-common_options = '--with-ccache=`which ccache` --with-system-nspr --enable-warnings-as-errors'
+common_options = ' '.join([
+    '--with-ccache=`which ccache`',
+    '--enable-warnings-as-errors',
+    '--enable-posix-nspr-emulation'
+])
 
 def get_configs_from_args(args):
     """
