@@ -23,7 +23,7 @@ parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
 
-parser.add_argument('-y', '--styletest', action='store_true', help = 'Run style check')
+parser.add_argument('-y', '--stylecheck', action='store_true', help = 'Run style check')
 parser.add_argument('-i', '--jsapitest', action='store_true', help = 'Run jsapi tests')
 parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit tests')
 parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
@@ -61,9 +61,9 @@ try:
         run_command('jsbuild ' + ' '.join(configs), True, False)
         print('')
 
-    test_all = not args.jsapitest and not args.jittest and not args.jstest and not args.octane
+    test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
-    if args.styletest or test_all:
+    if args.stylecheck or test_all:
         print("Run %s style check" % name)
         run_command("make -C %s check-style" % dir, False, False)
         print('')
