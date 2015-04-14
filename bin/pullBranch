@@ -2,30 +2,46 @@
 
 # Sync a source repo from a remote machine
 
-if [ $# -gt 0 ]; then
-    echo "usage: pullBranch"
-    echo "Sync a previously cloned source repository"
+REMOTE_FILE=.cloned-from
+
+if [ $# -eq 1 ] || [ $# -gt 2 ]; then
+    echo "usage: pullBranch [ HOST BRANCH ]"
+    echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
 
-# Find root of source tree
-while [ ! -f .cloned-from ]; do
-    cd ..
-    if [ $OLDPWD == $PWD ]; then
-        echo "Run pullBranch from within a cloned directory"
+if [ $# -eq 2 ]; then
+    # Create a new directory to clone into
+
+    REMOTE=$1
+    BRANCH=$2
+    if [ -e $BRANCH ]; then
+        echo "Directory already exists: $BRANCH"
         exit 1
     fi
-done
 
-if [ -d .hg ]; then
-    echo "Refusing to overwrite mercurial repo"
-    exit 1
-fi
+    mkdir $BRANCH
+    cd $BRANCH
+else
+    # Find root of source tree
+    while [ ! -f $REMOTE_FILE ]; do
+        cd ..
+        if [ $OLDPWD == $PWD ]; then
+            echo "Run pullBranch from within a cloned directory"
+            exit 1
+        fi
+    done
 
-REMOTE=`cat .cloned-from`
-if ! [[ $REMOTE =~ ^[[:alnum:]]+$ ]]; then
-    echo "Bad remote hostname set in .cloned-from: $REMOTE"
-    exit 1
+    if [ -d .hg ]; then
+        echo "Refusing to overwrite mercurial repo"
+        exit 1
+    fi
+
+    REMOTE=`cat $REMOTE_FILE`
+    if ! [[ $REMOTE =~ ^[[:alnum:]]+$ ]]; then
+        echo "Bad remote hostname set in $REMOTE_FILE: $REMOTE"
+        exit 1
+    fi
 fi
 
 ping -c 1 $REMOTE > /dev/null 2>&1
@@ -42,7 +58,10 @@ rsync \
     --exclude '*-build/' \
     --exclude .hg/ \
     --exclude __pycache__/ \
-    --exclude .cloned-from \
-    --exclude configure \
+    --exclude $REMOTE_FILE \
+    --exclude js/src/configure \
     $REMOTE:work/$BRANCH/ . || exit $?
 
+if [ $# -eq 2 ]; then
+    echo $REMOTE > $REMOTE_FILE
+fi
