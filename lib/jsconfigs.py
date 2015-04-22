@@ -58,7 +58,7 @@ config_group_defaults['ctypes'] = 'noctypes'
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
     '--enable-warnings-as-errors',
-    '--enable-posix-nspr-emulation'
+    '--with-system-nspr'
 ])
 
 def get_configs_from_args(args):
