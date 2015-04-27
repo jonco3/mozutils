@@ -32,7 +32,7 @@ add_config('nointl',       None, '--without-intl-api')
 add_config('noggc',        'gc', '--disable-gcgenerational')
 
 add_config('debug',        'opt', ('--enable-gczeal --enable-js-diagnostics ' +
-                                  '--enable-debug --disable-optimize'))
+                                  '--enable-debug --disable-optimize --enable-oom-breakpoint'))
 add_config('optdebug',     'opt', ('--enable-gczeal --enable-js-diagnostics ' +
                                   '--enable-debug --enable-optimize'))
 add_config('opt',          'opt', '--disable-debug --enable-optimize')
