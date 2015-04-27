@@ -53,7 +53,7 @@ config_group_defaults['compiler'] = 'clang'
 
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
-config_group_defaults['ctypes'] = 'noctypes'
+config_group_defaults['ctypes'] = 'ctypes'
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
