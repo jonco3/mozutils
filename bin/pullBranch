@@ -52,16 +52,17 @@ fi
 
 BRANCH=${PWD##*/}
 
+if [ $# -eq 2 ]; then
+    echo $REMOTE > $REMOTE_FILE
+fi
+
 echo "Syncing $REMOTE $BRANCH"
 rsync \
     --recursive --rsh=ssh --times --delete --links \
     --exclude '*-build/' \
     --exclude .hg/ \
     --exclude __pycache__/ \
+    --exclude .js-cache/ \
     --exclude $REMOTE_FILE \
     --exclude js/src/configure \
     $REMOTE:work/$BRANCH/ . || exit $?
-
-if [ $# -eq 2 ]; then
-    echo $REMOTE > $REMOTE_FILE
-fi
