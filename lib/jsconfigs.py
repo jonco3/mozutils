@@ -1,5 +1,7 @@
 # Configurations for SpiderMonkey builds
 
+import sys
+
 config_names = []
 config_group = {}
 config_options = {}
@@ -49,7 +51,7 @@ add_config('armsf',        'compiler',
 add_config('armhf',        'compiler',
            arm_options + ' --target=arm-linux-gnueabihf --with-float-abi=hard',
            'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
-config_group_defaults['compiler'] = 'clang'
+config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gcc'
 
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
