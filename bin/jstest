@@ -63,7 +63,7 @@ try:
 
     test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
-    if args.stylecheck or test_all:
+    if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
         print("Run %s style check" % name)
         run_command("make -C %s check-style" % dir, False, False)
         print('')
