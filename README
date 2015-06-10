@@ -1,10 +1,9 @@
 mozutils
 ========
 
-Some shell scripts I use for mozilla development:
+Some shell scripts for SpiderMonkey/Firefox development:
 
-    jsbuild:  builds javascript engine
-    jstest:   runs javascript shell tests
-    qwiggle:  runs wiggle on mercurial mq rejected patch pushes
-    v8test:   a GC stress test: run the v8 benchmarks with GC zeal on in debugger
     mozbuild: builds the browser
+    jsbuild:  builds the JavaScript engine
+    jstest:   runs JavaScript engine shell tests
+    qwiggle:  runs wiggle on mercurial mq rejected patch pushes
