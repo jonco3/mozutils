@@ -23,7 +23,7 @@ def add_config(name, group, options, compiler_c_exe = None, compiler_cpp_exe = N
 x86_options = '--target=i686-pc-linux'
 arm_options = '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api'
 
-add_config('armsim',       None, '--enable-arm-simulator')
+add_config('armsim',       None, '--enable-simulator=arm')
 add_config('nounified',    None, '--disable-unified-compilation')
 add_config('noion',        None, '--disable-ion')
 add_config('gctrace',      None, '--enable-gc-trace')
