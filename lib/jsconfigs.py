@@ -55,7 +55,7 @@ config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gc
 
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
-config_group_defaults['ctypes'] = 'ctypes'
+config_group_defaults['ctypes'] = 'noctypes'
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
