@@ -14,12 +14,12 @@ import time
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 
-common_options = '--enable-crypto --disable-gstreamer --enable-dmd'
+common_options = '--enable-crypto --disable-gstreamer'
 debug_options = '--enable-debug --enable-gczeal --disable-optimize --enable-profiling --enable-js-diagnostics'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize --enable-profiling --enable-js-diagnostics'
 opt_options = '--disable-debug --enable-optimize --disable-profiling'
 b2g_options = '--enable-application=b2g --disable-libjpeg-turbo --enable-tests' # --enable-b2g-bt --enable-b2g-camera --enable-b2g-ril
-valgrind_options = '--enable-valgrind'
+valgrind_options = '--enable-valgrind --disable-jemalloc --disable-replace-malloc'
 
 android_home = os.path.expanduser('~/software/android')
 fennec_options = ' '.join(['--enable-application=mobile/android',
