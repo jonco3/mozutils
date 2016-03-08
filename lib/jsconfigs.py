@@ -33,11 +33,15 @@ add_config('nointl',       None, '--without-intl-api')
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
 
-add_config('debug',        'opt', ('--enable-gczeal --enable-js-diagnostics ' +
-                                  '--enable-debug --disable-optimize --enable-oom-breakpoint'))
-add_config('optdebug',     'opt', ('--enable-gczeal --enable-js-diagnostics ' +
-                                  '--enable-debug --enable-optimize'))
-add_config('opt',          'opt', '--disable-debug --enable-optimize')
+add_config('debug',        'opt', ' '.join(['--enable-gczeal',
+                                            '--enable-debug',
+                                            '--disable-optimize',
+                                            '--enable-oom-breakpoint']))
+add_config('optdebug',     'opt', ' '.join(['--enable-gczeal',
+                                            '--enable-debug',
+                                            '--enable-optimize']))
+add_config('opt',          'opt', ' '.join(['--disable-debug',
+                                            '--enable-optimize']))
 config_group_defaults['opt'] = 'debug'
 
 add_config('clang',        'compiler', None, 'clang', 'clang++')
