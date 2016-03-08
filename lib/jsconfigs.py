@@ -24,6 +24,7 @@ x86_options = '--target=i686-pc-linux'
 arm_options = '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api'
 
 add_config('armsim',       None, '--enable-simulator=arm')
+add_config('armsim64',     None, '--enable-simulator=arm64')
 add_config('nounified',    None, '--disable-unified-compilation')
 add_config('noion',        None, '--disable-ion')
 add_config('gctrace',      None, '--enable-gc-trace')
@@ -63,9 +64,11 @@ config_group_defaults['ctypes'] = 'noctypes'
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
-    '--enable-warnings-as-errors',
     '--enable-posix-nspr-emulation'
 ])
+
+if sys.platform == 'darwin':
+    common_options += ' --enable-warnings-as-errors'
 
 def get_configs_from_args(args):
     """
