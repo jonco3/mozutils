@@ -47,7 +47,9 @@ if os.path.isfile('.cloned-from') and args.sync:
 
 os.chdir("js/src")
 
-if not os.path.isfile('configure') or os.path.getmtime('configure.in') > os.path.getmtime('configure'):
+if not os.path.isfile('configure') or \
+   os.path.getmtime('configure.in') > os.path.getmtime('configure') or \
+   os.path.getmtime('old-configure.in') > os.path.getmtime('old-configure'):
     print('Autoconf')
     autoconf = which('autoconf213') or which('autoconf2.13')
     if not autoconf:
