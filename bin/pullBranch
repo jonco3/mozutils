@@ -65,4 +65,5 @@ rsync \
     --exclude .js-cache/ \
     --exclude $REMOTE_FILE \
     --exclude js/src/configure \
+    --exclude js/src/old-configure \
     $REMOTE:work/$BRANCH/ . || exit $?

@@ -48,6 +48,7 @@ if os.path.isfile('.cloned-from') and args.sync:
 os.chdir("js/src")
 
 if not os.path.isfile('configure') or \
+   not os.path.isfile('old-configure') or \
    os.path.getmtime('configure.in') > os.path.getmtime('configure') or \
    os.path.getmtime('old-configure.in') > os.path.getmtime('old-configure'):
     print('Autoconf')
