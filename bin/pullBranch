@@ -64,8 +64,8 @@ rsync \
     --exclude __pycache__/ \
     --exclude .js-cache/ \
     --exclude $REMOTE_FILE \
-    --exclude configure \
-    --exclude old-configure \
-    --exclude js/src/configure \
-    --exclude js/src/old-configure \
+    --exclude /configure \
+    --exclude /old-configure \
+    --exclude /js/src/configure \
+    --exclude /js/src/old-configure \
     $REMOTE:work/$BRANCH/ . || exit $?
