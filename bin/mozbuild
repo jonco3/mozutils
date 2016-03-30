@@ -18,6 +18,7 @@ common_options = ''
 debug_options = '--enable-debug --enable-gczeal --disable-optimize --enable-profiling'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize --enable-profiling'
 opt_options = '--disable-debug --enable-optimize --disable-profiling'
+prof_options = '--disable-debug --enable-optimize --enable-profiling'
 b2g_options = '--enable-application=b2g --disable-libjpeg-turbo --enable-tests'
 valgrind_options = '--enable-valgrind --disable-jemalloc --disable-replace-malloc'
 
@@ -38,6 +39,7 @@ build_configs = {
 parser = argparse.ArgumentParser(description = 'Build Firefox')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
+parser.add_argument('-p', '--prof', action='store_true', help = 'Profiling build')
 parser.add_argument('-V', '--valgrind', action='store_true', help = 'Build with valgrind')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
@@ -63,6 +65,8 @@ if args.optdebug:
     build_name += "-optdebug"
 elif args.opt:
     build_name += "-opt"
+elif args.prof:
+    build_name += "-prof"
 if args.valgrind:
     build_name += "-valgrind"
 if args.gcc and sys.platform == 'darwin':
@@ -137,6 +141,8 @@ if not os.path.exists(mozconfig_file):
             addOptions(optdebug_options)
         elif args.opt:
             addOptions(opt_options)
+        elif args.prof:
+            addOptions(prof_options)
         else:
             addOptions(debug_options)
 
