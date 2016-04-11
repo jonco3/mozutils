@@ -28,7 +28,7 @@ def stripTimestamp(line):
         return line
     return match.group(1)
 
-objectFileRe = re.compile("( *[\d\.:]+ )?\w+\.o")
+objectFileRe = re.compile("-o (\w+\.o)")
 
 def exit_with_code(code, message):
     sys.stderr.write(message + "\n")
@@ -69,8 +69,10 @@ def run_command(command, verbose, warnings):
                 print(directory_line)
                 directory_line = None
             print(stripTimestamp(line))
-        elif objectFileRe.match(line):
-            print(line)
+        else:
+            match = objectFileRe.search(line)
+            if match:
+                print(match.group(1))
 
     if proc.returncode:
         exit_build_failed("Command failed with returncode %d" % proc.returncode)
