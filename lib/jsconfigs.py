@@ -24,7 +24,9 @@ x86_options = '--target=i686-pc-linux'
 arm_options = '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api'
 
 add_config('armsim',       None, '--enable-simulator=arm')
-add_config('armsim64',     None, '--enable-simulator=arm64')
+add_config('arm64sim',     None, '--enable-simulator=arm64')
+add_config('mipssim',      None, '--enable-simulator=mips32')
+add_config('mips64sim',    None, '--enable-simulator=mips64')
 add_config('nounified',    None, '--disable-unified-compilation')
 add_config('noion',        None, '--disable-ion')
 add_config('gctrace',      None, '--enable-gc-trace')
@@ -43,6 +45,11 @@ add_config('optdebug',     'opt', ' '.join(['--enable-gczeal',
                                             '--enable-optimize']))
 add_config('opt',          'opt', ' '.join(['--disable-debug',
                                             '--enable-optimize']))
+
+add_config('profile',      'opt',  ' '.join(['--disable-debug',
+                                             '--enable-optimize',
+                                             '--enable-profiling',
+                                             '--enable-instruments']))
 config_group_defaults['opt'] = 'debug'
 
 add_config('clang',        'compiler', None, 'clang', 'clang++')
@@ -85,6 +92,8 @@ def get_configs_from_args(args):
         configs.append('opt')
     if args.optdebug:
         configs.append('optdebug')
+    if args.profile:
+        configs.append('profile')
 
     # Check for mutally exclusive configs
     config_groups_specified = {}

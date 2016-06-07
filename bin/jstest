@@ -19,6 +19,7 @@ from jsconfigs import *
 parser = argparse.ArgumentParser(description = 'Run SpiderMonkey tests')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
+parser.add_argument('-p', '--profile', action='store_true', help = 'Profiling build')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
@@ -55,17 +56,17 @@ if args.gczeal:
     os.environ['JS_GC_ZEAL'] = str(args.gczeal)
 
 testOptions = '--tbpl' if args.tbpl else ''
+test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
 try:
-    if args.build:
-        run_command('jsbuild ' + ' '.join(configs), True, False)
-        print('')
-
-    test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
     if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
         print("Run %s style check" % name)
         run_command("make -C %s check-style" % dir, False, False)
+        print('')
+
+    if args.build:
+        run_command('jsbuild ' + ' '.join(configs), True, False)
         print('')
 
     if args.jsapitest or test_all:
