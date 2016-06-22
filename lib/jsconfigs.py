@@ -3,18 +3,23 @@
 import sys
 
 config_names = []
-config_group = {}
+config_groups = {}
 config_options = {}
 config_compiler_exes = {}
 config_env_vars = {}
 config_group_defaults = {}
 
-def add_config(name, group, options, compiler_c_exe = None, compiler_cpp_exe = None, env_vars = None):
-    global config_names, config_group, config_options, config_compiler_exes, config_env_vars
+def add_config(name, groups, options, compiler_c_exe = None, compiler_cpp_exe = None, env_vars = None):
+    global config_names, config_groups, config_options, config_compiler_exes, config_env_vars
     assert name not in config_names
     config_names.append(name)
-    config_group[name] = group
-    config_options[name] = options if options else ''
+    config_groups[name] = groups
+    if isinstance(options, list):
+        config_options[name] = ' '.join(options)
+    elif options:
+        config_options[name] = options
+    else:
+        config_options[name] = ''
     if compiler_c_exe or compiler_cpp_exe:
         config_compiler_exes[name] = (compiler_c_exe, compiler_cpp_exe)
     if env_vars:
@@ -23,38 +28,37 @@ def add_config(name, group, options, compiler_c_exe = None, compiler_cpp_exe = N
 x86_options = '--target=i686-pc-linux'
 arm_options = '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api'
 
-add_config('armsim',       None, '--enable-simulator=arm')
-add_config('arm64sim',     None, '--enable-simulator=arm64')
-add_config('mipssim',      None, '--enable-simulator=mips32')
-add_config('mips64sim',    None, '--enable-simulator=mips64')
-add_config('nounified',    None, '--disable-unified-compilation')
-add_config('noion',        None, '--disable-ion')
-add_config('gctrace',      None, '--enable-gc-trace')
-add_config('valgrind',     None, '--enable-valgrind')
-add_config('smallchunk',   None, '--enable-small-chunk-size')
-add_config('nointl',       None, '--without-intl-api')
+add_config('armsim',       [], '--enable-simulator=arm')
+add_config('arm64sim',     [], '--enable-simulator=arm64')
+add_config('mipssim',      [], '--enable-simulator=mips32')
+add_config('mips64sim',    [], '--enable-simulator=mips64')
+add_config('nounified',    [], '--disable-unified-compilation')
+add_config('noion',        [], '--disable-ion')
+add_config('gctrace',      [], '--enable-gc-trace')
+add_config('valgrind',     [], '--enable-valgrind')
+add_config('smallchunk',   [], '--enable-small-chunk-size')
+add_config('nointl',       [], '--without-intl-api')
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
 
-add_config('debug',        'opt', ' '.join(['--enable-gczeal',
-                                            '--enable-debug',
-                                            '--disable-optimize',
-                                            '--enable-oom-breakpoint']))
-add_config('optdebug',     'opt', ' '.join(['--enable-gczeal',
-                                            '--enable-debug',
-                                            '--enable-optimize']))
-add_config('opt',          'opt', ' '.join(['--disable-debug',
-                                            '--enable-optimize']))
-
-add_config('profile',      'opt',  ' '.join(['--disable-debug',
-                                             '--enable-optimize',
-                                             '--enable-profiling',
-                                             '--enable-instruments']))
+add_config('debug',        'opt', ['--enable-gczeal',
+                                   '--enable-debug',
+                                   '--disable-optimize',
+                                   '--enable-oom-breakpoint'])
+add_config('optdebug',     'opt', ['--enable-gczeal',
+                                   '--enable-debug',
+                                   '--enable-optimize'])
+add_config('opt',          'opt', ['--disable-debug',
+                                   '--enable-optimize'])
+add_config('profile',      'opt',  ['--disable-debug',
+                                    '--enable-optimize',
+                                    '--enable-profiling',
+                                    '--enable-instruments'])
 config_group_defaults['opt'] = 'debug'
 
-add_config('clang',        'compiler', None, 'clang', 'clang++')
-add_config('gcc',          'compiler', None, 'gcc', 'g++')
-add_config('gcc47',        'compiler', None, 'gcc-4.7', 'g++-4.7')
+add_config('clang',        'compiler', [], 'clang', 'clang++')
+add_config('gcc',          'compiler', [], 'gcc', 'g++')
+add_config('gcc47',        'compiler', [], 'gcc-4.7', 'g++-4.7')
 add_config('gcc32',        'compiler', '--target=i686-pc-linux', 'gcc -m32', 'g++ -m32',
            { 'PKG_CONFIG_LIBDIR': '/usr/lib/pkgconfig', 'AR': 'ar' })
 add_config('armsf',        'compiler',
@@ -68,6 +72,19 @@ config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gc
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
 config_group_defaults['ctypes'] = 'noctypes'
+
+add_config('tsan',
+           ['opt', 'compiler'],
+           ['--disable-debug',
+            '--enable-optimize="-O2 -gline-tables-only"',
+            '--enable-llvm-hacks',
+            '--disable-jemalloc',
+            '--enable-thread-sanitizer'],
+           'clang', 'clang++',
+           {})
+#'CFLAGS': '-fsanitize=thread -fPIC -pie',
+#'CXXFLAGS': '-fsanitize=thread -fPIC -pie',
+#'LDFLAGS': '-fsanitize=thread -fPIC -pie' })
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
@@ -99,8 +116,10 @@ def get_configs_from_args(args):
     config_groups_specified = {}
     for config in configs:
         assert config in config_names
-        group = config_group[config]
-        if group:
+        groups = config_groups[config]
+        if not isinstance(groups, list):
+            groups = [groups]
+        for group in groups:
             if group in config_groups_specified:
                 sys.exit("Config %s conflicts with previous config %s" %
                          (config, config_groups_specified[group]))
