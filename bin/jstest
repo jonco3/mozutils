@@ -59,14 +59,14 @@ testOptions = '--tbpl' if args.tbpl else ''
 test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
 try:
+    if args.build:
+        run_command('jsbuild ' + ' '.join(configs), True, False)
+        print('')
 
     if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
         print("Run %s style check" % name)
         run_command("make -C %s check-style" % dir, False, False)
-        print('')
-
-    if args.build:
-        run_command('jsbuild ' + ' '.join(configs), True, False)
+        run_command("make -C %s check-masm" % dir, False, False)
         print('')
 
     if args.jsapitest or test_all:
