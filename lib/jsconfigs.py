@@ -76,12 +76,13 @@ config_group_defaults['ctypes'] = 'noctypes'
 add_config('tsan',
            ['opt', 'compiler'],
            ['--disable-debug',
-            '--enable-optimize="-O2 -gline-tables-only"',
+            '--enable-optimize',
+            '--without-intl-api',
             '--enable-llvm-hacks',
-            '--disable-jemalloc',
-            '--enable-thread-sanitizer'],
+            '--disable-jemalloc'],
            'clang', 'clang++',
-           {'CFLAGS': '-fsanitize=thread -fPIC -pie',
+           {'AR': 'ar',
+            'CFLAGS': '-fsanitize=thread -fPIC -pie',
             'CXXFLAGS': '-fsanitize=thread -fPIC -pie',
             'LDFLAGS': '-fsanitize=thread -fPIC -pie' })
 
