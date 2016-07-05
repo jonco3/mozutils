@@ -74,7 +74,8 @@ if args.gcc:
     name_elements.append("gcc")
 if args.distribute:
     name_elements.append("dist")
-
+if not name_elements:
+    name_elements.append("default")
 build_name = '-'.join(name_elements)
 build_dir = build_name + "-build"
 
