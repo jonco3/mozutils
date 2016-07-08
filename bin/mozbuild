@@ -35,6 +35,8 @@ build_configs = {
     'b2g': b2g_options
 }
 
+darwin_icecream_path = os.path.expanduser('~/software/icecc-osx-moztor')
+
 parser = argparse.ArgumentParser(description = 'Build Firefox')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
@@ -55,7 +57,11 @@ if args.opt and args.optdebug:
     sys.exit("Can't specify both --opt and --optdebug")
 
 if args.distribute:
-    ensureExe("icecc")
+    if sys.platform == 'darwin':
+        if not os.path.isdir(darwin_icecream_path):
+            sys.exit("Can't find icecream at %s" % darwin_icecream_path)
+    else:
+        ensureExe("icecc")
 
 chdir_to_source_root()
 
@@ -127,6 +133,9 @@ if not os.path.exists(mozconfig_file):
             setCompiler("gcc", "g++")
         elif args.config == 'b2g':
             setCompiler("gcc-4.6", "g++-4.6")
+        elif sys.platform == 'darwin' and args.distribute:
+            f.write("CC='%s/cc'\n" % darwin_icecream_path)
+            f.write("CXX='%s/c++'\n" % darwin_icecream_path)
         else:
             setCompiler("clang", "clang++")
 
@@ -135,9 +144,10 @@ if not os.path.exists(mozconfig_file):
         job_count = 40 if args.distribute else multiprocessing.cpu_count()
         addMakeOption("MOZ_MAKE_FLAGS=\"-s -j%d\"" % job_count)
 
-        if args.distribute:
+        if args.distribute and sys.platform != 'darwin':
             addMakeOption("'export CCACHE_PREFIX=icecc'")
-        addOptions("--with-ccache=%s" % ccache_path)
+        if not args.distribute or sys.platform != 'darwin':
+            addOptions("--with-ccache=%s" % ccache_path)
 
         addMakeOption("AUTOCONF=%s" % autoconf_path)
         addMakeOption("AUTOCLOBBER=1");
