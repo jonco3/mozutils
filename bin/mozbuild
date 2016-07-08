@@ -112,9 +112,6 @@ if not os.path.exists(mozconfig_file):
         def setCompiler(c_name, cpp_name):
             ensureExe(c_name)
             ensureExe(cpp_name)
-            if (args.distribute):
-                c_name = "icecc " + c_name
-                cpp_name = "icecc " + cpp_name
             f.write("CC='%s'\n" % c_name)
             f.write("CXX='%s'\n" % cpp_name)
 
@@ -138,9 +135,12 @@ if not os.path.exists(mozconfig_file):
         job_count = 40 if args.distribute else multiprocessing.cpu_count()
         addMakeOption("MOZ_MAKE_FLAGS=\"-s -j%d\"" % job_count)
 
+        if args.distribute:
+            addMakeOption("'export CCACHE_PREFIX=icecc'")
+        addOptions("--with-ccache=%s" % ccache_path)
+
         addMakeOption("AUTOCONF=%s" % autoconf_path)
         addMakeOption("AUTOCLOBBER=1");
-        addOptions("--with-ccache=%s" % ccache_path)
         addOptions(common_options)
 
         if args.optdebug:
