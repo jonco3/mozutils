@@ -33,6 +33,8 @@ if [ ! -f $TEST ]; then
     exit 1
 fi
 
+export JSGC_DISABLE_POISONING=1
+
 sync
 sleep 1
 
