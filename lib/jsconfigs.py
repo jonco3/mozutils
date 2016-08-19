@@ -82,9 +82,9 @@ add_config('tsan',
             '--disable-jemalloc'],
            'clang', 'clang++',
            {'AR': 'ar',
-            'CFLAGS': '-fsanitize=thread -fPIC -pie',
-            'CXXFLAGS': '-fsanitize=thread -fPIC -pie',
-            'LDFLAGS': '-fsanitize=thread -fPIC -pie' })
+            'CFLAGS': '-fsanitize=thread -fPIC',
+            'CXXFLAGS': '-fsanitize=thread -fPIC',
+            'LDFLAGS': '-fsanitize=thread -fPIC' })
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
