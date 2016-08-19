@@ -141,7 +141,7 @@ if not os.path.exists(mozconfig_file):
 
         addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
 
-        job_count = 60 if args.distribute else multiprocessing.cpu_count()
+        job_count = 100 if args.distribute else multiprocessing.cpu_count()
         addMakeOption("MOZ_MAKE_FLAGS=\"-s -j%d\"" % job_count)
 
         if args.distribute and sys.platform != 'darwin':
