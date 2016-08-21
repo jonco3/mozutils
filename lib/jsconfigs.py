@@ -73,6 +73,20 @@ add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
 config_group_defaults['ctypes'] = 'noctypes'
 
+if sys.platform == 'darwin':
+    llvm_path = '/usr/local/opt/llvm38/lib/llvm-3.8'
+    tsan_env = {
+        'AR': 'ar',
+        'CFLAGS': '-fsanitize=thread -fPIC -pie',
+        'CXXFLAGS': '-fsanitize=thread -fPIC -pie -I%s/include/c++/v1' % llvm_path,
+        'LDFLAGS': '-fsanitize=thread -fPIC -pie -L%s/lib' % llvm_path }
+else:
+    tsan_env = {
+        'AR': 'ar',
+        'CFLAGS': '-fsanitize=thread -fPIC',
+        'CXXFLAGS': '-fsanitize=thread -fPIC',
+        'LDFLAGS': '-fsanitize=thread -fPIC' }
+
 add_config('tsan',
            ['opt', 'compiler'],
            ['--disable-debug',
@@ -80,11 +94,8 @@ add_config('tsan',
             '--without-intl-api',
             '--enable-llvm-hacks',
             '--disable-jemalloc'],
-           'clang', 'clang++',
-           {'AR': 'ar',
-            'CFLAGS': '-fsanitize=thread -fPIC',
-            'CXXFLAGS': '-fsanitize=thread -fPIC',
-            'LDFLAGS': '-fsanitize=thread -fPIC' })
+           'clang-3.8', 'clang++-3.8',
+           tsan_env)
 
 common_options = ' '.join([
     '--with-ccache=`which ccache`',
