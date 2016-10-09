@@ -18,6 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 from jsconfigs import *
 
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
