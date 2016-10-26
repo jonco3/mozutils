@@ -1,5 +1,6 @@
 # Configurations for SpiderMonkey builds
 
+import os
 import sys
 
 config_names = []
@@ -69,6 +70,15 @@ add_config('armhf',        'compiler',
            'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
 config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gcc'
 
+if sys.platform == 'darwin':
+    darwin_icecream_path = os.path.expanduser('~/software/icecc-osx-moztor')
+    if not os.path.isdir(darwin_icecream_path):
+        sys.exit("Can't find icecream at %s" % darwin_icecream_path)
+    add_config('dist', 'compiler', [],
+               darwin_icecream_path + '/cc', darwin_icecream_path + '/c++')
+else:
+    add_config('dist', [], [])
+
 add_config('ctypes',       'ctypes', '--enable-ctypes')
 add_config('noctypes',     'ctypes', '--disable-ctypes')
 config_group_defaults['ctypes'] = 'noctypes'
@@ -122,6 +132,8 @@ def get_configs_from_args(args):
         configs.append('optdebug')
     if args.profile:
         configs.append('profile')
+    if args.distribute:
+        configs.append('dist')
 
     # Check for mutally exclusive configs
     config_groups_specified = {}
