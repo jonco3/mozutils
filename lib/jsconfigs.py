@@ -153,6 +153,9 @@ def get_configs_from_args(args):
         if group not in config_groups_specified:
             configs.append(config_group_defaults[group])
 
+    # Make sure args.dist is in sync with dist config
+    args.dist = 'dist' in configs
+
     return configs
 
 def get_build_name(configs):

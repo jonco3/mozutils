@@ -47,7 +47,7 @@ parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnin
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('-i', '--distribute', action='store_true', help = 'Distribute build using icecc')
+parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
@@ -56,7 +56,7 @@ args = parser.parse_args()
 if args.opt and args.optdebug:
     sys.exit("Can't specify both --opt and --optdebug")
 
-if args.distribute:
+if args.dist:
     if sys.platform == 'darwin':
         if not os.path.isdir(darwin_icecream_path):
             sys.exit("Can't find icecream at %s" % darwin_icecream_path)
@@ -78,7 +78,7 @@ if args.valgrind:
     name_elements.append("valgrind")
 if args.gcc:
     name_elements.append("gcc")
-if args.distribute:
+if args.dist:
     name_elements.append("dist")
 if not name_elements:
     name_elements.append("default")
@@ -133,7 +133,7 @@ if not os.path.exists(mozconfig_file):
             setCompiler("gcc", "g++")
         elif args.config == 'b2g':
             setCompiler("gcc-4.6", "g++-4.6")
-        elif sys.platform == 'darwin' and args.distribute:
+        elif sys.platform == 'darwin' and args.dist:
             f.write("CC='%s/cc'\n" % darwin_icecream_path)
             f.write("CXX='%s/c++'\n" % darwin_icecream_path)
         else:
@@ -141,12 +141,12 @@ if not os.path.exists(mozconfig_file):
 
         addMakeOption("MOZ_OBJDIR=@TOPSRCDIR@/%s-build" % build_name)
 
-        job_count = 100 if args.distribute else multiprocessing.cpu_count()
+        job_count = 100 if args.dist else multiprocessing.cpu_count()
         addMakeOption("MOZ_MAKE_FLAGS=\"-s -j%d\"" % job_count)
 
-        if args.distribute and sys.platform != 'darwin':
+        if args.dist and sys.platform != 'darwin':
             addMakeOption("'export CCACHE_PREFIX=icecc'")
-        if not args.distribute or sys.platform != 'darwin':
+        if not args.dist or sys.platform != 'darwin':
             addOptions("--with-ccache=%s" % ccache_path)
 
         addMakeOption("AUTOCONF=%s" % autoconf_path)

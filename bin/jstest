@@ -24,7 +24,6 @@ parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute buil
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
-parser.add_argument('-i', '--distribute', action='store_true', help = 'Distribute build using icecc')
 
 parser.add_argument('-y', '--stylecheck', action='store_true', help = 'Run style check')
 parser.add_argument('-a', '--jsapitest', action='store_true', help = 'Run jsapi tests')
@@ -62,7 +61,10 @@ test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args
 
 try:
     if args.build:
-        run_command('jsbuild ' + ' '.join(configs), True, False)
+        command = ['jsbuild'] + configs
+        if args.clean:
+            command.append('--clean')
+        run_command(' '.join(command), True, False)
         print('')
 
     if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
