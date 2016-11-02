@@ -30,7 +30,7 @@ parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings'
                     help = 'Hide warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('-i', '--distribute', action='store_true', help = 'Distribute build using icecc')
+parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
 parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
@@ -97,13 +97,13 @@ if not os.path.isdir(dir):
     run_command('../configure ' + opts, args.verbose, args.warnings)
     os.chdir('..')
 
-if args.distribute and sys.platform != 'darwin':
+if args.dist and sys.platform != 'darwin':
     ensureExe("icecc")
     os.environ['CCACHE_PREFIX'] = 'icecc'
 
 print('Build ' + name)
 os.chdir(dir)
-job_count = 100 if args.distribute else multiprocessing.cpu_count()
+job_count = 100 if args.dist else multiprocessing.cpu_count()
 run_command('nice make -j%d' % job_count, args.verbose, args.warnings)
 if not os.path.lexists('shell'):
     os.symlink('dist/bin/js', 'shell')

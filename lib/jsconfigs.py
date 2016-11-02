@@ -132,7 +132,7 @@ def get_configs_from_args(args):
         configs.append('optdebug')
     if args.profile:
         configs.append('profile')
-    if args.distribute:
+    if args.dist:
         configs.append('dist')
 
     # Check for mutally exclusive configs
