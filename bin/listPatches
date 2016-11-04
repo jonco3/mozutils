@@ -91,10 +91,10 @@ for hostName in os.listdir(patchesDir):
 
         index = 0
         for patchName in read_series_file(branchPath):
-            patchPath = os.path.join(branchPath, patchName)
-            if patchName == "series" or patchName == "status":
+            if patchName.startswith('try-'):
                 continue
 
+            patchPath = os.path.join(branchPath, patchName)
             if not os.path.isfile(patchPath):
                 print("Can't read file: " + patchPath)
                 continue
@@ -127,9 +127,6 @@ patches = [ patchesByName[name][0] for name in patchesByName ]
 patches.sort(comparePatchesByTime if args.sort == 'time' else comparePatchesByPosition)
 
 for patch in patches:
-    if patch.name.startswith('try-'):
-        continue
-
     timestr = time.ctime(patch.mtime)
     print("%s %s %2d %s" % (timestr, patch.dir, patch.index, patch.name))
 

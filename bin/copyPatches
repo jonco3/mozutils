@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# todo: need host alias - store in .file?
-# todo: use 
-
 SOURCE=~/work
 DEST=~/shared/patches
 HOSTALIAS=~/.hostalias
@@ -52,11 +49,23 @@ for dir in `ls`; do
         exit 1
     fi
 
-    rsync -tc $patches/* $backup
+    rsync --checksum --times $patches/* $backup || exit 1
+
+    # Delete old patches.  rsync --delete doesn't work without --dirs or
+    # --recursive.
     for file in `ls $backup`; do
         path=$patches/$file
         if [ ! -e $patches/$file ]; then
             rm $backup/$file
         fi
     done
+
+    # Store qparent changeset if present so we can recreate the branch.
+    (
+        cd $dir
+        qparent=`hg log --template '{rev}:{node|short}\n' -r qparent 2>/dev/null`
+        if [ $? -eq 0 ] && [ -n "$qparent" ]; then
+            echo $qparent | cut -d: -f2 > $backup/qparent
+        fi
+    )
 done
