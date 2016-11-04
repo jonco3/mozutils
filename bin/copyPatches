@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# todo: need host alias - store in .file?
+# todo: use 
+
+SOURCE=~/work
+DEST=~/shared/patches
+HOSTALIAS=~/.hostalias
+
+if [ ! -d $SOURCE ]; then
+    echo "Can't find source dir: $SOURCE"
+    exit 1
+fi
+
+if [ ! -d $DEST ]; then
+    echo "Can't find dest dir: $DEST"
+    exit 1
+fi
+
+if [ ! -f $HOSTALIAS ]; then
+    echo "Can't find host alias in: $HOSTALIAS"
+    exit 1
+fi
+
+# check for modified files in current repo
+if [ -n "$(hg status -m 2> /dev/null)" ]; then
+    echo "Modified files exist, aborting"
+    exit 1
+fi
+
+HOST=`cat $HOSTALIAS`
+
+cd $SOURCE
+for dir in `ls`; do
+    if [ ! -d $dir ]; then
+        continue
+    fi
+    name=${dir##*/}
+    repo=$dir/.hg
+    patches=$repo/patches
+    if [ ! -d $patches ]; then
+        continue
+    fi
+    if [ -z "$(ls -A $patches)" ]; then
+        continue
+    fi
+
+    backup=$DEST/$HOST/$name
+    mkdir -p $backup
+    if [ ! -d $backup ]; then
+        echo "Failed to create directory: $backup"
+        exit 1
+    fi
+
+    rsync -tc $patches/* $backup
+    for file in `ls $backup`; do
+        path=$patches/$file
+        if [ ! -e $patches/$file ]; then
+            rm $backup/$file
+        fi
+    done
+done
