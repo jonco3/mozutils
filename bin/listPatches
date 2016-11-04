@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+
+# List most recent versions of patches in my dropbox
+
+import argparse
+import os.path
+import sys
+import time
+
+parser = argparse.ArgumentParser(description = 'List shared mq patches')
+parser.add_argument('-a', '--all', action='store_true',
+                    help='Show patches for all branches, not just current')
+parser.add_argument('-t', '--time-sort', dest='sort', action='store_const', const='time',
+                    help='Sort patches by latest modification time')
+parser.add_argument('-p', '--position-sort', action='store_const', const='position',
+                    help='Sort patches by branch and index')
+
+args = parser.parse_args()
+
+patchesDirConfig = '~/shared/patches'
+
+patchesDir = os.path.expanduser(patchesDirConfig)
+if not os.path.isdir(patchesDir):
+    sys.exit("Can't find dir: " + patchesDir)
+
+class Patch:
+    def __init__(self, name, dir, mtime, index):
+        self.name = name
+        self.dir = dir
+        self.mtime = mtime
+        self.index = index
+        self.cachedContent = None
+
+    def path(self):
+        return os.path.join(patchesDir, self.dir, self.name)
+
+    def readContent(self):
+        lines = []
+        with open(self.path()) as f:
+            header = True
+            for line in f:
+                if not header or not line.startswith('#'):
+                    lines.append(line.rstrip())
+                    header = False
+        return '\n'.join(lines)
+
+    def content(self):
+        if not self.cachedContent:
+            self.cachedContent = self.readContent()
+        return self.cachedContent
+
+    def friendlyPath(self):
+        return os.path.join(patchesDirConfig, self.dir, self.name)
+
+def get_current_branch():
+    lastDir = os.getcwd()
+    while not os.path.isdir(".hg"):
+        os.chdir("..")
+        currentDir = os.getcwd()
+        if currentDir == lastDir:
+            sys.exit("Please run from within a mercurial repo or use --all to view all branches")
+        lastDir = currentDir
+    currentDir = os.getcwd()
+    return os.path.basename(currentDir)
+
+def read_series_file(path):
+    path = os.path.join(path, "series")
+    if not os.path.isfile(path):
+        print("Can't read series file: " + path)
+        return None
+
+    with open(path) as f:
+        return map(lambda s: s.rstrip(), f.readlines())
+
+selectedBranch = None if args.all else get_current_branch()
+
+patchesByName = {}
+
+for hostName in os.listdir(patchesDir):
+    hostPath = os.path.join(patchesDir, hostName)
+    if not os.path.isdir(hostPath):
+        continue
+
+    for branchName in os.listdir(hostPath):
+        branchPath = os.path.join(hostPath, branchName)
+        if not os.path.isdir(branchPath):
+            continue
+
+        if selectedBranch and selectedBranch != branchName:
+            continue
+
+        index = 0
+        for patchName in read_series_file(branchPath):
+            patchPath = os.path.join(branchPath, patchName)
+            if patchName == "series" or patchName == "status":
+                continue
+
+            if not os.path.isfile(patchPath):
+                print("Can't read file: " + patchPath)
+                continue
+
+            dir = os.path.join(hostName, branchName)
+            mtime = os.path.getmtime(patchPath)
+            patch = Patch(patchName, dir, mtime, index)
+            if patchName not in patchesByName:
+                patchesByName[patchName] = []
+            patchesByName[patchName].append(patch)
+            index += 1
+
+def comparePatchesByTime(a, b):
+    return -cmp(a.mtime, b.mtime)
+
+def comparePatchesByPosition(a, b):
+    c = cmp(a.dir, b.dir)
+    if c != 0:
+        return c
+
+    return cmp(a.index, b.index)
+
+def isSamePatch(a, b):
+    return a.content() == b.content()
+
+for name in patchesByName:
+    patchesByName[name].sort(comparePatchesByTime)
+
+patches = [ patchesByName[name][0] for name in patchesByName ]
+patches.sort(comparePatchesByTime if args.sort == 'time' else comparePatchesByPosition)
+
+for patch in patches:
+    if patch.name.startswith('try-'):
+        continue
+
+    timestr = time.ctime(patch.mtime)
+    print("%s %s %2d %s" % (timestr, patch.dir, patch.index, patch.name))
+
+    for p in patchesByName[patch.name][1:]:
+        same = "same" if isSamePatch(patch, p) else "different"
+        print("  also in %s %d (%s)" % (p.dir, p.index, same))
