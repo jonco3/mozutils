@@ -33,15 +33,25 @@ parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, che
 parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
+parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
+parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
 parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
                     help = 'Build configurations to use')
 args = parser.parse_args()
 
-configs = get_configs_from_args(args)
-name = get_build_name(configs)
-dir = name + '-build'
+if args.dir:
+    for dir in args.dir:
+        os.chdir(dir)
 
 chdir_to_source_root()
+
+if args.remote:
+    dir = os.path.basename(os.getcwd())
+    command = ['jsbuild', '--dir', 'clone', '--dir', dir] + \
+              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+    subprocess.check_call(['ssh', 'desktop'] + command)
+    sys.exit()
+
 
 if args.dry_run:
     sys.exit(0)
@@ -50,6 +60,10 @@ if os.path.isfile('.cloned-from') and args.sync:
     subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
 
 os.chdir("js/src")
+
+configs = get_configs_from_args(args)
+name = get_build_name(configs)
+dir = name + '-build'
 
 if (os.path.isfile('old-configure.in') and
     (not os.path.isfile('old-configure') or
