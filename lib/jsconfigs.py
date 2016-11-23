@@ -72,10 +72,9 @@ config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gc
 
 if sys.platform == 'darwin':
     darwin_icecream_path = os.path.expanduser('~/software/icecc-osx-moztor')
-    if not os.path.isdir(darwin_icecream_path):
-        sys.exit("Can't find icecream at %s" % darwin_icecream_path)
-    add_config('dist', 'compiler', [],
-               darwin_icecream_path + '/cc', darwin_icecream_path + '/c++')
+    if os.path.isdir(darwin_icecream_path):
+        add_config('dist', 'compiler', [],
+                   darwin_icecream_path + '/cc', darwin_icecream_path + '/c++')
 else:
     add_config('dist', [], [])
 
