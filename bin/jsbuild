@@ -41,7 +41,7 @@ args = parser.parse_args()
 
 if args.dir:
     for dir in args.dir:
-        os.chdir(dir)
+        os.chdir(dir[0])
 
 chdir_to_source_root()
 
@@ -51,7 +51,6 @@ if args.remote:
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
     subprocess.check_call(['ssh', 'desktop'] + command)
     sys.exit()
-
 
 if args.dry_run:
     sys.exit(0)
