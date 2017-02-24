@@ -59,11 +59,12 @@ fi
 echo "Syncing $REMOTE $BRANCH"
 rsync \
     --recursive --rsh=ssh --times --delete --links \
-    --exclude '*-build/' \
-    --exclude .hg/ \
+    --exclude /$REMOTE_FILE \
+    --exclude /.hg/ \
+    --exclude '/*-build/' \
+    --exclude '/js/src/*-build/' \
     --exclude __pycache__/ \
     --exclude .js-cache/ \
-    --exclude $REMOTE_FILE \
     --exclude /configure \
     --exclude /old-configure \
     --exclude /js/src/configure \

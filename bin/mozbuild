@@ -163,7 +163,7 @@ if not os.path.exists(mozconfig_file):
             addOptions(debug_options)
 
         if not args.opt and args.config != 'fennec':
-            addOptions("--enable-debug-symbols")
+            addOptions("--enable-debug-symbols --disable-install-strip")
 
         if args.valgrind:
             addOptions(valgrind_options)
