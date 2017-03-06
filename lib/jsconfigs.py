@@ -3,6 +3,8 @@
 import os
 import sys
 
+from mozutils import *
+
 config_names = []
 config_groups = {}
 config_options = {}
@@ -70,11 +72,9 @@ add_config('armhf',        'compiler',
            'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
 config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gcc'
 
-if sys.platform == 'darwin':
-    darwin_icecream_path = os.path.expanduser('~/software/icecc-osx-moztor')
-    if os.path.isdir(darwin_icecream_path):
-        add_config('dist', 'compiler', [],
-                   darwin_icecream_path + '/cc', darwin_icecream_path + '/c++')
+icecream_path = get_icecream_path()
+if icecream_path:
+    add_config('dist', 'compiler', [], icecream_path + '/cc', icecream_path + '/c++')
 else:
     add_config('dist', [], [])
 
@@ -137,7 +137,7 @@ def get_configs_from_args(args):
     # Check for mutally exclusive configs
     config_groups_specified = {}
     for config in configs:
-        assert config in config_names
+        assert config in config_names, "Bad config: " + config
         groups = config_groups[config]
         if not isinstance(groups, list):
             groups = [groups]

@@ -86,3 +86,11 @@ def chdir_to_source_root():
         if currentDir == lastDir:
             sys.exit('Please run from within the mozilla source tree')
         lastDir = currentDir
+
+def get_icecream_path():
+    path = which('icecc')
+    if path:
+        path = os.path.dirname(path)
+        if sys.platform == 'darwin':
+            path = os.path.dirname(path)
+    return path

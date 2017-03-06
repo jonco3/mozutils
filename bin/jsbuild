@@ -30,7 +30,8 @@ parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings'
                     help = 'Hide warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
+if 'dist' in config_names:
+    parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
 parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
