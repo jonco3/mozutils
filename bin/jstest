@@ -41,6 +41,10 @@ parser.add_argument('configs', nargs = '*', choices = config_names + ['default']
                     help = 'Build configurations to use')
 args = parser.parse_args()
 
+if args.dir:
+    for dir in args.dir:
+        os.chdir(dir[0])
+
 configs = get_configs_from_args(args)
 name = get_build_name(configs)
 dir = name + '-build'
@@ -51,10 +55,6 @@ def run_test(test_name, command):
     if rc != 0:
         sys.exit("Test failed")
     print('')
-
-if args.dir:
-    for dir in args.dir:
-        os.chdir(dir[0])
 
 chdir_to_source_root()
 
