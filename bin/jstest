@@ -33,6 +33,8 @@ parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane be
 
 parser.add_argument('-B', '--no-build', action='store_false', dest='build', default=True,
                     help = 'Don\'t build before running tests')
+parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
+parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
 parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
                     help = 'Build configurations to use')
 args = parser.parse_args()
@@ -48,7 +50,19 @@ def run_test(test_name, command):
         sys.exit("Test failed")
     print('')
 
+if args.dir:
+    for dir in args.dir:
+        os.chdir(dir[0])
+
 chdir_to_source_root()
+
+if args.remote:
+    dir = os.path.basename(os.getcwd())
+    command = ['jstest', '--dir', 'clone', '--dir', dir] + \
+              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+    subprocess.check_call(['ssh', 'desktop'] + command)
+    sys.exit()
+
 os.chdir("js/src")
 
 os.environ['TIMEZONE'] = 'PST'
