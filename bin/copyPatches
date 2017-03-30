@@ -3,6 +3,7 @@
 SOURCE=~/work
 DEST=~/shared/patches
 HOSTALIAS=~/.hostalias
+VERBOSE=
 
 if [ ! -d $SOURCE ]; then
     echo "Can't find source dir: $SOURCE"
@@ -19,6 +20,16 @@ if [ ! -f $HOSTALIAS ]; then
     exit 1
 fi
 
+if [ "$1" == "-v" ]; then
+    VERBOSE=-i
+    shift
+fi
+
+if [ $# -ne 0 ]; then
+    echo "Usage: copyPatches [-v]"
+    exit 1
+fi
+
 # check for modified files in current repo
 if [ -n "$(hg status -m 2> /dev/null)" ]; then
     echo "Modified files exist, aborting"
@@ -26,6 +37,10 @@ if [ -n "$(hg status -m 2> /dev/null)" ]; then
 fi
 
 HOST=`cat $HOSTALIAS`
+
+if [ -n "$VERBOSE" ]; then
+    echo "copyPatches $SOURCE -> $DEST/$HOST"
+fi
 
 cd $SOURCE
 for dir in `ls`; do
@@ -42,6 +57,10 @@ for dir in `ls`; do
         continue
     fi
 
+    if [ -n "$VERBOSE" ]; then
+        echo "repo $dir"
+    fi
+
     backup=$DEST/$HOST/$name
     mkdir -p $backup
     if [ ! -d $backup ]; then
@@ -49,7 +68,10 @@ for dir in `ls`; do
         exit 1
     fi
 
-    rsync --checksum --times $patches/* $backup || exit 1
+    if ! rsync $VERBOSE --checksum --times $patches/* $backup; then
+        echo "rsync failed!"
+        exit 1
+    fi
 
     # Delete old patches.  rsync --delete doesn't work without --dirs or
     # --recursive.
@@ -59,13 +81,4 @@ for dir in `ls`; do
             rm $backup/$file
         fi
     done
-
-    # Store qparent changeset if present so we can recreate the branch.
-    (
-        cd $dir
-        qparent=`hg log --template '{rev}:{node|short}\n' -r qparent 2>/dev/null`
-        if [ $? -eq 0 ] && [ -n "$qparent" ]; then
-            echo $qparent | cut -d: -f2 > $backup/qparent
-        fi
-    )
 done
