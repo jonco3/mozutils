@@ -33,8 +33,6 @@ build_configs = {
     'fennec6': fennec_options + ' --with-arch=armv6'
 }
 
-icecream_path = get_icecream_path()
-
 parser = argparse.ArgumentParser(description = 'Build Firefox')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
 parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
@@ -45,8 +43,7 @@ parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnin
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
-if icecream_path:
-    parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
+parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
@@ -54,6 +51,10 @@ parser.add_argument('config', nargs ='?', choices = build_configs.keys(), defaul
 args = parser.parse_args()
 if args.opt and args.optdebug:
     sys.exit("Can't specify both --opt and --optdebug")
+
+icecream_path = get_icecream_path()
+if args.dist and not icecream_path:
+    sys.exit("icecc not found on path")
 
 chdir_to_source_root()
 
