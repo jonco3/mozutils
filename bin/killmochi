@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Kill residual processes left around after running mochitests
+
+function killMatching() {
+    local PIDS
+    PIDS=`ps -o pid,command | grep $1 | grep -v grep | cut -f1 -d' '`
+    if [ -n "$PIDS" ]; then
+        kill $PIDS
+    fi
+}
+
+killMatching _tests/testing/mochitest
+killMatching dist/bin/xpcshell
+killMatching dist/bin/ssltunnel
