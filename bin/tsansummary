@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Summarise TSAN test output
+
+VERBOSE=
+if [ "$1" == "-v" ]; then
+    VERBOSE=1
+    shift
+fi
+
+INPUT=$1
+
+if [ ! -f "$INPUT" ]; then
+    echo "usage: tsansummary [ -v ] LOG_FILE"
+    exit 1
+fi
+
+TSAN_PATTERN="^SUMMARY: ThreadSanitizer"
+FAIL_PATTERN="^FAIL -"
+
+echo "TSAN warnings:"
+echo
+if [ -n "$VERBOSE" ]; then
+    grep "$TSAN_PATTERN" $INPUT | cut -d' ' -f3- | sort | uniq -c | sort -nr
+else
+    grep "$TSAN_PATTERN" $INPUT | cut -d' ' -f3- | sort | uniq
+fi
+echo
+
+echo "Test failures:"
+echo
+grep "$FAIL_PATTERN" $INPUT | cut -d' ' -f3- | sort
