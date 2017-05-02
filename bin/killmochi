@@ -3,8 +3,9 @@
 # Kill residual processes left around after running mochitests
 
 function killMatching() {
+    local PATTERN="$1"
     local PIDS
-    PIDS=`ps -o pid,command | grep $1 | grep -v grep | cut -f1 -d' '`
+    PIDS=`ps -o pid,command | grep $PATTERN | grep -v grep | cut -f1 -d' '`
     if [ -n "$PIDS" ]; then
         kill $PIDS
     fi
