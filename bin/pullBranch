@@ -2,10 +2,16 @@
 
 # Sync a source repo from a remote machine
 
+VERBOSE=
+if [ $1 == "-v" ]; then
+    VERBOSE=$1
+    shift
+fi
+
 REMOTE_FILE=.cloned-from
 
 if [ $# -eq 1 ] || [ $# -gt 2 ]; then
-    echo "usage: pullBranch [ HOST BRANCH ]"
+    echo "usage: pullBranch [ -v ] [ HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
@@ -58,6 +64,7 @@ fi
 
 echo "Syncing $REMOTE $BRANCH"
 rsync \
+    $VERBOSE \
     --recursive --rsh=ssh --times --delete --links \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
