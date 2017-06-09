@@ -3,7 +3,7 @@
 # Sync a source repo from a remote machine
 
 VERBOSE=
-if [ $1 == "-v" ]; then
+if [ "$1" == "-v" ]; then
     VERBOSE=$1
     shift
 fi
