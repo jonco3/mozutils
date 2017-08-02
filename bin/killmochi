@@ -2,15 +2,29 @@
 
 # Kill residual processes left around after running mochitests
 
+VERBOSE=""
+if [ "$1" == "-v" ]; then
+   VERBOSE=1
+fi
+
 function killMatching() {
     local PATTERN="$1"
     local PIDS
-    PIDS=`ps -o pid,command | grep $PATTERN | grep -v grep | cut -f1 -d' '`
+    PIDS=`ps -e -o pid,command | grep $PATTERN | grep -v grep | sed 's/^[[:blank:]]*//' | cut -f1 -d' '`
+
     if [ -n "$PIDS" ]; then
-        kill $PIDS
+        if [ -n "$VERBOSE" ]; then
+            echo "Killing $PIDS which for matching $PATTERN"
+        fi
+        kill -9 $PIDS
+    else
+        if [ -n "$VERBOSE" ]; then
+            echo "Didn't match $PATTERN"
+        fi
     fi
 }
 
 killMatching _tests/testing/mochitest
 killMatching dist/bin/xpcshell
 killMatching dist/bin/ssltunnel
+killMatching dist/bin/firefox
