@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+
+# Simplistic script to generate graph of include dependencies.
+
+import argparse
+import glob
+import os.path
+import re
+import subprocess
+import sys
+import tempfile
+
+parser = argparse.ArgumentParser(description = 'Discover SpiderMonkey include graphs')
+parser.add_argument('--graph', action="store_true", help='Create include graph')
+parser.add_argument('--summary', '-s', action="store_true", help='Only print a single per file')
+parser.add_argument('--reversed', '-r', action="store_true", help='Find who includes files')
+parser.add_argument('files', metavar='FILE', nargs='*', help='Source files to process')
+args = parser.parse_args()
+
+# Match double quoted but not angle bracketed includes.
+IncludeRe = re.compile('^#include\s+"([^\s]+)"')
+
+def findAllPublicHeaders():
+    return glob.glob("public/*.h")
+
+def findAllSourceFiles():
+    Patterns = ["public/*.h",
+                "src/*.h", "src/*.cpp",
+                "src/*/*.h", "src/*/*.cpp",
+                "src/*/*/*.h", "src/*/*/*.cpp",
+                "src/*/*/*/*.h", "src/*/*/*/*.cpp"]
+    return sum([glob.glob(pattern) for pattern in Patterns], [])
+
+def getLineCount(path):
+    if not os.path.exists(path):
+        sys.exit("File not found: " + path)
+    count = 0
+    with open(path, "r") as file:
+        for line in file:
+            count += 1
+
+    return count
+
+def getIncludeDirectives(path):
+    if not os.path.exists(path):
+        sys.exit("File not found: " + path)
+    includes = []
+    with open(path, "r") as file:
+        for line in file:
+            match = IncludeRe.match(line)
+            if match:
+                includes.append(match.group(1))
+
+    return includes
+
+def shouldProcessInclude(path):
+    return (path.endswith(".h") and
+            not path.startswith("mozilla/") and
+            not path.startswith("unicode/") and
+            not path.startswith("pr") and
+            not path.endswith("Generated.h") and
+            not path.endswith(".out.h") and
+            not path.endswith("javascript-trace.h") and
+            not path in ["js-config.h",
+                         "fdlibm.h",
+                         "ffi.h",
+                         "Instruments.h",
+                         "sharkctl.h",
+                         "gdb-tests.h",
+                         "VMPI.h",
+                         "vprof.h"])
+
+def mapInclude(path):
+    if path.startswith("js/"):
+        return re.sub("^js/", "public/", path)
+    return "src/" + path
+
+def getIncludes(path):
+    return [mapInclude(include)
+            for include in getIncludeDirectives(path) if shouldProcessInclude(include)]
+
+def nameInclude(path):
+    return re.sub("^public/", "", path)
+
+def makeGraph(files, output):
+    includes = []
+    processedFiles = set()
+
+    while files:
+        file = files.pop()
+        if file in processedFiles:
+            continue
+
+        processedFiles.add(file)
+        name = nameInclude(file)
+        for target in getIncludes(file):
+            if target not in processedFiles:
+                files.append(target)
+            includes.append((name, nameInclude(target)))
+
+    f = tempfile.NamedTemporaryFile("w", delete = False)
+
+    output.write("digraph G {\n")
+    output.write("  concentrate = true;\n")
+    output.write("  rankdir = LR;\n")
+    for source, target in includes:
+        output.write('  "%s" -> "%s";\n' % (source, target))
+    output.write("}\n")
+
+def drawGraph(dotFile):
+    output = dotFile + ".png"
+
+    subprocess.run(['dot', dotFile, '-Tpng', '-o' + output], check = True)
+    print(output)
+
+    os.unlink(dotFile)
+    #os.unlink(output)
+
+def findIncludes(files):
+    totalIncludes = 0
+    totalLines = 0
+
+    includeMap = {}
+    lineCountMap = {}
+    sourceFiles = findAllSourceFiles()
+    for file in sourceFiles:
+        includeMap[file] = getIncludes(file)
+        lineCountMap[file] = getLineCount(file)
+
+    def process(file, level):
+        results.append((file, level))
+        processedFiles.add(file)
+        includeCount = 1
+        lineCount = lineCountMap[file]
+        for target in includeMap[file]:
+            if target not in processedFiles:
+                includes, lines = process(target, level + 1)
+                includeCount += includes
+                lineCount += lines
+        includeCounts[file] = includeCount
+        lineCounts[file] = lineCount
+        return includeCount, lineCount
+
+    for file in files:
+        results = []
+        processedFiles = set()
+        includeCounts = {}
+        lineCounts = {}
+        process(file, 0)
+
+        if args.summary:
+            results = results[:1]
+
+        for name, level in results:
+            print("%-40s %4d %8d" % ("  " * level + name, includeCounts[name], lineCounts[name]))
+
+        totalIncludes += includeCounts[file]
+        totalLines += lineCounts[file]
+
+    if len(files) > 1:
+            print("%-40s %4d %8d" % ("Total", totalIncludes, totalLines))
+
+def findInclusions(files):
+    includeMap = {}
+    sourceFiles = findAllSourceFiles()
+    for file in sourceFiles:
+        includes = getIncludes(file)
+        for include in includes:
+            if include not in includeMap:
+                includeMap[include] = []
+            includeMap[include].append(file)
+
+    for file in sourceFiles:
+        if file.endswith(".cpp"):
+            assert file not in includeMap, "Nothing should include source file: " + file
+
+    def process(file, level):
+        assert file in sourceFiles, "Unknown file: " + file
+        if file in processedFiles:
+            return 0
+
+        processedFiles.add(file)
+
+        results.append((file, level))
+
+        if file not in includeMap:
+            includeCounts[file] = 1
+            return 1
+
+        includeCount = 0
+
+        for inclusion in includeMap[file]:
+            includeCount += process(inclusion, level + 1)
+
+        includeCounts[file] = includeCount
+        return includeCount
+
+    for file in files:
+        results = []
+        includeCounts = {}
+        processedFiles = set()
+        process(file, 0)
+
+        if args.summary:
+            results = results[:1]
+
+        for file, level in results:
+            count = includeCounts[file]
+            if count != 0:
+                if level == 0:
+                    lines = count * getLineCount(file)
+                    print("%-60s %4d %8d" % ("  " * level + file, count, lines))
+                else:
+                    print("%-60s %4d" % ("  " * level + file, count))
+
+dirPrefix = []
+while not os.path.isfile("src/jsapi.h"):
+    dirPrefix.insert(0, os.path.basename(os.getcwd()))
+    if len(dirPrefix) > 5:
+        break
+    os.chdir("..");
+
+if not os.path.isfile("src/jsapi.h"):
+    sys.exit("Can't find SpiderMonkey source dir")
+
+if args.files:
+    dirPrefix = os.path.join(dirPrefix[0], *dirPrefix[1:])
+    filesToProcess = [os.path.normpath(os.path.join(dirPrefix, file)) for file in args.files]
+else:
+    filesToProcess = findAllPublicHeaders()
+
+if args.graph:
+    makeGraph(filesToProcess, sys.stdout)
+elif args.reversed:
+    findInclusions(filesToProcess)
+else:
+    findIncludes(filesToProcess)
