@@ -58,7 +58,7 @@ def run_command(command, verbose, warnings):
             print(line)
         elif "Entering directory" in line:
             directory_line = stripTimestamp(line)
-        elif "error:" in line or sawError:
+        elif "error:" in line or sawError or "clobber" in line:
             if directory_line:
                 print(directory_line)
                 directory_line = None

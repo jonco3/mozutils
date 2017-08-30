@@ -14,11 +14,11 @@ import time
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 
-common_options = ''
-debug_options = '--enable-debug --enable-gczeal --disable-optimize --enable-profiling'
-optdebug_options = '--enable-debug --enable-gczeal --enable-optimize --enable-profiling'
+common_options = '--enable-profiling'
+debug_options = '--enable-debug --enable-gczeal --disable-optimize'
+optdebug_options = '--enable-debug --enable-gczeal --enable-optimize'
 opt_options = '--disable-debug --enable-optimize'
-prof_options = '--disable-debug --enable-optimize --enable-profiling'
+prof_options = '--disable-debug --enable-optimize'
 valgrind_options = '--enable-valgrind --disable-jemalloc --disable-replace-malloc'
 
 android_home = os.path.expanduser('~/software/android')
@@ -138,7 +138,7 @@ if not os.path.exists(mozconfig_file):
             addOptions("--with-ccache=%s" % ccache_path)
 
         addMakeOption("AUTOCONF=%s" % autoconf_path)
-        addMakeOption("AUTOCLOBBER=1");
+        addMakeOption("AUTOCLOBBER=1")
         addOptions(common_options)
 
         if args.optdebug:
