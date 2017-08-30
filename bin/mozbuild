@@ -161,4 +161,4 @@ if not os.path.exists(mozconfig_file):
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
 print("Build %s" % build_name)
-run_command("./mach build", args.verbose, args.warnings)
+run_command(['./mach', 'build'], args.verbose, args.warnings)

@@ -33,6 +33,12 @@ parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit test
 parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
 parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
+sync_group = parser.add_mutually_exclusive_group()
+sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
+                        default='all', help = 'Don\'t sync cloned branch')
+sync_group.add_argument('-m', '--sync-js', dest='sync', action='store_const', const="js",
+                        help = 'Sync js source only before build')
+
 parser.add_argument('-B', '--no-build', action='store_false', dest='build', default=True,
                     help = 'Don\'t build before running tests')
 parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
@@ -80,13 +86,17 @@ try:
         command = ['jsbuild'] + configs
         if args.clean:
             command.append('--clean')
-        run_command(' '.join(command), True, False)
+        if not args.sync:
+            command.append('--no-sync')
+        elif args.sync == "js":
+            command.append('--sync-js')
+        run_command(command, True, False)
         print('')
 
     if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
         print("Run %s style check" % name)
-        run_command("make -C %s check-style" % dir, False, False)
-        run_command("make -C %s check-masm" % dir, False, False)
+        run_command(['make', '-C', dir, 'check-style'], False, False)
+        run_command(['make', '-C', dir, 'check-masm'], False, False)
         print('')
 
     if args.jsapitest or test_all:

@@ -59,17 +59,31 @@ if args.dist and not get_icecream_path():
 if args.dir:
     for dir in args.dir:
         os.chdir(dir[0])
+    print("Entered dir: " + os.getcwd())
 
 chdir_to_source_root()
 
 if args.remote:
     dir = os.path.basename(os.getcwd())
-    command = ['jsbuild', '--dir', 'clone', '--dir', dir] + \
+    command = ['ssh', 'desktop', 'jsbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
-    env = os.environ
-    env["TERM"] = "dumb"
-    subprocess.check_call(['ssh', 'desktop'] + command)
-    sys.exit()
+    os.environ["TERM"] = "dumb"
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    remoteDir = None
+    localDir = os.getcwd()
+    while proc.poll() == None:
+        line = proc.stdout.readline().rstrip()
+        if not remoteDir:
+            match = re.match("^Entered dir: (.+)", line)
+            if match:
+                remoteDir = match.group(1)
+                print("Remote dir: " + remoteDir)
+                continue
+        if remoteDir and line.startswith(remoteDir):
+            line = localDir + line[len(remoteDir):]
+            line = re.sub("/clone/", "/work/", line)
+        print(line)
+    sys.exit(proc.returncode)
 
 if args.dry_run:
     sys.exit(0)
@@ -138,7 +152,7 @@ if not os.path.isdir(dir):
 
     if args.verbose:
         print('configure ' + opts)
-    run_command('../configure ' + opts, args.verbose, args.warnings)
+    run_command(['../configure '] + opts.split(" "), args.verbose, args.warnings)
     os.chdir('..')
 
 if args.dist and sys.platform != 'darwin':
@@ -148,7 +162,7 @@ if args.dist and sys.platform != 'darwin':
 print('Build ' + name)
 os.chdir(dir)
 job_count = 100 if args.dist else multiprocessing.cpu_count()
-run_command('nice make -j%d' % job_count, args.verbose, args.warnings)
+run_command(['nice', 'make', '-j%d' % job_count], args.verbose, args.warnings)
 if not os.path.lexists('shell'):
     os.symlink('dist/bin/js', 'shell')
 if not os.path.lexists('jsapi-tests'):

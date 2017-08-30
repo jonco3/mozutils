@@ -44,9 +44,8 @@ def exit_fatal(message):
 
 def run_command(command, verbose, warnings):
     if verbose:
-        print(command)
-    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT,
-                            shell = True)
+        print(" ".join(command))
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     directory_line = None
     sawError = False
     while proc.poll() == None:
