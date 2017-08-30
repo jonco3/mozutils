@@ -66,6 +66,8 @@ if args.remote:
     dir = os.path.basename(os.getcwd())
     command = ['jsbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+    env = os.environ
+    env["TERM"] = "dumb"
     subprocess.check_call(['ssh', 'desktop'] + command)
     sys.exit()
 
