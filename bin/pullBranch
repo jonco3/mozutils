@@ -8,10 +8,16 @@ if [ "$1" == "-v" ]; then
     shift
 fi
 
+JS_ONLY=
+if [ "$1" == "-j" ]; then
+    JS_ONLY=$1
+    shift
+fi
+
 REMOTE_FILE=.cloned-from
 
 if [ $# -eq 1 ] || [ $# -gt 2 ]; then
-    echo "usage: pullBranch [ -v ] [ HOST BRANCH ]"
+    echo "usage: pullBranch [ -v ] [ -j ] [ HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
@@ -62,18 +68,28 @@ if [ $# -eq 2 ]; then
     echo $REMOTE > $REMOTE_FILE
 fi
 
-echo "Syncing $REMOTE $BRANCH"
+SOURCE=$REMOTE:work/$BRANCH
+TARGET=.
+JS_PATH=/js/src
+
+if [ -n "$JS_ONLY" ]; then
+    SOURCE=$SOURCE/js
+    TARGET=$TARGET/js
+    JS_PATH=/src
+fi
+
+echo "Syncing $SOURCE to $TARGET"
 rsync \
     $VERBOSE \
     --recursive --rsh=ssh --times --delete --links \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
-    --exclude '/*-build/' \
-    --exclude '/js/src/*-build/' \
+    --exclude "/*-build/" \
+    --exclude "$JS_PATH/*-build/" \
     --exclude __pycache__/ \
     --exclude .js-cache/ \
     --exclude /configure \
     --exclude /old-configure \
-    --exclude /js/src/configure \
-    --exclude /js/src/old-configure \
-    $REMOTE:work/$BRANCH/ . || exit $?
+    --exclude $JS_PATH/configure \
+    --exclude $JS_PATH/old-configure \
+    $SOURCE/ $TARGET/ || exit $?
