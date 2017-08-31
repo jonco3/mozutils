@@ -138,9 +138,9 @@ if not os.path.isdir(dir):
     os.mkdir(dir)
     os.chdir(dir)
 
-    opts = common_options
+    opts = list(common_options)
     for config in configs:
-        opts += ' ' + config_options[config]
+        opts.extend(config_options[config])
         if config in config_compiler_exes:
             c_exe, cpp_exe = config_compiler_exes[config]
             os.environ['CC'] = ensureExe(c_exe)
@@ -150,9 +150,7 @@ if not os.path.isdir(dir):
             for var in env_vars:
                 os.environ[var] = env_vars[var]
 
-    if args.verbose:
-        print('configure ' + opts)
-    run_command(['../configure '] + opts.split(" "), args.verbose, args.warnings)
+    run_command(['../configure'] + opts, args.verbose, args.warnings)
     os.chdir('..')
 
 if args.dist and sys.platform != 'darwin':

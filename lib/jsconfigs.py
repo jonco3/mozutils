@@ -18,11 +18,11 @@ def add_config(name, groups, options, compiler_c_exe = None, compiler_cpp_exe = 
     config_names.append(name)
     config_groups[name] = groups
     if isinstance(options, list):
-        config_options[name] = ' '.join(options)
-    elif options:
         config_options[name] = options
+    elif options:
+        config_options[name] = options.split(" ")
     else:
-        config_options[name] = ''
+        config_options[name] = []
     if compiler_c_exe or compiler_cpp_exe:
         config_compiler_exes[name] = (compiler_c_exe, compiler_cpp_exe)
     if env_vars:
@@ -106,10 +106,10 @@ add_config('tsan',
            'clang-3.8', 'clang++-3.8',
            tsan_env)
 
-common_options = ' '.join([
-    '--with-ccache=`which ccache`',
+common_options = [
+    '--with-ccache',
     '--enable-posix-nspr-emulation'
-])
+]
 
 if sys.platform == 'darwin':
     common_options += ' --enable-warnings-as-errors'
