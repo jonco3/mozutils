@@ -112,7 +112,7 @@ common_options = [
 ]
 
 if sys.platform == 'darwin':
-    common_options += ' --enable-warnings-as-errors'
+    common_options.append('--enable-warnings-as-errors')
 
 def get_configs_from_args(args):
     """
