@@ -99,7 +99,8 @@ if not os.path.exists(mozconfig_file):
     if not autoconf_path:
         exit_fatal("Can't find autoconf 2.13 on path")
 
-    ccache_path = ensureExe("ccache")
+    ensureExe("ccache")
+    ensureExe("sccache")
 
     with open(mozconfig_file, 'w') as f:
         if args.config != 'fennec':
@@ -135,7 +136,9 @@ if not os.path.exists(mozconfig_file):
         if args.dist and sys.platform != 'darwin':
             addMakeOption("'export CCACHE_PREFIX=icecc'")
         if not args.dist or sys.platform != 'darwin':
-            addOptions("--with-ccache=%s" % ccache_path)
+            addOptions("--with-ccache")
+
+        addMakeOption("'export RUSTC_WRAPPER=sccache'")
 
         addMakeOption("AUTOCONF=%s" % autoconf_path)
         addMakeOption("AUTOCLOBBER=1")
