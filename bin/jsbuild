@@ -58,13 +58,11 @@ if args.dist and not get_icecream_path():
 if args.dir:
     for dir in args.dir:
         os.chdir(dir[0])
-    println("Entered dir: " + os.getcwd(), flush=True)
+    println("Entered dir: " + os.getcwd())
 
 chdir_to_source_root()
 
 if args.remote:
-    println(os.environ["TERM"])
-
     dir = os.path.basename(os.getcwd())
     command = ['ssh', 'desktop', 'jsbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
