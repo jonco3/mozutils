@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Python script to build Firefox
 
@@ -85,8 +85,8 @@ if os.path.isfile('.cloned-from') and args.sync:
     subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
 
 if args.clean and os.path.exists(build_dir):
-    print("Clean " + build_name)
-    print("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
+    println("Clean " + build_name)
+    println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
     time.sleep(5);  # so I can hit ^C after I accidentally do this
     shutil.rmtree(build_dir)
 
@@ -163,5 +163,5 @@ if not os.path.exists(mozconfig_file):
 
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
-print("Build %s" % build_name)
+println("Build %s" % build_name)
 run_command(['./mach', 'build'], args.verbose, args.warnings)

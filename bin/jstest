@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # jstest: Run SpiderMonkey tests
 
@@ -15,8 +15,6 @@ import multiprocessing
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 from jsconfigs import *
-
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 parser = argparse.ArgumentParser(description = 'Run SpiderMonkey tests')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
@@ -56,11 +54,11 @@ name = get_build_name(configs)
 dir = name + '-build'
 
 def run_test(test_name, command):
-    print("Run %s %s tests" % (name, test_name))
+    println("Run %s %s tests" % (name, test_name))
     rc = subprocess.call(command, shell = True)
     if rc != 0:
         sys.exit("Test failed")
-    print('')
+    println('')
 
 chdir_to_source_root()
 
@@ -91,18 +89,18 @@ try:
         elif args.sync == "js":
             command.append('--sync-js')
         run_command(command, True, False)
-        print('')
+        println('')
 
     if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
-        print("Run %s style check" % name)
+        println("Run %s style check" % name)
         run_command(['make', '-C', dir, 'check-style'], False, False)
         run_command(['make', '-C', dir, 'check-masm'], False, False)
-        print('')
+        println('')
 
     if args.jsapitest or test_all:
-        print("Run %s jsapi tests" % name)
+        println("Run %s jsapi tests" % name)
         run_command(os.path.join(dir, 'jsapi-tests'), False, False)
-        print('')
+        println('')
 
     if args.jittest or test_all:
         run_test('jit', 'python jit-test/jit_test.py %s %s/shell' % (testOptions, dir))
@@ -115,6 +113,6 @@ try:
         run_test('octane', os.path.join('..', dir, 'shell') + ' run.js')
         os.chdir('..')
 except KeyboardInterrupt:
-    print('')
-    print('Interrupted')
+    println('')
+    println('Interrupted')
     sys.exit(1)

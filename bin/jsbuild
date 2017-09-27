@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # jsbuild: Build SpiderMonkey
 
@@ -20,8 +21,6 @@ libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
 from jsconfigs import *
-
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
 parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
@@ -59,30 +58,33 @@ if args.dist and not get_icecream_path():
 if args.dir:
     for dir in args.dir:
         os.chdir(dir[0])
-    print("Entered dir: " + os.getcwd())
+    println("Entered dir: " + os.getcwd(), flush=True)
 
 chdir_to_source_root()
 
 if args.remote:
+    println(os.environ["TERM"])
+
     dir = os.path.basename(os.getcwd())
     command = ['ssh', 'desktop', 'jsbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
-    os.environ["TERM"] = "dumb"
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     remoteDir = None
     localDir = os.getcwd()
-    while proc.poll() == None:
-        line = proc.stdout.readline().rstrip()
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        line = line.rstrip();
         if not remoteDir:
             match = re.match("^Entered dir: (.+)", line)
             if match:
                 remoteDir = match.group(1)
-                print("Remote dir: " + remoteDir)
+                println("Remote dir: " + remoteDir)
                 continue
         if remoteDir and line.startswith(remoteDir):
             line = localDir + line[len(remoteDir):]
             line = re.sub("/clone/", "/work/", line)
-        print(line)
+        line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
+        println(line)
+    proc.wait()
     sys.exit(proc.returncode)
 
 if args.dry_run:
@@ -114,27 +116,27 @@ if (os.path.isfile('old-configure.in') and
      os.path.getmtime('old-configure.in') > os.path.getmtime('old-configure'))) or \
     (not os.path.isfile('configure') or
      os.path.getmtime('configure.in') > os.path.getmtime('configure')):
-    print('Autoconf')
+    println('Autoconf')
     autoconf = which('autoconf213') or which('autoconf2.13')
     if not autoconf:
         exit_fatal('Can\'t find autoconf 2.13')
     subprocess.check_call(autoconf)
 
-    print('Clean all')
+    println('Clean all')
     args.clean = False
     for build in glob.glob('*-build'):
         if os.path.isdir(build):
             shutil.rmtree(build)
 
 if args.clean and os.path.exists(dir):
-    print('Clean ' + name)
-    print("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
+    println('Clean ' + name)
+    println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
     time.sleep(5);  # so I can hit ^C after I accidentally do this
     if os.path.isdir(dir):
         shutil.rmtree(dir)
 
 if not os.path.isdir(dir):
-    print('Configure ' + name)
+    println('Configure ' + name)
     os.mkdir(dir)
     os.chdir(dir)
 
@@ -157,7 +159,7 @@ if args.dist and sys.platform != 'darwin':
     ensureExe("icecc")
     os.environ['CCACHE_PREFIX'] = 'icecc'
 
-print('Build ' + name)
+println('Build ' + name)
 os.chdir(dir)
 job_count = 100 if args.dist else multiprocessing.cpu_count()
 run_command(['nice', 'make', '-j%d' % job_count], args.verbose, args.warnings)

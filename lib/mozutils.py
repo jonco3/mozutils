@@ -1,9 +1,13 @@
 # Common functions for python build scripts
 
-import re
+import io
 import os
-import sys
+import re
 import subprocess
+import sys
+
+def println(str):
+    print(str, flush = True)
 
 # based on http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -44,36 +48,37 @@ def exit_fatal(message):
 
 def run_command(command, verbose, warnings):
     if verbose:
-        print(" ".join(command))
+        println(" ".join(command))
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     directory_line = None
     sawError = False
-    while proc.poll() == None:
-        line = proc.stdout.readline().rstrip()
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        line = line.rstrip();
         if not line:
             continue
 
         if verbose:
-            print(line)
+            println(line)
         elif "Entering directory" in line:
             directory_line = stripTimestamp(line)
         elif "error:" in line or sawError or "clobber" in line:
             if directory_line:
-                print(directory_line)
+                println(directory_line)
                 directory_line = None
-            print(stripTimestamp(line))
+            println(stripTimestamp(line))
             sawError = True
         elif warnings and "warning:" in line:
             if directory_line:
-                print(directory_line)
+                println(directory_line)
                 directory_line = None
-            print(stripTimestamp(line))
+            println(stripTimestamp(line))
         else:
             match = objectFileRe.search(line)
             if match:
                 name = match.group(1) if match.group(1) else match.group(2)
-                print("  %s" % name)
+                println("  %s" % name)
 
+    proc.wait()
     if proc.returncode:
         exit_build_failed("Command failed with returncode %d" % proc.returncode)
 

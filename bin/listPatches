@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # List most recent versions of patches in my dropbox
 
@@ -107,24 +107,20 @@ for hostName in os.listdir(patchesDir):
             patchesByName[patchName].append(patch)
             index += 1
 
-def comparePatchesByTime(a, b):
-    return -cmp(a.mtime, b.mtime)
+def patchModificationTime(p):
+    return p.mtime
 
-def comparePatchesByPosition(a, b):
-    c = cmp(a.dir, b.dir)
-    if c != 0:
-        return c
-
-    return cmp(a.index, b.index)
+def patchPosition(p):
+    return p.dir, p.index
 
 def isSamePatch(a, b):
     return a.content() == b.content()
 
 for name in patchesByName:
-    patchesByName[name].sort(comparePatchesByTime)
+    patchesByName[name].sort(key = patchModificationTime)
 
 patches = [ patchesByName[name][0] for name in patchesByName ]
-patches.sort(comparePatchesByTime if args.sort == 'time' else comparePatchesByPosition)
+patches.sort(key = patchModificationTime if args.sort == 'time' else patchPosition)
 
 for patch in patches:
     timestr = time.ctime(patch.mtime)
