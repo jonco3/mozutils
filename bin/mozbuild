@@ -58,6 +58,9 @@ if args.dist and not icecream_path:
 
 chdir_to_source_root()
 
+default_compiler = 'clang' if sys.platform == 'darwin' else 'gcc'
+compiler = 'gcc' if args.gcc else default_compiler
+
 name_elements = []
 if args.config != 'default':
     name_elements.append(args.config)
@@ -69,7 +72,7 @@ elif args.prof:
     name_elements.append("prof")
 if args.valgrind:
     name_elements.append("valgrind")
-if args.gcc:
+if compiler != default_compiler and args.gcc:
     name_elements.append("gcc")
 if args.dist:
     name_elements.append("dist")
@@ -120,11 +123,11 @@ if not os.path.exists(mozconfig_file):
                 for option in options_string.split(' '):
                     f.write("ac_add_options %s\n" % option)
 
-        if args.gcc:
-            setCompiler("gcc", "g++")
-        elif sys.platform == 'darwin' and args.dist:
+        if sys.platform == 'darwin' and args.dist:
             f.write("CC='%s/cc'\n" % icecream_path)
             f.write("CXX='%s/c++'\n" % icecream_path)
+        elif compiler == 'gcc':
+            setCompiler("gcc", "g++")
         else:
             setCompiler("clang", "clang++")
 
