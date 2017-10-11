@@ -31,27 +31,31 @@ def findAllSourceFiles():
                 "src/*/*/*/*.h", "src/*/*/*/*.cpp"]
     return sum([glob.glob(pattern) for pattern in Patterns], [])
 
-def getLineCount(path):
+cachedFileInfo = {}
+
+def readFileInfo(path):
+    assert path not in cachedFileInfo
     if not os.path.exists(path):
         sys.exit("File not found: " + path)
-    count = 0
-    with open(path, "r") as file:
-        for line in file:
-            count += 1
-
-    return count
-
-def getIncludeDirectives(path):
-    if not os.path.exists(path):
-        sys.exit("File not found: " + path)
+    lineCount = 0
     includes = []
     with open(path, "r") as file:
         for line in file:
+            lineCount += 1
             match = IncludeRe.match(line)
             if match:
                 includes.append(match.group(1))
+    cachedFileInfo[path] = lineCount, includes
 
-    return includes
+def getLineCount(path):
+    if path not in cachedFileInfo:
+        readFileInfo(path)
+    return cachedFileInfo[path][0]
+
+def getIncludeDirectives(path):
+    if path not in cachedFileInfo:
+        readFileInfo(path)
+    return cachedFileInfo[path][1]
 
 def shouldProcessInclude(path):
     return (path.endswith(".h") and
@@ -116,23 +120,19 @@ def drawGraph(dotFile):
     os.unlink(dotFile)
     #os.unlink(output)
 
+def pathWidth(results):
+    return max([2 * level + len(name) for name, level in results]) + 2
+
 def findIncludes(files):
     totalIncludes = 0
     totalLines = 0
-
-    includeMap = {}
-    lineCountMap = {}
-    sourceFiles = findAllSourceFiles()
-    for file in sourceFiles:
-        includeMap[file] = getIncludes(file)
-        lineCountMap[file] = getLineCount(file)
 
     def process(file, level):
         results.append((file, level))
         processedFiles.add(file)
         includeCount = 1
-        lineCount = lineCountMap[file]
-        for target in includeMap[file]:
+        lineCount = getLineCount(file)
+        for target in getIncludes(file):
             if target not in processedFiles:
                 includes, lines = process(target, level + 1)
                 includeCount += includes
@@ -151,8 +151,10 @@ def findIncludes(files):
         if args.summary:
             results = results[:1]
 
+        width = pathWidth(results)
         for name, level in results:
-            print("%-40s %4d %8d" % ("  " * level + name, includeCounts[name], lineCounts[name]))
+            indentedName = "  " * level + name
+            print("%-*s %4d %8d" % (width, indentedName, includeCounts[name], lineCounts[name]))
 
         totalIncludes += includeCounts[file]
         totalLines += lineCounts[file]
@@ -204,14 +206,16 @@ def findInclusions(files):
         if args.summary:
             results = results[:1]
 
+        width = pathWidth(results)
         for file, level in results:
             count = includeCounts[file]
+            indentedFile = "  " * level + file
             if count != 0:
                 if level == 0:
                     lines = count * getLineCount(file)
-                    print("%-60s %4d %8d" % ("  " * level + file, count, lines))
+                    print("%-*s %4d %8d" % (width, indentedFile, count, lines))
                 else:
-                    print("%-60s %4d" % ("  " * level + file, count))
+                    print("%-*s %4d" % (width, indentedFile, count))
 
 dirPrefix = []
 while not os.path.isfile("src/jsapi.h"):
