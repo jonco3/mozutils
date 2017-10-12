@@ -34,8 +34,6 @@ def findAllSourceFiles():
             if file.endswith(".cpp") or file.endswith(".h"):
                 paths.append(os.path.join(root, file))
 
-    print(len(list(filter(lambda p: p.endswith(".cpp"), paths))))
-    sys.exit(0)
     return paths
 
 cachedFileInfo = {}
