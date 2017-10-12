@@ -24,12 +24,19 @@ def findAllPublicHeaders():
     return glob.glob("public/*.h")
 
 def findAllSourceFiles():
-    Patterns = ["public/*.h",
-                "src/*.h", "src/*.cpp",
-                "src/*/*.h", "src/*/*.cpp",
-                "src/*/*/*.h", "src/*/*/*.cpp",
-                "src/*/*/*/*.h", "src/*/*/*/*.cpp"]
-    return sum([glob.glob(pattern) for pattern in Patterns], [])
+    def dirContainsSource(name):
+        return "test" not in name and "build" not in name
+
+    paths = glob.glob("public/*.h")
+    for root, dirs, files in os.walk("src"):
+        dirs[:] = filter(dirContainsSource, dirs)
+        for file in files:
+            if file.endswith(".cpp") or file.endswith(".h"):
+                paths.append(os.path.join(root, file))
+
+    print(len(list(filter(lambda p: p.endswith(".cpp"), paths))))
+    sys.exit(0)
+    return paths
 
 cachedFileInfo = {}
 
