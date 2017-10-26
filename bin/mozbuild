@@ -96,7 +96,7 @@ if args.clean and os.path.exists(build_dir):
 if not os.path.exists(build_dir):
     os.makedirs(build_dir)
 
-mozconfig_file = build_dir + "/mozconfig"
+mozconfig_file = "mozconfig-" + build_name
 if not os.path.exists(mozconfig_file):
     autoconf_path = which("autoconf213") or which("autoconf2.13")
     if not autoconf_path:
