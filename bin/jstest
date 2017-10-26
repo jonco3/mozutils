@@ -91,7 +91,7 @@ try:
         run_command(command, True, False)
         println('')
 
-    if (args.stylecheck or test_all) and os.path.exists("../../.hg"):
+    if (args.stylecheck) and os.path.exists("../../.hg"):
         println("Run %s style check" % name)
         run_command(['make', '-C', dir, 'check-style'], False, False)
         run_command(['make', '-C', dir, 'check-masm'], False, False)
