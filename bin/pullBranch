@@ -84,6 +84,7 @@ rsync \
     --recursive --rsh=ssh --times --delete --links \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
+    --exclude "/mozconfig-*" \
     --exclude "/*-build/" \
     --exclude "$JS_PATH/*-build/" \
     --exclude __pycache__/ \
