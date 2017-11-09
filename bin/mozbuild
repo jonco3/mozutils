@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Python script to build Firefox
 
@@ -46,6 +47,8 @@ parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, che
 parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
                     help = 'Don\'t sync cloned branch')
+parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
+parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
                     help = 'Build config to use')
 args = parser.parse_args()
@@ -56,7 +59,35 @@ icecream_path = get_icecream_path()
 if args.dist and not icecream_path:
     sys.exit("icecc not found on path")
 
+if args.dir:
+    for dir in args.dir:
+        os.chdir(dir[0])
+    println("Entered dir: " + os.getcwd())
+
 chdir_to_source_root()
+
+if args.remote:
+    dir = os.path.basename(os.getcwd())
+    command = ['ssh', 'desktop', 'mozbuild', '--dir', 'clone', '--dir', dir] + \
+              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    remoteDir = None
+    localDir = os.getcwd()
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        line = line.rstrip();
+        if not remoteDir:
+            match = re.match("^Entered dir: (.+)", line)
+            if match:
+                remoteDir = match.group(1)
+                println("Remote dir: " + remoteDir)
+                continue
+        if remoteDir and line.startswith(remoteDir):
+            line = localDir + line[len(remoteDir):]
+            line = re.sub("/clone/", "/work/", line)
+        line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
+        println(line)
+    proc.wait()
+    sys.exit(proc.returncode)
 
 default_compiler = 'clang' if sys.platform == 'darwin' else 'gcc'
 compiler = 'gcc' if args.gcc else default_compiler
