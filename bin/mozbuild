@@ -124,7 +124,6 @@ if os.path.isfile('.cloned-from') and args.sync:
     if args.sync == "dom":
         cmd.append("-d")
     subprocess.check_call(cmd)
-    subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
 
 if args.clean and os.path.exists(build_dir):
     println("Clean " + build_name)
