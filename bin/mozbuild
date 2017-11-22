@@ -12,7 +12,9 @@ import multiprocessing
 import time
 
 # Import common functions
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
+binDir = os.path.dirname(__file__)
+libDir = os.path.join(binDir, '..', 'lib')
+sys.path.append(libDir)
 from mozutils import *
 
 common_options = '--enable-profiling'
@@ -45,8 +47,10 @@ parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all bui
 parser.add_argument('-g', '--gcc', action='store_true', help = 'Force use of GCC rather than Clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
-parser.add_argument('-S', '--no-sync', action='store_false', dest='sync', default=True,
-                    help = 'Don\'t sync cloned branch')
+parser.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
+                    default='all', help = 'Don\'t sync cloned branch')
+parser.add_argument('-m', '--sync-dom-only', dest='sync', action='store_const', const="dom",
+                    help = 'Sync dom source only before build')
 parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
 parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
@@ -116,6 +120,10 @@ if args.dry_run:
     sys.exit(0)
 
 if os.path.isfile('.cloned-from') and args.sync:
+    cmd = [ os.path.join(binDir, 'pullBranch') ]
+    if args.sync == "dom":
+        cmd.append("-d")
+    subprocess.check_call(cmd)
     subprocess.check_call(os.path.join(os.path.dirname(__file__), 'pullBranch'))
 
 if args.clean and os.path.exists(build_dir):

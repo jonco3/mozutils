@@ -38,7 +38,7 @@ parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute buil
 sync_group = parser.add_mutually_exclusive_group()
 sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
                         default='all', help = 'Don\'t sync cloned branch')
-sync_group.add_argument('-m', '--sync-js', dest='sync', action='store_const', const="js",
+sync_group.add_argument('-m', '--sync-js-only', dest='sync', action='store_const', const="js",
                         help = 'Sync js source only before build')
 
 parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
