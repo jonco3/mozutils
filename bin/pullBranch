@@ -2,26 +2,42 @@
 
 # Sync a source repo from a remote machine
 
+set -euf -o pipefail
+
+REMOTE_FILE=.cloned-from
+
 VERBOSE=
-if [ "$1" == "-v" ]; then
+if [ $# -gt 0 ] && [ "$1" == "-v" ]; then
     VERBOSE=$1
     shift
 fi
 
-JS_ONLY=
-DOM_ONLY=
-if [ "$1" == "-j" ]; then
-    JS_ONLY=$1
+DIR=.
+if [ $# -gt 0 ] && [ "$1" == "-j" ]; then
+    DIR=js
     shift
-elif [ "$1" == "-d" ]; then
-    DOM_ONLY=$1
+elif [ $# -gt 0 ] && [ "$1" == "-d" ]; then
+    DIR=dom
     shift
 fi
 
-REMOTE_FILE=.cloned-from
+if [ $# -eq 1 ]; then
+    # Single argument: sync one dir only.
+    DIR=$1
+elif [ $# -eq 2 ]; then
+    # Two arguments: create a new cloned directory.
+    REMOTE=$1
+    BRANCH=$2
 
-if [ $# -eq 1 ] || [ $# -gt 2 ]; then
-    echo "usage: pullBranch [ -v ] [ -j | -d ] [ HOST BRANCH ]"
+    if [ -e $BRANCH ]; then
+        echo "Directory already exists: $BRANCH"
+        exit 1
+    fi
+
+    mkdir $BRANCH
+    cd $BRANCH
+elif [ $# -ne 0 ]; then
+    echo "usage: pullBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
@@ -35,10 +51,7 @@ if [ $# -eq 2 ]; then
         echo "Directory already exists: $BRANCH"
         exit 1
     fi
-
-    mkdir $BRANCH
-    cd $BRANCH
-else
+ else
     # Find root of source tree
     while [ ! -f $REMOTE_FILE ]; do
         cd ..
@@ -66,19 +79,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-BRANCH=${PWD##*/}
-
 if [ $# -eq 2 ]; then
+    mkdir $BRANCH
+    cd $BRANCH
     echo $REMOTE > $REMOTE_FILE
 fi
 
-if [ -n "$JS_ONLY" ]; then
-    DIR=js
-elif [ -n "$DOM_ONLY" ]; then
-    DIR=dom
-else
-    DIR=.
-fi
+BRANCH=${PWD##*/}
 
 SOURCE=$REMOTE:work/$BRANCH/$DIR
 TARGET=$DIR
