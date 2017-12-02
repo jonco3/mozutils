@@ -78,8 +78,8 @@ if icecream_path:
 else:
     add_config('dist', [], [])
 
-add_config('ctypes',       'ctypes', ['--enable-ctypes', '--enable-nspr-build'])
-add_config('noctypes',     'ctypes', ['--disable-ctypes', '--enable-posix-nspr-emulation'])
+add_config('ctypes',       'ctypes', ['--enable-ctypes'])
+add_config('noctypes',     'ctypes', ['--disable-ctypes'])
 config_group_defaults['ctypes'] = 'noctypes'
 
 if sys.platform == 'darwin':
@@ -108,6 +108,7 @@ add_config('tsan',
 
 common_options = [
     '--with-ccache',
+    '--enable-nspr-build'
 ]
 
 if sys.platform == 'darwin':
