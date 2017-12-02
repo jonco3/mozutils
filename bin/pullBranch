@@ -97,6 +97,7 @@ rsync \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
     --exclude "/mozconfig-*" \
+    --include /third_party/rust/winapi-build/ \
     --exclude "*-build/" \
     --exclude __pycache__/ \
     --exclude .js-cache/ \
