@@ -17,7 +17,7 @@ libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
 
-common_options = '--enable-profiling'
+common_options = '--enable-profiling --enable-warnings-as-errors'
 debug_options = '--enable-debug --enable-gczeal --disable-optimize'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize'
 opt_options = '--disable-debug --enable-optimize'
@@ -125,16 +125,18 @@ if os.path.isfile('.cloned-from') and args.sync:
         cmd.append("-d")
     subprocess.check_call(cmd)
 
+mozconfig_file = "mozconfig-" + build_name
+
 if args.clean and os.path.exists(build_dir):
     println("Clean " + build_name)
     println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
     time.sleep(5);  # so I can hit ^C after I accidentally do this
+    os.remove(mozconfig_file)
     shutil.rmtree(build_dir)
 
 if not os.path.exists(build_dir):
     os.makedirs(build_dir)
 
-mozconfig_file = "mozconfig-" + build_name
 if not os.path.exists(mozconfig_file):
     autoconf_path = which("autoconf213") or which("autoconf2.13")
     if not autoconf_path:
