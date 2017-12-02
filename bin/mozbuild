@@ -134,10 +134,8 @@ if args.clean and os.path.exists(build_dir):
     os.remove(mozconfig_file)
     shutil.rmtree(build_dir)
 
-if not os.path.exists(build_dir):
-    os.makedirs(build_dir)
-
-if not os.path.exists(mozconfig_file):
+if not os.path.exists(mozconfig_file) or \
+   os.path.getmtime(__file__) >= os.path.getmtime(mozconfig_file):
     autoconf_path = which("autoconf213") or which("autoconf2.13")
     if not autoconf_path:
         exit_fatal("Can't find autoconf 2.13 on path")
@@ -203,6 +201,9 @@ if not os.path.exists(mozconfig_file):
             addOptions(valgrind_options)
 
         addOptions(build_configs[args.config])
+
+if not os.path.exists(build_dir):
+    os.makedirs(build_dir)
 
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
