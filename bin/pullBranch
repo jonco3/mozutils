@@ -100,9 +100,12 @@ rsync \
     --include /third_party/rust/winapi-build/ \
     --exclude "*-build/" \
     --exclude __pycache__/ \
-    --exclude .js-cache/ \
-    --include configure/ \
-    --exclude configure \
-    --exclude old-configure \
     --exclude "*.pyc" \
+    --exclude .js-cache/ \
+    --exclude /configure \
+    --exclude /old-configure \
+    --exclude /src/configure \
+    --exclude /src/old-configure \
+    --exclude /js/src/configure \
+    --exclude /js/src/old-configure \
     $SOURCE/ $TARGET/ || exit $?
