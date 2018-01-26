@@ -77,7 +77,8 @@ def shouldProcessInclude(path):
                          "sharkctl.h",
                          "gdb-tests.h",
                          "VMPI.h",
-                         "vprof.h"])
+                         "vprof.h",
+                         "mozmemory.h"])
 
 def mapInclude(path):
     if path.startswith("js/"):
