@@ -131,7 +131,8 @@ if args.clean and os.path.exists(build_dir):
     println("Clean " + build_name)
     println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
     time.sleep(5);  # so I can hit ^C after I accidentally do this
-    os.remove(mozconfig_file)
+    if os.path.exists(mozconfig_file):
+        os.remove(mozconfig_file)
     shutil.rmtree(build_dir)
 
 if not os.path.exists(mozconfig_file) or \
