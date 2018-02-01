@@ -1,60 +1,62 @@
 #!/bin/bash
 
+set -euo pipefail
+
 SOURCE=~/work
 DEST=~/shared/patches
 HOSTALIAS=~/.hostalias
 VERBOSE=
 
-if [ ! -d $SOURCE ]; then
+if [[ ! -d $SOURCE ]]; then
     echo "Can't find source dir: $SOURCE"
     exit 1
 fi
 
-if [ ! -d $DEST ]; then
+if [[ ! -d $DEST ]]; then
     echo "Can't find dest dir: $DEST"
     exit 1
 fi
 
-if [ ! -f $HOSTALIAS ]; then
+if [[ ! -f $HOSTALIAS ]]; then
     echo "Can't find host alias in: $HOSTALIAS"
     exit 1
 fi
 
-if [ "$1" == "-v" ]; then
+if [[ $# -gt 0 && $1 == "-v" ]]; then
     VERBOSE=-i
     shift
 fi
 
-if [ $# -ne 0 ]; then
+if [[ $# -ne 0 ]]; then
     echo "Usage: copyPatches [-v]"
     exit 1
 fi
 
 # check for modified files in current repo
-if [ -n "$(hg status -m 2> /dev/null)" ]; then
+if [[ -n "$(hg status -m 2> /dev/null)" ]]; then
     echo "Modified files exist, aborting"
     exit 1
 fi
 
 HOST=`cat $HOSTALIAS`
 
-if [ -n "$VERBOSE" ]; then
+if [[ -n $VERBOSE ]]; then
     echo "copyPatches $SOURCE -> $DEST/$HOST"
 fi
 
 cd $SOURCE
 for dir in `ls`; do
-    if [ ! -d $dir ]; then
+    if [[ ! -d $dir ]]; then
         continue
     fi
     name=${dir##*/}
     repo=$dir/.hg
     patches=$repo/patches
-    if [ ! -e "$patches/series" ]; then
+    if [[ ! -e "$patches/series" ]]; then
         continue
     fi
 
-    if [ -n "$VERBOSE" ]; then
+    if [[ -n $VERBOSE ]]; then
         echo "  repo $dir"
     fi
 
@@ -64,15 +66,15 @@ for dir in `ls`; do
     # --recursive.
     for file in `ls $backup`; do
         path=$patches/$file
-        if [ ! -e $patches/$file ]; then
-            if [ -n "$VERBOSE" ]; then
+        if [[ ! -e $patches/$file ]]; then
+            if [[ -n $VERBOSE ]]; then
                 echo "    deleting $file"
             fi
             rm $backup/$file
         fi
     done
 
-    if [ ! -d $backup ]; then
+    if [[ ! -d $backup ]]; then
         if ! mkdir -p $backup; then
             echo "Failed to create directory: $backup"
             exit 1

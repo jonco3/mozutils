@@ -2,9 +2,12 @@
 
 # Kill residual processes left around after running mochitests
 
+set -eu
+
 VERBOSE=""
-if [ "$1" == "-v" ]; then
-   VERBOSE=1
+if [[ $# -gt 0 && $1 == "-v" ]]; then
+    VERBOSE=1
+    shift
 fi
 
 function killMatching() {
@@ -14,12 +17,12 @@ function killMatching() {
 
     if [ -n "$PIDS" ]; then
         if [ -n "$VERBOSE" ]; then
-            echo "Killing $PIDS which for matching $PATTERN"
+            echo "Killing processes matching $PATTERN: $PIDS"
         fi
         kill -9 $PIDS
     else
         if [ -n "$VERBOSE" ]; then
-            echo "Didn't match $PATTERN"
+            echo "No processes matching $PATTERN"
         fi
     fi
 }

@@ -7,61 +7,61 @@ set -euf -o pipefail
 REMOTE_FILE=.cloned-from
 
 VERBOSE=
-if [ $# -gt 0 ] && [ "$1" == "-v" ]; then
+if [[ $# -gt 0 && $1 == "-v" ]]; then
     VERBOSE=$1
     shift
 fi
 
 DIR=.
-if [ $# -gt 0 ] && [ "$1" == "-j" ]; then
+if [[ $# -gt 0 && $1 == "-j" ]]; then
     DIR=js
     shift
-elif [ $# -gt 0 ] && [ "$1" == "-d" ]; then
+elif [[ $# -gt 0 && $1 == "-d" ]]; then
     DIR=dom
     shift
 fi
 
-if [ $# -eq 1 ]; then
+if [[ $# -eq 1 ]]; then
     # Single argument: sync one dir only.
     DIR=$1
-elif [ $# -eq 2 ]; then
+elif [[ $# -eq 2 ]]; then
     # Two arguments: create a new cloned directory.
     REMOTE=$1
     BRANCH=$2
 
-    if [ -e $BRANCH ]; then
+    if [[ -e $BRANCH ]]; then
         echo "Directory already exists: $BRANCH"
         exit 1
     fi
 
     mkdir $BRANCH
     cd $BRANCH
-elif [ $# -ne 0 ]; then
+elif [[ $# -ne 0 ]]; then
     echo "usage: pullBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
 
-if [ $# -eq 2 ]; then
+if [[ $# -eq 2 ]]; then
     # Create a new directory to clone into
 
     REMOTE=$1
     BRANCH=$2
-    if [ -e $BRANCH ]; then
+    if [[ -e $BRANCH ]]; then
         echo "Directory already exists: $BRANCH"
         exit 1
     fi
  else
     # Find root of source tree
-    while [ ! -f $REMOTE_FILE ]; do
+    while [[ ! -f $REMOTE_FILE ]]; do
         cd ..
-        if [ $OLDPWD == $PWD ]; then
+        if [[ $OLDPWD == $PWD ]]; then
             echo "Run pullBranch from within a cloned directory"
             exit 1
         fi
     done
 
-    if [ -d .hg ]; then
+    if [[ -d .hg ]]; then
         echo "Refusing to overwrite mercurial repo"
         exit 1
     fi
@@ -73,13 +73,12 @@ if [ $# -eq 2 ]; then
     fi
 fi
 
-ping -c 1 $REMOTE > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo "Can't resolve remote hostname: $REMOTE"
+if ! ping -c 1 $REMOTE > /dev/null 2>&1; then
+    echo "Can't contact remote host: $REMOTE"
     exit 1
 fi
 
-if [ $# -eq 2 ]; then
+if [[ $# -eq 2 ]]; then
     mkdir $BRANCH
     cd $BRANCH
     echo $REMOTE > $REMOTE_FILE
