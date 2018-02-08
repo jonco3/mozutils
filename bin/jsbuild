@@ -52,9 +52,6 @@ args = parser.parse_args()
 if not args.unified and not args.sync:
     sys.exit("Disabling of uniifed build only supported with sync")
 
-if args.dist and not get_icecream_path():
-    sys.exit("icecc not found on path")
-
 if args.dir:
     for dir in args.dir:
         os.chdir(dir[0])
@@ -84,6 +81,9 @@ if args.remote:
         println(line)
     proc.wait()
     sys.exit(proc.returncode)
+
+if args.dist and not get_icecream_path():
+    sys.exit("icecc not found on path")
 
 if args.dry_run:
     sys.exit(0)
