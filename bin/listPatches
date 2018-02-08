@@ -12,7 +12,7 @@ parser.add_argument('-a', '--all', action='store_true',
                     help='Show patches for all branches, not just current')
 parser.add_argument('-t', '--time-sort', dest='sort', action='store_const', const='time',
                     help='Sort patches by latest modification time')
-parser.add_argument('-p', '--position-sort', action='store_const', const='position',
+parser.add_argument('-p', '--position-sort', dest='sort', action='store_const', const='position',
                     help='Sort patches by branch and index')
 
 args = parser.parse_args()
@@ -107,25 +107,31 @@ for hostName in os.listdir(patchesDir):
             patchesByName[patchName].append(patch)
             index += 1
 
-def patchModificationTime(p):
-    return p.mtime
+def patchModificationOrder(p):
+    return -p.mtime
 
-def patchPosition(p):
+def patchPositionOrder(p):
     return p.dir, p.index
 
 def isSamePatch(a, b):
     return a.content() == b.content()
 
+def formatTime(t):
+    return time.strftime('%d %b %Y %H:%M', time.localtime(t))
+
 for name in patchesByName:
-    patchesByName[name].sort(key = patchModificationTime)
+    patchesByName[name].sort(key = patchModificationOrder)
 
 patches = [ patchesByName[name][0] for name in patchesByName ]
-patches.sort(key = patchModificationTime if args.sort == 'time' else patchPosition)
+sortKey = patchModificationOrder if args.sort == 'time' else patchPositionOrder
+patches.sort(key = sortKey)
 
 for patch in patches:
-    timestr = time.ctime(patch.mtime)
+    timestr = formatTime(patch.mtime)
     print("%s %s %2d %s" % (timestr, patch.dir, patch.index, patch.name))
 
     for p in patchesByName[patch.name][1:]:
-        same = "same" if isSamePatch(patch, p) else "different"
-        print("  also in %s %d (%s)" % (p.dir, p.index, same))
+        if isSamePatch(patch, p):
+            print("  also in %s %d (same)" % (p.dir, p.index))
+        else:
+            print("  also in %s %d (different, %s)" % (p.dir, p.index, formatTime(p.mtime)))
