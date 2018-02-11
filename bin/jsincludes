@@ -11,9 +11,14 @@ import sys
 import tempfile
 
 parser = argparse.ArgumentParser(description = 'Discover SpiderMonkey include graphs')
-parser.add_argument('--graph', action="store_true", help='Create include graph')
-parser.add_argument('--summary', '-s', action="store_true", help='Only print a single per file')
-parser.add_argument('--reversed', '-r', action="store_true", help='Find who includes files')
+parser.add_argument('--graph', '-g', dest='action', action='store_const', const='graph',
+                    help='Create include graph')
+parser.add_argument('--reverse', '-r', dest='action', action='store_const', const='reverse',
+                    help='Find who includes files')
+parser.add_argument('--paths', '-p', dest='action', action='store_const', const='paths',
+                    help='Find paths between two files')
+parser.add_argument('--summary', '-s', action='store_true',
+                    help='Only print a single per file')
 parser.add_argument('files', metavar='FILE', nargs='*', help='Source files to process')
 args = parser.parse_args()
 
@@ -223,6 +228,29 @@ def findInclusions(files):
                 else:
                     print("%-*s %4d" % (width, indentedFile, count))
 
+def findPaths(files):
+    if len(files) != 2:
+        sys.exit("--paths option takes exactly two files")
+
+    fromFile, toFile = files[0], files[1]
+
+    processedFiles = set()
+
+    def findInFile(file, path):
+        if file in processedFiles:
+            return
+        processedFiles.add(file)
+
+        path = path + [file]
+        includes = getIncludes(file)
+        for include in includes:
+            if include == toFile:
+                print(path + [include])
+            else:
+                findInFile(include, path)
+
+    findInFile(fromFile, [])
+
 dirPrefix = []
 while not os.path.isfile("src/jsapi.h"):
     dirPrefix.insert(0, os.path.basename(os.getcwd()))
@@ -239,9 +267,11 @@ if args.files:
 else:
     filesToProcess = findAllPublicHeaders()
 
-if args.graph:
+if args.action == 'graph':
     makeGraph(filesToProcess, sys.stdout)
-elif args.reversed:
+elif args.action == 'reverse':
     findInclusions(filesToProcess)
+elif args.action == 'paths':
+    findPaths(filesToProcess)
 else:
     findIncludes(filesToProcess)
