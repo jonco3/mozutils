@@ -70,7 +70,10 @@ add_config('armsf',        'compiler',
 add_config('armhf',        'compiler',
            arm_options + ' --target=arm-linux-gnueabihf --with-float-abi=hard',
            'arm-linux-gnueabihf-gcc', 'arm-linux-gnueabihf-g++')
-config_group_defaults['compiler'] = 'clang' if sys.platform == 'darwin' else 'gcc'
+
+# 12/02/18: Clang is 30% faster at debug builds on linux and marginally
+# faster at optdebug
+config_group_defaults['compiler'] = 'clang'
 
 icecream_path = get_icecream_path()
 if icecream_path:
