@@ -261,9 +261,11 @@ while not os.path.isfile("src/jsapi.h"):
 if not os.path.isfile("src/jsapi.h"):
     sys.exit("Can't find SpiderMonkey source dir")
 
+dirPrefix = os.path.join(dirPrefix[0], *dirPrefix[1:])
+
 if args.files:
-    dirPrefix = os.path.join(dirPrefix[0], *dirPrefix[1:])
-    filesToProcess = [os.path.normpath(os.path.join(dirPrefix, file)) for file in args.files]
+    filesToProcess = [os.path.normpath(os.path.join(dirPrefix, file))
+                      for file in args.files]
 else:
     filesToProcess = findAllPublicHeaders()
 
