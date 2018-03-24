@@ -165,6 +165,6 @@ run_command(['nice', 'make', '-j%d' % job_count], args.verbose, args.warnings)
 if not os.path.lexists('shell'):
     os.symlink('dist/bin/js', 'shell')
 if not os.path.lexists('jsapi-tests'):
-    os.symlink('js/src/jsapi-tests/jsapi-tests', 'jsapi-tests')
+    os.symlink('dist/bin/jsapi-tests', 'jsapi-tests')
 if platform.system() == 'Darwin' and not os.path.lexists('libmozglue.dylib'):
     os.symlink('mozglue/build/libmozglue.dylib', 'libmozglue.dylib')
