@@ -210,6 +210,4 @@ os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
 
 println("Build %s" % build_name)
 cmd = ['./mach', 'build']
-if args.sync == "dom":
-    cmd.append("dom")
 run_command(cmd, args.verbose, args.warnings)
