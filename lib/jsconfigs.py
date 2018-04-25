@@ -106,7 +106,7 @@ add_config('tsan',
             '--without-intl-api',
             '--enable-llvm-hacks',
             '--disable-jemalloc'],
-           'clang-3.8', 'clang++-3.8',
+           'clang', 'clang++',
            tsan_env)
 
 common_options = [
