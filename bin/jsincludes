@@ -29,18 +29,24 @@ IncludeRe = re.compile('^#include\s+"([^\s]+)"')
 def findAllPublicHeaders():
     return glob.glob("public/*.h")
 
-def findAllSourceFiles():
-    def dirContainsSource(name):
-        return "test" not in name and "build" not in name
+def dirContainsSource(name):
+    return "test" not in name and "build" not in name and "devtools" not in name and "libffi" not in name
 
-    paths = glob.glob("public/*.h")
-    for root, dirs, files in os.walk("src"):
+def findPathsBySuffix(rootPath, suffix):
+    paths = []
+    for root, dirs, names in os.walk(rootPath):
         dirs[:] = filter(dirContainsSource, dirs)
-        for file in files:
-            if file.endswith(".cpp") or file.endswith(".h"):
-                paths.append(os.path.join(root, file))
+        for name in names:
+            if name.endswith(suffix):
+                paths.append(os.path.join(root, name))
 
     return paths
+
+def findAllCppFiles():
+    return findPathsBySuffix('src', '.cpp')
+
+def findAllSourceFiles():
+    return findAllPublicHeaders() + findPathsBySuffix('src', '.h') + findAllCppFiles()
 
 cachedFileInfo = {}
 
@@ -84,7 +90,8 @@ def shouldProcessInclude(path):
                          "gdb-tests.h",
                          "VMPI.h",
                          "vprof.h",
-                         "mozmemory.h"])
+                         "mozmemory.h",
+                         "unix.h", "os9.h"])
 
 def mapInclude(path):
     if path.startswith("js/"):
@@ -94,6 +101,30 @@ def mapInclude(path):
 def getIncludes(path):
     return [mapInclude(include)
             for include in getIncludeDirectives(path) if shouldProcessInclude(include)]
+
+inclusionMap = None
+
+def buildInclusionMap():
+    global inclusionMap
+
+    paths = findAllSourceFiles()
+    inclusionMap = {}
+    for path in paths:
+        includes = getIncludes(path)
+        for include in includes:
+            if include not in inclusionMap:
+                inclusionMap[include] = []
+            inclusionMap[include].append(path)
+
+    for path in paths:
+        if path.endswith(".cpp"):
+            assert path not in inclusionMap, "Nothing should include source file: " + path
+
+def getInclusions(path):
+    if not inclusionMap:
+        buildInclusionMap()
+
+    return inclusionMap[path]
 
 def nameInclude(path):
     name = re.sub("^public/", "js/", path)
@@ -162,49 +193,95 @@ def drawGraph(dotFile):
     os.unlink(dotFile)
     #os.unlink(output)
 
-def pathWidth(results):
-    return max([2 * level + len(name) for name, level in results]) + 2
+def maxPathWidth(stats):
+    return max([2 * level + len(path) for level, path, _1, _2 in stats]) + 2
 
-def findIncludes(files):
-    totalIncludes = 0
-    totalLines = 0
+# Return a list of (level, path, includeCount, lineCount) tuples.
+def generateIncludeStats(level, path, processedPaths):
+    assert path not in processedPaths
+    processedPaths.add(path)
 
-    def process(file, level):
-        results.append((file, level))
-        processedFiles.add(file)
-        includeCount = 1
-        lineCount = getLineCount(file)
-        for target in getIncludes(file):
-            if target not in processedFiles:
-                includes, lines = process(target, level + 1)
-                includeCount += includes
-                lineCount += lines
-        includeCounts[file] = includeCount
-        lineCounts[file] = lineCount
-        return includeCount, lineCount
+    stats = []
+    includeCount = 1
+    lineCount = getLineCount(path)
 
-    for file in files:
-        results = []
-        processedFiles = set()
-        includeCounts = {}
-        lineCounts = {}
-        process(file, 0)
+    for target in getIncludes(path):
+        if target not in processedPaths:
+            targetStats = generateIncludeStats(level + 1, target, processedPaths)
+            includeCount += targetStats[0][2]
+            lineCount += targetStats[0][3]
+            stats.extend(targetStats)
 
+    stats.insert(0, (level, path, includeCount, lineCount))
+    return stats
+
+def findIncludes(paths):
+    totalIncludeCount = 0
+    totalLineCount = 0
+    stats = []
+
+    for path in paths:
+        pathStats = generateIncludeStats(0, path, set())
         if args.summary:
-            results = results[:1]
+            stats.append(pathStats[0])
+        else:
+            stats.extend(pathStats)
+        totalIncludeCount += pathStats[0][2]
+        totalLineCount += pathStats[0][3]
 
-        width = pathWidth(results)
-        for name, level in results:
-            indentedName = "  " * level + name
-            print("%-*s %4d %8d" % (width, indentedName, includeCounts[name], lineCounts[name]))
+    if len(paths) > 1:
+        stats.append((0, "TOTAL", totalIncludeCount, totalLineCount))
 
-        totalIncludes += includeCounts[file]
-        totalLines += lineCounts[file]
+    width = maxPathWidth(stats)
+    for level, path, includeCount, lineCount in stats:
+        indentedPath = "  " * level + path
+        print("%-*s %6d %9d" % (width, indentedPath, includeCount, lineCount))
 
-    if len(files) > 1:
-            print("%-40s %4d %8d" % ("Total", totalIncludes, totalLines))
+# Return a list of (level, path, inclusionCount, lineCount) tuples.
+def generateInclusionStats(level, path, processedPaths):
+    assert path not in processedPaths
+    processedPaths.add(path)
 
-def findInclusions(files):
+    lineCount = getLineCount(path)
+    if path.endswith(".cpp"):
+        return [(level, path, 1, lineCount)]
+
+    stats = []
+    inclusionCount = 0
+
+    for target in getInclusions(path):
+        if target not in processedPaths:
+            targetStats = generateInclusionStats(level + 1, target, processedPaths)
+            inclusionCount += targetStats[0][2]
+            lineCount += targetStats[0][3]
+            stats.extend(targetStats)
+
+    stats.insert(0, (level, path, inclusionCount, lineCount))
+    return stats
+
+def findInclusions(paths):
+    totalInclusionCount = 0
+    totalLineCount = 0
+    stats = []
+
+    for path in paths:
+        pathStats = generateInclusionStats(0, path, set())
+        if args.summary:
+            stats.append(pathStats[0])
+        else:
+            stats.extend(pathStats)
+        totalInclusionCount += pathStats[0][2]
+        totalLineCount += pathStats[0][3]
+
+    if len(paths) > 1:
+        stats.append((0, "TOTAL", totalInclusionCount, totalLineCount))
+
+    width = maxPathWidth(stats)
+    for level, path, inclusionCount, lineCount in stats:
+        indentedPath = "  " * level + path
+        print("%-*s %6d %9d" % (width, indentedPath, inclusionCount, lineCount))
+
+def findInclusions2(files):
     includeMap = {}
     sourceFiles = findAllSourceFiles()
     for file in sourceFiles:
@@ -248,7 +325,7 @@ def findInclusions(files):
         if args.summary:
             results = results[:1]
 
-        width = pathWidth(results)
+        width = maxPathWidth(results)
         for file, level in results:
             count = includeCounts[file]
             indentedFile = "  " * level + file
@@ -298,7 +375,7 @@ if args.files:
     filesToProcess = [os.path.normpath(os.path.join(dirPrefix, file))
                       for file in args.files]
 else:
-    filesToProcess = findAllPublicHeaders()
+    filesToProcess = findAllCppFiles()
 
 if args.action == 'graph':
     makeGraph(filesToProcess, sys.stdout)
