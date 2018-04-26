@@ -32,7 +32,7 @@ def stripTimestamp(line):
         return line
     return match.group(1)
 
-objectFileRe = re.compile("-o (\w+)\.o|(\w+)\.a.desc")
+objectFileRe = re.compile("[\w/\.]+")
 
 def exit_with_code(code, message):
     sys.stderr.write(message + "\n")
@@ -51,32 +51,36 @@ def run_command(command, verbose, warnings):
         println(" ".join(command))
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     directory_line = None
-    sawError = False
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
         line = line.rstrip();
         if not line:
             continue
 
+        line = stripTimestamp(line)
+
         if verbose:
             println(line)
-        elif "Entering directory" in line:
-            directory_line = stripTimestamp(line)
-        elif "error:" in line or sawError or "clobber" in line:
+            continue
+
+        if "Entering directory" in line:
+            directory_line = line
+            continue
+
+        if "error:" in line:
+            verbose = True
             if directory_line:
                 println(directory_line)
                 directory_line = None
-            println(stripTimestamp(line))
-            sawError = True
-        elif warnings and "warning:" in line:
-            if directory_line:
-                println(directory_line)
-                directory_line = None
-            println(stripTimestamp(line))
-        else:
-            match = objectFileRe.search(line)
-            if match:
-                name = match.group(1) if match.group(1) else match.group(2)
-                println("  %s" % name)
+            println(line)
+            continue
+
+        words = line.split()
+        if len(words) > 2 and words[0] == "Compiling":
+            println("  " + words[1])
+            continue
+
+        if len(words) == 1 and objectFileRe.fullmatch(words[0]):
+            println("  " + words[0])
 
     proc.wait()
     if proc.returncode:
