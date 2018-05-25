@@ -82,6 +82,7 @@ def shouldProcessInclude(path):
             not path.endswith("Generated.h") and
             not path.endswith(".out.h") and
             not path.endswith("javascript-trace.h") and
+            not path.endswith("MOpcodes.h") and
             not path in ["js-config.h",
                          "fdlibm.h",
                          "ffi.h",
