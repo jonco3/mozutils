@@ -32,7 +32,9 @@ def stripTimestamp(line):
         return line
     return match.group(1)
 
-objectFileRe = re.compile("[\w/\.]+")
+objectFileRe = re.compile("(\w[\w\-_]*)\.o")
+
+pathRe = re.compile("\w[\w\-_/\.]*")
 
 def exit_with_code(code, message):
     sys.stderr.write(message + "\n")
@@ -66,7 +68,7 @@ def run_command(command, verbose, warnings):
             directory_line = line
             continue
 
-        if "error:" in line:
+        if "error:" in line or "required from" in line:
             verbose = True
             if directory_line:
                 println(directory_line)
@@ -74,12 +76,17 @@ def run_command(command, verbose, warnings):
             println(line)
             continue
 
+        match = objectFileRe.search(line)
+        if (match):
+            println("  " + match.group(1))
+            continue
+
         words = line.split()
         if len(words) > 2 and words[0] == "Compiling":
             println("  " + words[1])
             continue
 
-        if len(words) == 1 and objectFileRe.fullmatch(words[0]):
+        if len(words) == 1 and pathRe.fullmatch(words[0]):
             println("  " + words[0])
 
     proc.wait()
