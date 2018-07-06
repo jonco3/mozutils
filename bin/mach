@@ -19,6 +19,7 @@ args = types.SimpleNamespace()
 args.opt = False
 args.optdebug = False
 args.dist = False
+args.headless = False
 
 # Only parse known arguments at the start of the arguments list.
 while len(sys.argv) > 1 and sys.argv[1].startswith('-'):
@@ -29,6 +30,8 @@ while len(sys.argv) > 1 and sys.argv[1].startswith('-'):
         args.opt = True
     elif opt == '-i':
         args.dist = True
+    elif opt == '-h':
+        args.headless = True
     else:
         break
 
@@ -57,6 +60,9 @@ if not os.path.isfile(mozconfig_file):
     sys.exit("Can't find mozconfig file: " + mozconfig_file)
 
 os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
+
+if args.headless:
+    os.environ['MOZ_HEADLESS'] = '1'
 
 cmd = ['./mach'] + sys.argv[1:]
 run_command(cmd, True, False)
