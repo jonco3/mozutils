@@ -45,8 +45,8 @@ def findPathsBySuffix(rootPath, suffix):
 def findAllCppFiles():
     return findPathsBySuffix('src', '.cpp')
 
-def findAllSourceFiles():
-    return findAllPublicHeaders() + findPathsBySuffix('src', '.h') + findAllCppFiles()
+def findAllHeaderFiles():
+    return findAllPublicHeaders() + findPathsBySuffix('src', '.h')
 
 cachedFileInfo = {}
 
@@ -76,23 +76,26 @@ def getIncludeDirectives(path):
 
 def shouldProcessInclude(path):
     return (path.endswith(".h") and
-            not path.startswith("mozilla/") and
-            not path.startswith("unicode/") and
-            not path.startswith("pr") and
-            not path.endswith("Generated.h") and
-            not path.endswith(".out.h") and
-            not path.endswith("javascript-trace.h") and
-            not path.endswith("MOpcodes.h") and
-            not path in ["js-config.h",
-                         "fdlibm.h",
-                         "ffi.h",
-                         "Instruments.h",
-                         "sharkctl.h",
-                         "gdb-tests.h",
-                         "VMPI.h",
-                         "vprof.h",
-                         "mozmemory.h",
-                         "unix.h", "os9.h"])
+            not (path.startswith("mozilla/") or
+                 path.startswith("unicode/") or
+                 path.startswith("pr") or
+                 path.endswith("Generated.h") or
+                 path.endswith(".out.h") or
+                 path.endswith("javascript-trace.h") or
+                 path.endswith("double-conversion.h") or
+                 path.endswith("Opcodes.h") or
+                 path in ["js-config.h",
+                          "fdlibm.h",
+                          "ffi.h",
+                          "Instruments.h",
+                          "sharkctl.h",
+                          "gdb-tests.h",
+                          "VMPI.h",
+                          "vprof.h",
+                          "mozmemory.h",
+                          "unix.h",
+                          "os9.h",
+                          "dtoa.c"]))
 
 def mapInclude(path):
     if path.startswith("js/"):
@@ -108,18 +111,18 @@ inclusionMap = None
 def buildInclusionMap():
     global inclusionMap
 
-    paths = findAllSourceFiles()
+    assert not inclusionMap
     inclusionMap = {}
-    for path in paths:
+
+    headers = findAllHeaderFiles()
+    for path in headers:
+        inclusionMap[path] = []
+
+    sources = findAllCppFiles()
+    for path in headers + sources:
         includes = getIncludes(path)
         for include in includes:
-            if include not in inclusionMap:
-                inclusionMap[include] = []
             inclusionMap[include].append(path)
-
-    for path in paths:
-        if path.endswith(".cpp"):
-            assert path not in inclusionMap, "Nothing should include source file: " + path
 
 def getInclusions(path):
     if not inclusionMap:
@@ -281,61 +284,6 @@ def findInclusions(paths):
     for level, path, inclusionCount, lineCount in stats:
         indentedPath = "  " * level + path
         print("%-*s %6d %9d" % (width, indentedPath, inclusionCount, lineCount))
-
-def findInclusions2(files):
-    includeMap = {}
-    sourceFiles = findAllSourceFiles()
-    for file in sourceFiles:
-        includes = getIncludes(file)
-        for include in includes:
-            if include not in includeMap:
-                includeMap[include] = []
-            includeMap[include].append(file)
-
-    for file in sourceFiles:
-        if file.endswith(".cpp"):
-            assert file not in includeMap, "Nothing should include source file: " + file
-
-    def process(file, level):
-        assert file in sourceFiles, "Unknown file: " + file
-        if file in processedFiles:
-            return 0
-
-        processedFiles.add(file)
-
-        results.append((file, level))
-
-        if file not in includeMap:
-            includeCounts[file] = 1
-            return 1
-
-        includeCount = 0
-
-        for inclusion in includeMap[file]:
-            includeCount += process(inclusion, level + 1)
-
-        includeCounts[file] = includeCount
-        return includeCount
-
-    for file in files:
-        results = []
-        includeCounts = {}
-        processedFiles = set()
-        process(file, 0)
-
-        if args.summary:
-            results = results[:1]
-
-        width = maxPathWidth(results)
-        for file, level in results:
-            count = includeCounts[file]
-            indentedFile = "  " * level + file
-            if count != 0:
-                if level == 0:
-                    lines = count * getLineCount(file)
-                    print("%-*s %4d %8d" % (width, indentedFile, count, lines))
-                else:
-                    print("%-*s %4d" % (width, indentedFile, count))
 
 def findPaths(files):
     if len(files) != 2:
