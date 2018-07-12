@@ -99,6 +99,9 @@ else:
         'CXXFLAGS': '-fsanitize=thread -fPIC',
         'LDFLAGS': '-fsanitize=thread -fPIC' }
 
+# TODO: decoder says: for the future, you should be able to substitute
+# the llvm-hacks flag with --enable-thread-sanitizer
+
 add_config('tsan',
            ['opt', 'compiler'],
            ['--disable-debug',
