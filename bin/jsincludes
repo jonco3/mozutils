@@ -50,32 +50,6 @@ def findAllCppFiles():
 def findAllHeaderFiles():
     return findAllPublicHeaders() + findPathsBySuffix('src', '.h')
 
-cachedFileInfo = {}
-
-def readFileInfo(path):
-    assert path not in cachedFileInfo
-    if not os.path.exists(path):
-        sys.exit("File not found: " + path)
-    lineCount = 0
-    includes = []
-    with open(path, "r") as file:
-        for line in file:
-            lineCount += 1
-            match = IncludeRe.match(line)
-            if match:
-                includes.append(match.group(1))
-    cachedFileInfo[path] = lineCount, includes
-
-def getLineCount(path):
-    if path not in cachedFileInfo:
-        readFileInfo(path)
-    return cachedFileInfo[path][0]
-
-def getIncludeDirectives(path):
-    if path not in cachedFileInfo:
-        readFileInfo(path)
-    return cachedFileInfo[path][1]
-
 def shouldProcessInclude(path):
     return (path.endswith(".h") and
             not (path.startswith("mozilla/") or
@@ -104,9 +78,36 @@ def mapInclude(path):
         return re.sub("^js/", "public/", path)
     return "src/" + path
 
+cachedFileInfo = {}
+
+def readFileInfo(path):
+    assert path not in cachedFileInfo
+    if not os.path.exists(path):
+        sys.exit("File not found: " + path)
+
+    lineCount = 0
+    includes = []
+    with open(path, "r") as file:
+        for line in file:
+            lineCount += 1
+            match = IncludeRe.match(line)
+            if not match:
+                continue
+            include = match.group(1)
+            if shouldProcessInclude(include):
+                includes.append(mapInclude(include))
+
+    cachedFileInfo[path] = lineCount, includes
+
+def getLineCount(path):
+    if path not in cachedFileInfo:
+        readFileInfo(path)
+    return cachedFileInfo[path][0]
+
 def getIncludes(path):
-    return [mapInclude(include)
-            for include in getIncludeDirectives(path) if shouldProcessInclude(include)]
+    if path not in cachedFileInfo:
+        readFileInfo(path)
+    return cachedFileInfo[path][1]
 
 inclusionMap = None
 
