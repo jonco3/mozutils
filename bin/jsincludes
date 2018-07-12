@@ -18,6 +18,8 @@ parser.add_argument('--reverse', '-r', dest='action', action='store_const', cons
                     help='Find who includes files')
 parser.add_argument('--paths', '-p', dest='action', action='store_const', const='paths',
                     help='Find paths between two files')
+parser.add_argument('--total', '-t', dest='action', action='store_const', const='total',
+                    help='Find total lines that would be built (in a non-unified build)')
 parser.add_argument('--summary', '-s', action='store_true',
                     help='Only print a single per file')
 parser.add_argument('files', metavar='FILE', nargs='*', help='Source files to process')
@@ -241,6 +243,19 @@ def findIncludes(paths):
         indentedPath = "  " * level + path
         print("%-*s %6d %9d" % (width, indentedPath, includeCount, lineCount))
 
+def findTotal(paths):
+    totalIncludeCount = 0
+    totalLineCount = 0
+
+    for path in paths:
+        pathStats = generateIncludeStats(0, path, set())
+        totalIncludeCount += pathStats[0][2]
+        totalLineCount += pathStats[0][3]
+
+    stats = ["TOTAL", totalIncludeCount, totalLineCount]
+
+    print("TOTAL %6d %9d" % (totalIncludeCount, totalLineCount))
+
 # Return a list of (level, path, inclusionCount, lineCount) tuples.
 def generateInclusionStats(level, path, processedPaths):
     assert path not in processedPaths
@@ -332,5 +347,7 @@ elif args.action == 'reverse':
     findInclusions(filesToProcess)
 elif args.action == 'paths':
     findPaths(filesToProcess)
+elif args.action == 'total':
+    findTotal(filesToProcess)
 else:
     findIncludes(filesToProcess)
