@@ -330,10 +330,9 @@ def generateInclusionStats(level, path, processedPaths):
         if target not in processedPaths:
             targetStats = generateInclusionStats(level + 1, target, processedPaths)
             inclusionCount += targetStats[0][2]
-            lineCount += targetStats[0][3]
             stats.extend(targetStats)
 
-    stats.insert(0, (level, path, inclusionCount, lineCount))
+    stats.insert(0, (level, path, inclusionCount, inclusionCount * lineCount))
     return stats
 
 def findInclusions(paths):
