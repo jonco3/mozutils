@@ -224,6 +224,22 @@ def generateIncludeStats(level, path, processedPaths):
     stats.insert(0, (level, path, includeCount, lineCount))
     return stats
 
+# Return an (includeCount, lineCount) tuple.
+def calculateIncludeTotals(path, processedPaths):
+    assert path not in processedPaths
+    processedPaths.add(path)
+
+    includeCount = 1
+    lineCount = getLineCount(path)
+
+    for target in getIncludes(path):
+        if target not in processedPaths:
+            (includes, lines) = calculateIncludeTotals(target, processedPaths)
+            includeCount += includes
+            lineCount += lines
+
+    return (includeCount, lineCount)
+
 def findIncludes(paths):
     totalIncludeCount = 0
     totalLineCount = 0
@@ -250,9 +266,9 @@ def findTotal(paths):
     totalIncludeCount = 0
     totalLineCount = 0
     for path in paths:
-        pathStats = generateIncludeStats(0, path, set())
-        totalIncludeCount += pathStats[0][2]
-        totalLineCount += pathStats[0][3]
+        (includes, lines) = calculateIncludeTotals(path, set())
+        totalIncludeCount += includes
+        totalLineCount += lines
 
     print("TOTAL %6d %9d" % (totalIncludeCount, totalLineCount))
 
@@ -277,9 +293,9 @@ def profileRemovals(paths):
             testIncludeCount = 0
             testLineCount = 0
             for p in paths:
-                pathStats = generateIncludeStats(0, p, set())
-                testIncludeCount += pathStats[0][2]
-                testLineCount += pathStats[0][3]
+                (includeCount, lineCount) = calculateIncludeTotals(p, set())
+                testIncludeCount += includeCount
+                testLineCount += lineCount
 
             if testLineCount != totalLineCount or testIncludeCount != totalIncludeCount:
                 stats.append((0, "%s -> %s" % (path, removed), testIncludeCount, testLineCount))
