@@ -20,6 +20,8 @@ parser.add_argument('--paths', '-p', dest='action', action='store_const', const=
                     help='Find paths between two files')
 parser.add_argument('--total', '-t', dest='action', action='store_const', const='total',
                     help='Find total lines that would be built (in a non-unified build)')
+parser.add_argument('--profile', '-f', dest='action', action='store_const', const='profile',
+                    help='Profile removing individual includes')
 parser.add_argument('--summary', '-s', action='store_true',
                     help='Only print a single per file')
 parser.add_argument('files', metavar='FILE', nargs='*', help='Source files to process')
@@ -97,7 +99,7 @@ def readFileInfo(path):
             if shouldProcessInclude(include):
                 includes.append(mapInclude(include))
 
-    cachedFileInfo[path] = lineCount, includes
+    cachedFileInfo[path] = [lineCount, includes]
 
 def getLineCount(path):
     if path not in cachedFileInfo:
@@ -247,15 +249,46 @@ def findIncludes(paths):
 def findTotal(paths):
     totalIncludeCount = 0
     totalLineCount = 0
-
     for path in paths:
         pathStats = generateIncludeStats(0, path, set())
         totalIncludeCount += pathStats[0][2]
         totalLineCount += pathStats[0][3]
 
-    stats = ["TOTAL", totalIncludeCount, totalLineCount]
-
     print("TOTAL %6d %9d" % (totalIncludeCount, totalLineCount))
+
+def profileRemovals(paths):
+    totalIncludeCount = 0
+    totalLineCount = 0
+    for path in paths:
+        pathStats = generateIncludeStats(0, path, set())
+        totalIncludeCount += pathStats[0][2]
+        totalLineCount += pathStats[0][3]
+
+    stats = [(0, "TOTAL", totalIncludeCount, totalLineCount)]
+
+    for path in cachedFileInfo:
+        includes = getIncludes(path)
+        for i in range(len(includes)):
+            removed = includes[i]
+            testIncludes = includes[:i] + includes[i+1:]
+            assert len(testIncludes) + 1 == len(includes)
+            cachedFileInfo[path][1] = testIncludes
+
+            testIncludeCount = 0
+            testLineCount = 0
+            for p in paths:
+                pathStats = generateIncludeStats(0, p, set())
+                testIncludeCount += pathStats[0][2]
+                testLineCount += pathStats[0][3]
+
+            if testLineCount != totalLineCount or testIncludeCount != totalIncludeCount:
+                stats.append((0, "%s -> %s" % (path, removed), testIncludeCount, testLineCount))
+
+        cachedFileInfo[path][1] = includes
+
+    width = maxPathWidth(stats)
+    for level, path, includeCount, lineCount in stats:
+        print("%-*s %6d %9d" % (width, path, includeCount, lineCount))
 
 # Return a list of (level, path, inclusionCount, lineCount) tuples.
 def generateInclusionStats(level, path, processedPaths):
@@ -350,5 +383,7 @@ elif args.action == 'paths':
     findPaths(filesToProcess)
 elif args.action == 'total':
     findTotal(filesToProcess)
+elif args.action == 'profile':
+    profileRemovals(filesToProcess)
 else:
     findIncludes(filesToProcess)
