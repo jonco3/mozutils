@@ -34,7 +34,12 @@ def findAllPublicHeaders():
     return glob.glob("public/*.h")
 
 def dirContainsSource(name):
-    return "test" not in name and "build" not in name and "devtools" not in name and "libffi" not in name
+    return not ("test" in name or
+                "build" in name or
+                "devtools" in name or
+                "libffi" in name or
+                "arm" in name or
+                "mips" in name)
 
 def findPathsBySuffix(rootPath, suffix):
     paths = []
@@ -62,6 +67,8 @@ def shouldProcessInclude(path):
                  path.endswith("javascript-trace.h") or
                  path.endswith("double-conversion.h") or
                  path.endswith("Opcodes.h") or
+                 "arm" in path or
+                 "mips" in path or
                  path in ["js-config.h",
                           "fdlibm.h",
                           "ffi.h",
@@ -288,6 +295,7 @@ def profileRemovals(paths):
             removed = includes[i]
             testIncludes = includes[:i] + includes[i+1:]
             assert len(testIncludes) + 1 == len(includes)
+            assert removed not in testIncludes
             cachedFileInfo[path][1] = testIncludes
 
             testIncludeCount = 0
