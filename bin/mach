@@ -65,4 +65,4 @@ if args.headless:
     os.environ['MOZ_HEADLESS'] = '1'
 
 cmd = ['./mach'] + sys.argv[1:]
-run_command(cmd, True, False)
+os.execv(cmd[0], cmd)
