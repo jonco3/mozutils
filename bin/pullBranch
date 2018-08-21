@@ -98,6 +98,7 @@ rsync \
     --exclude "/mozconfig-*" \
     --include /third_party/rust/winapi-build/ \
     --exclude "*-build/" \
+    --exclude /target/ \
     --exclude __pycache__/ \
     --exclude "*.pyc" \
     --exclude .js-cache/ \
