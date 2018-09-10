@@ -19,24 +19,12 @@ if [[ $# -gt 0 && $1 == "-j" ]]; then
 elif [[ $# -gt 0 && $1 == "-d" ]]; then
     DIR=dom
     shift
+elif [[ $# -eq 1 ]]; then
+    DIR=$1
+    shift
 fi
 
-if [[ $# -eq 1 ]]; then
-    # Single argument: sync one dir only.
-    DIR=$1
-elif [[ $# -eq 2 ]]; then
-    # Two arguments: create a new cloned directory.
-    REMOTE=$1
-    BRANCH=$2
-
-    if [[ -e $BRANCH ]]; then
-        echo "Directory already exists: $BRANCH"
-        exit 1
-    fi
-
-    mkdir $BRANCH
-    cd $BRANCH
-elif [[ $# -ne 0 ]]; then
+if [[ $# -ne 0 && $# -ne 2 ]]; then
     echo "usage: pullBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
@@ -73,10 +61,10 @@ if [[ $# -eq 2 ]]; then
     fi
 fi
 
-if ! ping -c 1 $REMOTE > /dev/null 2>&1; then
-    echo "Can't contact remote host: $REMOTE"
-    exit 1
-fi
+#if ! ping -c 1 $REMOTE > /dev/null 2>&1; then
+#    echo "Can't contact remote host: $REMOTE"
+#    exit 1
+#fi
 
 if [[ $# -eq 2 ]]; then
     mkdir $BRANCH
@@ -99,6 +87,7 @@ rsync \
     --include /third_party/rust/winapi-build/ \
     --exclude "*-build/" \
     --exclude /target/ \
+    --exclude "obj-*/" \
     --exclude __pycache__/ \
     --exclude "*.pyc" \
     --exclude .js-cache/ \

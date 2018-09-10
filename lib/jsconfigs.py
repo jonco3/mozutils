@@ -38,7 +38,7 @@ add_config('mips64sim',    [], '--enable-simulator=mips64')
 add_config('nounified',    [], '--disable-unified-compilation')
 add_config('noion',        [], '--disable-ion')
 add_config('gctrace',      [], '--enable-gc-trace')
-add_config('valgrind',     [], '--enable-valgrind')
+add_config('valgrind',     [], ['--enable-valgrind'])
 add_config('smallchunk',   [], '--enable-small-chunk-size')
 add_config('nointl',       [], '--without-intl-api')
 
@@ -107,8 +107,7 @@ add_config('tsan',
            ['--disable-debug',
             '--enable-optimize',
             '--without-intl-api',
-            '--enable-llvm-hacks',
-            '--disable-jemalloc'],
+            '--enable-thread-sanitizer'],
            'clang', 'clang++',
            tsan_env)
 
