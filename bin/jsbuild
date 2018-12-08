@@ -158,6 +158,10 @@ if args.dist and sys.platform != 'darwin':
     ensureExe("icecc")
     os.environ['CCACHE_PREFIX'] = 'icecc'
 
+
+ensureExe('sccache')
+os.environ['RUSTC_WRAPPER'] = 'sccache'
+
 println('Build ' + name)
 os.chdir(dir)
 job_count = 100 if args.dist else multiprocessing.cpu_count()
