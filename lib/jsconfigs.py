@@ -113,7 +113,8 @@ add_config('tsan',
 
 common_options = [
     '--with-ccache',
-    '--enable-nspr-build'
+    '--enable-nspr-build',
+    '--disable-cranelift'
 ]
 
 if sys.platform == 'darwin':
