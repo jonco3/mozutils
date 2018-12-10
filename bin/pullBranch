@@ -84,10 +84,11 @@ rsync \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
     --exclude "/mozconfig-*" \
-    --include /third_party/rust/winapi-build/ \
-    --exclude "*-build/" \
+    --exclude "/*-build/" \
+    --exclude "/src/*-build/" \
+    --exclude "/js/src/*-build/" \
     --exclude /target/ \
-    --exclude "obj-*/" \
+    --exclude "/obj-*/" \
     --exclude __pycache__/ \
     --exclude "*.pyc" \
     --exclude .js-cache/ \
