@@ -93,7 +93,7 @@ if args.remote:
     proc.wait()
     sys.exit(proc.returncode)
 
-default_compiler = 'clang' if sys.platform == 'darwin' else 'gcc'
+default_compiler = 'clang' # clang works better with icecc on linux
 compiler = 'gcc' if args.gcc else default_compiler
 
 name_elements = []
