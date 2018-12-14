@@ -91,6 +91,9 @@ rsync \
     --exclude "/obj-*/" \
     --exclude __pycache__/ \
     --exclude "*.pyc" \
+    --exclude "*~" \
+    --exclude "#*#" \
+    --exclude .DS_Store \
     --exclude .js-cache/ \
     --exclude /configure \
     --exclude /old-configure \
@@ -98,4 +101,12 @@ rsync \
     --exclude /src/old-configure \
     --exclude /js/src/configure \
     --exclude /js/src/old-configure \
+    --exclude "/third_party/python/psutil/*.so" \
+    --exclude "/third_party/python/psutil/*.pyd" \
+    --exclude "/third_party/python/psutil/build/" \
+    --exclude "/third_party/python/psutil/tmp/" \
+    --exclude GTAGS \
+    --exclude GRTAGS \
+    --exclude GSYMS \
+    --exclude GPATH \
     $SOURCE/ $TARGET/ || exit $?
