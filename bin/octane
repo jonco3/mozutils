@@ -1,4 +1,4 @@
-x#!/bin/bash
+#!/bin/bash
 
 if [ $# -lt 1 ]; then
     echo "usage: octane BUILD-DIR [ ITERATIONS [ TEST ] ]"
