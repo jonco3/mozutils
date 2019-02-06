@@ -114,11 +114,9 @@ add_config('tsan',
 common_options = [
     '--with-ccache',
     '--enable-nspr-build',
-    '--disable-cranelift'
+    '--disable-cranelift',
+    '--enable-warnings-as-errors'
 ]
-
-if sys.platform == 'darwin':
-    common_options.append('--enable-warnings-as-errors')
 
 def get_configs_from_args(args):
     """
