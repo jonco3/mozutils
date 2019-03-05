@@ -18,6 +18,9 @@ sys.path.append(libDir)
 from mozutils import *
 
 common_options = '--enable-profiling --disable-av1' # --enable-warnings-as-errors
+if sys.platform == 'darwin':
+    common_optins += ' --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
+
 debug_options = '--enable-debug --enable-gczeal --disable-optimize'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize=-O2'
 opt_options = '--disable-debug --enable-optimize=-O2'
