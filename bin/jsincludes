@@ -61,6 +61,7 @@ def shouldProcessInclude(path):
     return (path.endswith(".h") and
             not (path.startswith("mozilla/") or
                  path.startswith("unicode/") or
+                 path.startswith("devtools/") or
                  path.startswith("pr") or
                  path.endswith("Generated.h") or
                  path.endswith(".out.h") or
@@ -80,7 +81,8 @@ def shouldProcessInclude(path):
                           "mozmemory.h",
                           "unix.h",
                           "os9.h",
-                          "dtoa.c"]))
+                          "dtoa.c",
+                          "jscustomallocator.h"]))
 
 def mapInclude(path):
     if path.startswith("js/"):
