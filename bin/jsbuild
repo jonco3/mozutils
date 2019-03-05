@@ -98,7 +98,12 @@ os.chdir("js/src")
 
 if not args.unified:
     # Hack to disable unified builds on remotely synced repo
-    for path in ["moz.build", "jsapi-tests/moz.build"]:
+    for path in ["moz.build",
+                 "frontend/moz.build",
+                 "wasm/moz.build",
+                 "jit/moz.build",
+                 "gc/moz.build",
+                 "jsapi-tests/moz.build"]:
         with open(path, "r") as file:
             content = file.read()
         content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "", content)
