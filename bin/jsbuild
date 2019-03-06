@@ -106,8 +106,7 @@ if not args.unified:
                  "jsapi-tests/moz.build"]:
         with open(path, "r") as file:
             content = file.read()
-        content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "", content)
-        content += "\nFILES_PER_UNIFIED_FILE = 1\n"
+        content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1", content)
         with open(path, "w") as file:
             file.write(content)
 
