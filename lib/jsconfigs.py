@@ -12,7 +12,8 @@ config_compiler_exes = {}
 config_env_vars = {}
 config_group_defaults = {}
 
-def add_config(name, groups, options, compiler_c_exe = None, compiler_cpp_exe = None, env_vars = None):
+def add_config(name, groups, options = [], compiler_c_exe = None, compiler_cpp_exe = None,
+               env_vars = None):
     global config_names, config_groups, config_options, config_compiler_exes, config_env_vars
     assert name not in config_names
     config_names.append(name)
@@ -41,6 +42,7 @@ add_config('gctrace',      [], '--enable-gc-trace')
 add_config('valgrind',     [], ['--enable-valgrind'])
 add_config('smallchunk',   [], '--enable-small-chunk-size')
 add_config('nointl',       [], '--without-intl-api')
+add_config('dist',         [])
 
 add_config('noggc',        'gc', '--disable-gcgenerational')
 
@@ -75,11 +77,6 @@ add_config('armhf',        'compiler',
 # faster at optdebug
 config_group_defaults['compiler'] = 'clang'
 
-icecream_path = get_icecream_path()
-if icecream_path:
-    add_config('dist', 'compiler', [], icecream_path + '/cc', icecream_path + '/c++')
-else:
-    add_config('dist', [], [])
 
 if sys.platform == 'darwin':
     llvm_path = '/usr/local/opt/llvm38/lib/llvm-3.8'

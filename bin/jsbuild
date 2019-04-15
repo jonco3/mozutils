@@ -52,6 +52,9 @@ args = parser.parse_args()
 if not args.unified and not args.sync:
     sys.exit("Disabling of uniifed build only supported with sync")
 
+if args.dist and not get_icecream_path():
+    sys.exit("icecc not found on path")
+
 if args.dir:
     for dir in args.dir:
         os.chdir(dir[0])
@@ -161,7 +164,6 @@ if not os.path.isdir(dir):
 if args.dist and sys.platform != 'darwin':
     ensureExe("icecc")
     os.environ['CCACHE_PREFIX'] = 'icecc'
-
 
 ensureExe('sccache')
 os.environ['RUSTC_WRAPPER'] = 'sccache'
