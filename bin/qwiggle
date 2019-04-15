@@ -7,8 +7,14 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
+if [[ `uname` == 'Darwin' ]]; then
+    FIND=gfind
+else
+    FIND=find
+fi
+
 if [[ $1 == "-a" ]]; then
-    FILES=`gfind -name '*.rej'`
+    FILES=`$FIND -name '*.rej'`
 else
     FILES="$1.rej"
 fi
