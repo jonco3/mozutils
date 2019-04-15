@@ -81,10 +81,6 @@ if icecream_path:
 else:
     add_config('dist', [], [])
 
-add_config('ctypes',       'ctypes', ['--enable-ctypes'])
-add_config('noctypes',     'ctypes', ['--disable-ctypes'])
-config_group_defaults['ctypes'] = 'noctypes'
-
 if sys.platform == 'darwin':
     llvm_path = '/usr/local/opt/llvm38/lib/llvm-3.8'
     tsan_env = {
@@ -114,6 +110,7 @@ add_config('tsan',
 common_options = [
     '--with-ccache',
     '--enable-nspr-build',
+    '--enable-ctypes',
     '--disable-cranelift',
     '--enable-warnings-as-errors'
 ]
