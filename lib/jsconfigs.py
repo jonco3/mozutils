@@ -32,20 +32,6 @@ def add_config(name, groups, options = [], compiler_c_exe = None, compiler_cpp_e
 x86_options = '--target=i686-pc-linux'
 arm_options = '--with-arch=armv7-a --with-fpu=vfp --with-thumb --without-intl-api'
 
-add_config('armsim',       [], '--enable-simulator=arm')
-add_config('arm64sim',     [], '--enable-simulator=arm64')
-add_config('mipssim',      [], '--enable-simulator=mips32')
-add_config('mips64sim',    [], '--enable-simulator=mips64')
-add_config('nounified',    [], '--disable-unified-compilation')
-add_config('noion',        [], '--disable-ion')
-add_config('gctrace',      [], '--enable-gc-trace')
-add_config('valgrind',     [], ['--enable-valgrind'])
-add_config('smallchunk',   [], '--enable-small-chunk-size')
-add_config('nointl',       [], '--without-intl-api')
-add_config('dist',         [])
-
-add_config('noggc',        'gc', '--disable-gcgenerational')
-
 add_config('debug',        'opt', ['--enable-gczeal',
                                    '--enable-debug',
                                    '--disable-optimize',
@@ -60,6 +46,20 @@ add_config('profile',      'opt',  ['--disable-debug',
                                     '--enable-profiling',
                                     '--enable-instruments'])
 config_group_defaults['opt'] = 'debug'
+
+add_config('armsim',       [], '--enable-simulator=arm')
+add_config('arm64sim',     [], '--enable-simulator=arm64')
+add_config('mipssim',      [], '--enable-simulator=mips32')
+add_config('mips64sim',    [], '--enable-simulator=mips64')
+add_config('nounified',    [], '--disable-unified-compilation')
+add_config('noion',        [], '--disable-ion')
+add_config('gctrace',      [], '--enable-gc-trace')
+add_config('valgrind',     [], ['--enable-valgrind'])
+add_config('smallchunk',   [], '--enable-small-chunk-size')
+add_config('nointl',       [], '--without-intl-api')
+add_config('dist',         [])
+
+add_config('noggc',        'gc', '--disable-gcgenerational')
 
 add_config('clang',        'compiler', [], 'clang', 'clang++')
 add_config('gcc',          'compiler', [], 'gcc', 'g++')
@@ -103,6 +103,14 @@ add_config('tsan',
             '--enable-thread-sanitizer'],
            'clang', 'clang++',
            tsan_env)
+
+add_config('asan',
+           ['opt', 'compiler'],
+           ['--enable-address-sanitizer',
+            '--disable-jemalloc',
+            '--disable-debug',
+            '--enable-optimize'],
+           'clang', 'clang++')
 
 common_options = [
     '--with-ccache',
