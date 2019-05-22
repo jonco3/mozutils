@@ -8,6 +8,7 @@ TargetRepo = "https://hg.mozilla.org/mozilla-central"
 BugzillaAPI = "https://bugzilla.mozilla.org/rest"
 
 import argparse
+from datetime import datetime
 import io
 import json
 import os
@@ -84,8 +85,8 @@ try:
         for comment in comments:
             text = comment['text']
             if TargetRepo in text and node in text:
-                time = comment['creation_time']
-                print("%s %s %s" % (time, node, desc))
+                time = datetime.strptime(comment['creation_time'], "%Y-%m-%dT%H:%M:%SZ")
+                print("%s %s %s" % (time.strftime("%Y-%m-%d %H:%M"), node, desc))
                 found = True
                 break
 
