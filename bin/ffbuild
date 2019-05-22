@@ -123,7 +123,7 @@ if args.dry_run:
     sys.exit(0)
 
 if os.path.isfile('.cloned-from') and args.sync:
-    cmd = [ os.path.join(binDir, 'pullBranch') ]
+    cmd = [ os.path.join(binDir, 'syncBranch') ]
     if args.sync == "dom":
         cmd.append("-d")
     subprocess.check_call(cmd)

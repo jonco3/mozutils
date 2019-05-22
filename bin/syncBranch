@@ -25,7 +25,7 @@ elif [[ $# -eq 1 ]]; then
 fi
 
 if [[ $# -ne 0 && $# -ne 2 ]]; then
-    echo "usage: pullBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
+    echo "usage: syncBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
     echo "Sync remote source repository ~/work/BRANCH from host HOST"
     exit 1
 fi
@@ -44,7 +44,7 @@ if [[ $# -eq 2 ]]; then
     while [[ ! -f $REMOTE_FILE ]]; do
         cd ..
         if [[ $OLDPWD == $PWD ]]; then
-            echo "Run pullBranch from within a cloned directory"
+            echo "Run syncBranch from within a cloned directory"
             exit 1
         fi
     done
