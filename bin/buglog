@@ -69,14 +69,14 @@ try:
 
         match = re.match(r'Bug (\d+)', desc)
         if not match:
-            print("Skipping: " + desc)
+            print("%s         Skipped: %s" % (node, desc))
             continue
 
         bug_id = match.group(1)
 
         bug_data = fetchBugData(bug_id)
         if not bug_data:
-            print("Bug %s change %s is hidden" % (bug_id, node))
+            print("%s          Hidden: %s" % (node, desc))
             continue
 
         comments = bug_data['bugs'][bug_id]['comments']
@@ -86,11 +86,11 @@ try:
             text = comment['text']
             if TargetRepo in text and node in text:
                 time = datetime.strptime(comment['creation_time'], "%Y-%m-%dT%H:%M:%SZ")
-                print("%s %s %s" % (time.strftime("%Y-%m-%d %H:%M"), node, desc))
+                print("%s %s %s" % (node, time.strftime("%Y-%m-%d %H:%M"), desc))
                 found = True
                 break
 
         if not found:
-            print("Couldn't find push comment for bug %s change %s" % (bug_id, node))
+            print("%s       Not found: %s" % (node, desc))
 except KeyboardInterrupt:
     sys.exit(1)
