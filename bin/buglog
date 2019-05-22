@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+
+# Find out when bugs landed on mozilla-central
+# todo: Parse backout information?
+# todo: work out which nightly build they were in
+
+TargetRepo = "https://hg.mozilla.org/mozilla-central"
+FilePath = "gc"
+MaxChanges = 20
+BugzillaAPI = "https://bugzilla.mozilla.org/rest"
+
+import io
+import json
+import os
+import sys
+import re
+import subprocess
+import urllib.request
+
+BugData = {}
+def fetchBugData(bug_id):
+    if bug_id in BugData:
+        return BugData[bug_id]
+
+    url = "%s/bug/%s/comment?include_fields=text,creation_time" % (BugzillaAPI, bug_id)
+    try:
+        contents = urllib.request.urlopen(url).read()
+    except urllib.error.HTTPError as error:
+        if error.code == 401:
+            return None
+        raise
+
+    bug_data = json.loads(contents)
+    BugData[bug_id] = bug_data
+    return bug_data
+
+if not os.path.exists(FilePath):
+    sys.exit("Path not found: " + FilePath)
+
+command = ['hg', 'log', '--template', '{node} {phase} {firstline(desc)}\n', '--limit', str(MaxChanges), FilePath]
+proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+    match = re.match(r'(\w+) (\w+) (.*)', line.rstrip())
+    if not match:
+        sys.exit("Can't parse hg log output: " + line)
+
+    node, phase, desc = match.group(1), match.group(2), match.group(3)
+    if phase != 'public':
+        continue
+
+    node = node[:12]
+
+    match = re.match(r'Bug (\d+) ', desc)
+    if not match:
+        print("Skipping " + desc)
+        continue
+
+    bug_id = match.group(1)
+
+    bug_data = fetchBugData(bug_id)
+    if not bug_data:
+        print("Bug %s change %s is hidden" % (bug_id, node))
+        continue
+
+    comments = bug_data['bugs'][bug_id]['comments']
+
+    found = False
+    for comment in comments:
+        text = comment['text']
+        if TargetRepo in text and node in text:
+            time = comment['creation_time']
+            print("Bug %s change %s landed on %s" % (bug_id, node, time))
+            found = True
+            break
+
+    if not found:
+        print("Couldn't find push comment for bug %s change %s" % (bug_id, node))
