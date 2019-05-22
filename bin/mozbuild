@@ -75,7 +75,7 @@ chdir_to_source_root()
 
 if args.remote:
     dir = os.path.basename(os.getcwd())
-    command = ['ssh', 'desktop', 'mozbuild', '--dir', 'clone', '--dir', dir] + \
+    command = ['ssh', 'build-remote', 'mozbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     remoteDir = None
