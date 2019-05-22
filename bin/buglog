@@ -45,48 +45,51 @@ def fetchBugData(bug_id):
     BugData[bug_id] = bug_data
     return bug_data
 
-command = ['hg', 'log',
-           '--template', '{node} {phase} {firstline(desc)}\n',
-           '--limit', str(args.limit),
-           args.path]
-proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
-    match = re.match(r'(\w+) (\w+) (.*)', line.rstrip())
-    if not match:
-        sys.exit("Can't parse hg log output: " + line)
+try:
+    command = ['hg', 'log',
+               '--template', '{node} {phase} {firstline(desc)}\n',
+               '--limit', str(args.limit),
+               args.path]
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        match = re.match(r'(\w+) (\w+) (.*)', line.rstrip())
+        if not match:
+            sys.exit("Can't parse hg log output: " + line)
 
-    node, phase, desc = match.group(1), match.group(2), match.group(3)
-    if args.verbose:
-        print("(log %s %s %s)" % (node, phase, desc))
+        node, phase, desc = match.group(1), match.group(2), match.group(3)
+        if args.verbose:
+            print("(log %s %s %s)" % (node, phase, desc))
 
-    if phase != 'public':
-        continue
+        if phase != 'public':
+            continue
 
-    node = node[:12]
-    desc = desc[:75]
+        node = node[:12]
+        desc = desc[:75]
 
-    match = re.match(r'Bug (\d+)', desc)
-    if not match:
-        print("Skipping " + desc)
-        continue
+        match = re.match(r'Bug (\d+)', desc)
+        if not match:
+            print("Skipping: " + desc)
+            continue
 
-    bug_id = match.group(1)
+        bug_id = match.group(1)
 
-    bug_data = fetchBugData(bug_id)
-    if not bug_data:
-        print("Bug %s change %s is hidden" % (bug_id, node))
-        continue
+        bug_data = fetchBugData(bug_id)
+        if not bug_data:
+            print("Bug %s change %s is hidden" % (bug_id, node))
+            continue
 
-    comments = bug_data['bugs'][bug_id]['comments']
+        comments = bug_data['bugs'][bug_id]['comments']
 
-    found = False
-    for comment in comments:
-        text = comment['text']
-        if TargetRepo in text and node in text:
-            time = comment['creation_time']
-            print("%s %s %s" % (time, node, desc))
-            found = True
-            break
+        found = False
+        for comment in comments:
+            text = comment['text']
+            if TargetRepo in text and node in text:
+                time = comment['creation_time']
+                print("%s %s %s" % (time, node, desc))
+                found = True
+                break
 
-    if not found:
-        print("Couldn't find push comment for bug %s change %s" % (bug_id, node))
+        if not found:
+            print("Couldn't find push comment for bug %s change %s" % (bug_id, node))
+except KeyboardInterrupt:
+    sys.exit(1)
