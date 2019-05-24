@@ -20,6 +20,8 @@ import urllib.request
 parser = argparse.ArgumentParser(description = 'Find when changes landed on mozilla-central')
 parser.add_argument('-l', '--limit', type=int, default=20,
                     help='Number of changesets to look at')
+parser.add_argument('-r', '--rev',
+                    help='Revision or revset to query')
 parser.add_argument('-v', '--verbose', action='store_true', default=False,
                     help='Produce verbose output')
 parser.add_argument('path', nargs='?', default='.',
@@ -46,11 +48,16 @@ def fetchBugData(bug_id):
     BugData[bug_id] = bug_data
     return bug_data
 
+print("Change:      Landed on:       Description:")
+
 try:
     command = ['hg', 'log',
                '--template', '{node} {phase} {firstline(desc)}\n',
                '--limit', str(args.limit),
                args.path]
+    if args.rev:
+        command.extend(['--rev', args.rev])
+
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
         match = re.match(r'(\w+) (\w+) (.*)', line.rstrip())
@@ -67,16 +74,16 @@ try:
         node = node[:12]
         desc = desc[:75]
 
-        match = re.match(r'Bug (\d+)', desc)
+        match = re.match(r'Bug (\d+)', desc, re.IGNORECASE)
         if not match:
-            print("%s         Skipped: %s" % (node, desc))
+            print("%s        (skipped) %s" % (node, desc))
             continue
 
         bug_id = match.group(1)
 
         bug_data = fetchBugData(bug_id)
         if not bug_data:
-            print("%s          Hidden: %s" % (node, desc))
+            print("%s         (hidden) %s" % (node, desc))
             continue
 
         comments = bug_data['bugs'][bug_id]['comments']
@@ -91,6 +98,6 @@ try:
                 break
 
         if not found:
-            print("%s       Not found: %s" % (node, desc))
+            print("%s      (not found) %s" % (node, desc))
 except KeyboardInterrupt:
     sys.exit(1)
