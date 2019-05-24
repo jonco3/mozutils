@@ -48,6 +48,21 @@ def fetchBugData(bug_id):
     BugData[bug_id] = bug_data
     return bug_data
 
+def findLandingTime(node, bug_id):
+    bug_data = fetchBugData(bug_id)
+    if not bug_data:
+        return "(hidden)"
+
+    comments = bug_data['bugs'][bug_id]['comments']
+
+    for comment in comments:
+        text = comment['text']
+        if TargetRepo in text and node[:12] in text:
+            time = datetime.strptime(comment['creation_time'], "%Y-%m-%dT%H:%M:%SZ")
+            return time.strftime("%Y-%m-%d %H:%M")
+
+    return "(not found)"
+
 print("Change:      Landed on:       Description:")
 
 try:
@@ -71,33 +86,14 @@ try:
         if phase != 'public':
             continue
 
-        node = node[:12]
-        desc = desc[:75]
-
         match = re.match(r'Bug (\d+)', desc, re.IGNORECASE)
         if not match:
-            print("%s        (skipped) %s" % (node, desc))
-            continue
+            result = "(skipped)"
+        else:
+            bug_id = match.group(1)
+            result = findLandingTime(node, bug_id)
 
-        bug_id = match.group(1)
+        print("%s %16s %s" % (node[:12], result, desc[:75]))
 
-        bug_data = fetchBugData(bug_id)
-        if not bug_data:
-            print("%s         (hidden) %s" % (node, desc))
-            continue
-
-        comments = bug_data['bugs'][bug_id]['comments']
-
-        found = False
-        for comment in comments:
-            text = comment['text']
-            if TargetRepo in text and node in text:
-                time = datetime.strptime(comment['creation_time'], "%Y-%m-%dT%H:%M:%SZ")
-                print("%s %s %s" % (node, time.strftime("%Y-%m-%d %H:%M"), desc))
-                found = True
-                break
-
-        if not found:
-            print("%s      (not found) %s" % (node, desc))
 except KeyboardInterrupt:
     sys.exit(1)
