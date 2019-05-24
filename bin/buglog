@@ -63,9 +63,7 @@ def findLandingTime(node, bug_id):
 
     return "(not found)"
 
-print("Change:      Landed on:       Description:")
-
-try:
+def run():
     command = ['hg', 'log',
                '--template', '{node} {phase} {firstline(desc)}\n',
                '--limit', str(args.limit),
@@ -74,6 +72,9 @@ try:
         command.extend(['--rev', args.rev])
 
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+
+    print("Change:      Landed on:       Description:")
+
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
         match = re.match(r'(\w+) (\w+) (.*)', line.rstrip())
         if not match:
@@ -95,5 +96,7 @@ try:
 
         print("%s %16s %s" % (node[:12], result, desc[:75]))
 
+try:
+    run()
 except KeyboardInterrupt:
     sys.exit(1)
