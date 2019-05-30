@@ -109,4 +109,5 @@ rsync \
     --exclude GRTAGS \
     --exclude GSYMS \
     --exclude GPATH \
+    --exclude GSTALE \
     $SOURCE/ $TARGET/ || exit $?
