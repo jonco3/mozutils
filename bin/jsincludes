@@ -31,7 +31,7 @@ args = parser.parse_args()
 IncludeRe = re.compile('^#include\s+"([^\s]+)"')
 
 def findAllPublicHeaders():
-    return glob.glob("public/*.h")
+    return glob.glob("public/*.h") + glob.glob("public/*/*.h")
 
 def dirContainsSource(name):
     return not ("test" in name or
