@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Kill residual processes left around after running mochitests
+# Kill residual processes left around after running mochi (and other)
+# tests.
 
 set -eu
 
@@ -31,3 +32,4 @@ killMatching _tests/testing/mochitest
 killMatching dist/bin/xpcshell
 killMatching dist/bin/ssltunnel
 killMatching dist/bin/firefox
+killMatching mitmdump
