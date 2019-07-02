@@ -76,7 +76,7 @@ def run_command(command, verbose, warnings):
             println(line)
             continue
 
-        match = objectFileRe.search(line)
+        match = objectFileRe.match(line)
         if (match):
             println("  " + match.group(1))
             continue
