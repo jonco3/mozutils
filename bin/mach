@@ -20,6 +20,7 @@ args.opt = False
 args.optdebug = False
 args.dist = False
 args.headless = False
+args.gcc = False
 
 # Only parse known arguments at the start of the arguments list.
 while len(sys.argv) > 1 and sys.argv[1].startswith('-'):
@@ -32,6 +33,8 @@ while len(sys.argv) > 1 and sys.argv[1].startswith('-'):
         args.dist = True
     elif opt == '-h':
         args.headless = True
+    elif opt == '-g':
+        args.gcc = True
     else:
         break
 
@@ -47,6 +50,8 @@ if args.optdebug:
     name_elements.append("optdebug")
 elif args.opt:
     name_elements.append("opt")
+if args.gcc:
+    name_elements.append("gcc")
 if args.dist:
     name_elements.append("dist")
 if not name_elements:
