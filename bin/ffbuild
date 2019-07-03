@@ -17,14 +17,14 @@ libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
 
-common_options = '--enable-profiling --disable-av1 --disable-cranelift' # --enable-warnings-as-errors
+# Currently getting build errors with webrender on linux
+common_options = '--enable-profiling --disable-av1 --disable-cranelift --disable-webrender' # --enable-warnings-as-errors
 if sys.platform == 'darwin':
     common_options += ' --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
 
 debug_options = '--enable-debug --enable-gczeal --disable-optimize'
 optdebug_options = '--enable-debug --enable-gczeal --enable-optimize=-O2'
 opt_options = '--disable-debug --enable-optimize=-O2'
-prof_options = '--disable-debug --enable-optimize=-O2'
 valgrind_options = '--enable-valgrind --disable-jemalloc --disable-replace-malloc'
 
 android_home = os.path.expanduser('~/software/android')
@@ -40,9 +40,10 @@ build_configs = {
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
-parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
-parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
-parser.add_argument('-p', '--prof', action='store_true', help = 'Profiling build')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-o', '--opt', action='store_true', help = 'Optimized rather than debug build')
+group.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
+group.add_argument('-p', '--pgo', action='store_true', help = 'PGO build')
 parser.add_argument('-V', '--valgrind', action='store_true', help = 'Build with valgrind')
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
@@ -59,8 +60,6 @@ parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remo
 parser.add_argument('config', nargs ='?', choices = build_configs.keys(), default = 'default',
                     help = 'Build config to use')
 args = parser.parse_args()
-if args.opt and args.optdebug:
-    sys.exit("Can't specify both --opt and --optdebug")
 
 icecream_path = get_icecream_path()
 if args.dist and not icecream_path:
@@ -106,8 +105,8 @@ if args.optdebug:
     name_elements.append("optdebug")
 elif args.opt:
     name_elements.append("opt")
-elif args.prof:
-    name_elements.append("prof")
+elif args.pgo:
+    name_elements.append("pgo")
 if args.valgrind:
     name_elements.append("valgrind")
 if compiler != default_compiler and args.gcc:
@@ -191,16 +190,17 @@ if not os.path.exists(mozconfig_file) or \
         addMakeOption("AUTOCLOBBER=1")
         addOptions(common_options)
 
-        if args.optdebug:
-            addOptions(optdebug_options)
-        elif args.opt:
+        if args.opt or args.pgo:
             addOptions(opt_options)
-        elif args.prof:
-            addOptions(prof_options)
+        elif args.optdebug:
+            addOptions(optdebug_options)
         else:
             addOptions(debug_options)
 
-        if not args.opt and args.config != 'fennec':
+        if args.pgo:
+            f.write("export MOZ_PGO=1\n")
+
+        if not (args.opt or args.pgo) and args.config != 'fennec':
             addOptions("--enable-debug-symbols --disable-install-strip")
 
         if args.valgrind:
