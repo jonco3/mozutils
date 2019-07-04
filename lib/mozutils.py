@@ -75,7 +75,7 @@ def run_command(command, verbose, warnings):
             continue
 
         words = line.split()
-        if len(words) > 2 and (words[0] == "Compiling" or words[0] == "Creating"):
+        if len(words) == 2 and (words[0] == "Compiling" or words[0] == "Creating"):
             println("  " + words[1])
         elif len(words) == 1 and re.fullmatch(r"\w[\w\-_/\.]*", words[0]):
             println("  " + words[0])
