@@ -26,16 +26,19 @@ optdebug_options = '--enable-debug --enable-gczeal --enable-optimize=-O2'
 opt_options = '--disable-debug --enable-optimize=-O2'
 valgrind_options = '--enable-valgrind --disable-jemalloc --disable-replace-malloc'
 
-android_home = os.path.expanduser('~/software/android')
-fennec_options = ' '.join(['--enable-application=mobile/android',
-                           '--target=arm-linux-androideabi',
-                           '--with-android-ndk="%s/android-ndk-r8e"' % android_home,
-                           '--with-android-sdk="%s/adt-bundle/sdk/platforms/android-19"' % android_home])
+minimal_options = ' '.join([
+    '--disable-js-shell',
+    '--disable-cranelift',
+    '--disable-binast',
+    '--disable-fmp4',
+    '--disable-printing',
+    '--disable-synth-speechd',
+    '--disable-webspeech',
+    '--disable-webrtc'])
 
 build_configs = {
     'default': '',
-    'fennec': fennec_options,
-    'fennec6': fennec_options + ' --with-arch=armv6'
+    'min': minimal_options
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
@@ -73,7 +76,7 @@ chdir_to_source_root()
 
 if args.remote:
     dir = os.path.basename(os.getcwd())
-    command = ['ssh', 'build-remote', 'ffbuild', '--dir', 'clone', '--dir', dir] + \
+    command = ['ssh', get_build_remote(), 'ffbuild', '--dir', 'clone', '--dir', dir] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     remoteDir = None
@@ -148,8 +151,7 @@ if not os.path.exists(mozconfig_file) or \
         ensureExe("lld")
 
     with open(mozconfig_file, 'w') as f:
-        if args.config != 'fennec':
-            f.write(". $topsrcdir/browser/config/mozconfig\n")
+        f.write(". $topsrcdir/browser/config/mozconfig\n")
 
         def setCompiler(c_name, cpp_name):
             ensureExe(c_name)
@@ -199,7 +201,7 @@ if not os.path.exists(mozconfig_file) or \
         if args.pgo:
             f.write("export MOZ_PGO=1\n")
 
-        if not (args.opt or args.pgo) and args.config != 'fennec':
+        if not (args.opt or args.pgo):
             addOptions("--enable-debug-symbols --disable-install-strip")
 
         if args.valgrind:

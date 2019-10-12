@@ -2,6 +2,7 @@
 
 import io
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -102,3 +103,10 @@ def get_icecream_path():
         if sys.platform == 'darwin':
             path = os.path.dirname(path)
     return path
+
+def get_build_remote():
+    path = os.path.join(pathlib.Path.home(), ".build-remote")
+    if not os.path.isfile(path):
+        sys.exit("Can't read remote host from " + path);
+    with open(path, "r") as file:
+        return file.readline().strip()

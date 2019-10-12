@@ -117,7 +117,8 @@ common_options = [
     '--enable-nspr-build',
     '--enable-ctypes',
     '--disable-cranelift',
-    '--enable-warnings-as-errors'
+    '--enable-warnings-as-errors',
+    '--with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
 ]
 
 def get_configs_from_args(args):

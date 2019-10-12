@@ -82,7 +82,9 @@ def shouldProcessInclude(path):
                           "unix.h",
                           "os9.h",
                           "dtoa.c",
-                          "jscustomallocator.h"]))
+                          "jscustomallocator.h",
+                          "FuzzerDefs.h",
+                          "FuzzingInterface.h"]))
 
 def mapInclude(path):
     if path.startswith("js/"):
