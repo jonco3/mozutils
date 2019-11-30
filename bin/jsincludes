@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Simplistic script to generate graph of include dependencies.
+# Query spidermonkey include graph.
 
 import argparse
 import glob
@@ -12,8 +12,10 @@ import sys
 import tempfile
 
 parser = argparse.ArgumentParser(description = 'Discover SpiderMonkey include graphs')
-parser.add_argument('--graph', '-g', dest='action', action='store_const', const='graph',
-                    help='Create include graph')
+parser.add_argument('--dot-graph', '-g', dest='action', action='store_const', const='dot_graph',
+                    help='Generate include graph in DOT format')
+parser.add_argument('--json-graph', '-j', dest='action', action='store_const', const='json_graph',
+                    help='Generate include graph in JSON format')
 parser.add_argument('--reverse', '-r', dest='action', action='store_const', const='reverse',
                     help='Find who includes files')
 parser.add_argument('--paths', '-p', dest='action', action='store_const', const='paths',
@@ -173,7 +175,7 @@ def nodeColour(path):
         return 'orange'
     return 'red'
 
-def makeGraph(files, output):
+def generateDOTGraph(files, output):
     includes = []
     processedFiles = set()
 
@@ -187,8 +189,6 @@ def makeGraph(files, output):
             if target not in processedFiles:
                 files.append(target)
             includes.append((file, target))
-
-    f = tempfile.NamedTemporaryFile("w", delete = False)
 
     output.write("digraph G {\n")
     output.write('  size = "10, 7.5";\n')
@@ -205,6 +205,32 @@ def makeGraph(files, output):
             nameInclude(target),
             nodeColour(target)))
     output.write("}\n")
+
+def generateJSONGraph(files, output):
+    includes = {}
+
+    while files:
+        file = files.pop()
+        if file in includes:
+            continue
+
+        includes[file] = set()
+        for target in getIncludes(file):
+            includes[file].add(target)
+            if target not in includes:
+                files.append(target)
+
+    output.write("[\n")
+    first = True
+    for file in sorted(includes.keys()):
+        if first:
+            first = False
+        else:
+            output.write(",")
+        output.write("\n{\"name\":\"%s\",\"imports\":[" % file)
+        output.write(",".join(map(lambda s: "\"%s\"" % s, sorted(includes[file]))))
+        output.write("]}")
+    output.write("\n]\n")
 
 def drawGraph(dotFile):
     output = dotFile + ".png"
@@ -404,8 +430,10 @@ if args.files:
 else:
     filesToProcess = findAllCppFiles()
 
-if args.action == 'graph':
-    makeGraph(filesToProcess, sys.stdout)
+if args.action == 'dot_graph':
+    generateDOTGraph(filesToProcess, sys.stdout)
+if args.action == 'json_graph':
+    generateJSONGraph(filesToProcess, sys.stdout)
 elif args.action == 'reverse':
     findInclusions(filesToProcess)
 elif args.action == 'paths':
