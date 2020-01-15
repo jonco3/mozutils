@@ -17,7 +17,7 @@ libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
 
-common_options = '--enable-profiling --disable-av1 --disable-cranelift --enable-js-shell' # --enable-warnings-as-errors
+common_options = '--enable-profiling --disable-av1 --disable-cranelift --enable-js-shell --disable-warnings-as-errors' # --enable-warnings-as-errors
 if sys.platform == 'darwin':
     common_options += ' --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk'
 
@@ -37,10 +37,13 @@ minimal_options = ' '.join([
     '--disable-webspeech',
     '--disable-webrtc'])
 
+android_options = '--enable-application=mobile/android --target=arm-linux-androideabi'
+
 build_configs = {
     'default': '',
     'min': minimal_options,
-    'coverage': coverage_options
+    'coverage': coverage_options,
+    'android': android_options
 }
 
 parser = argparse.ArgumentParser(description = 'Build Firefox')
@@ -52,7 +55,7 @@ parser.add_argument('-V', '--valgrind', action='store_true', help = 'Build with 
 parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
 parser.add_argument('-w', '--warnings', action='store_true', help = 'Show warnings')
 parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
-parser.add_argument(      '--clang', action='store_true', help = 'Force use of Clang rather than GCC')
+parser.add_argument(      '--gcc', action='store_true', help = 'Force use of GCC rather than clang')
 parser.add_argument('-n', '--dry-run', action='store_true', help = 'Dry run, check arguments but don\'t build')
 parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
 parser.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
@@ -99,8 +102,8 @@ if args.remote:
     proc.wait()
     sys.exit(proc.returncode)
 
-default_compiler = 'gcc' # clang compilations currently broken
-compiler = 'clang' if args.clang else default_compiler
+default_compiler = 'clang' # gcc compilations currently broken
+compiler = 'gcc' if args.gcc else default_compiler
 
 name_elements = []
 if args.config != 'default':
@@ -113,8 +116,8 @@ elif args.pgo:
     name_elements.append("pgo")
 if args.valgrind:
     name_elements.append("valgrind")
-if compiler != default_compiler and args.clang:
-    name_elements.append("clang")
+if compiler != default_compiler and args.gcc:
+    name_elements.append("gcc")
 if args.dist:
     name_elements.append("dist")
 if not name_elements:
