@@ -43,8 +43,7 @@ add_config('opt',          'opt', ['--disable-debug',
                                    '--enable-optimize'])
 add_config('profile',      'opt',  ['--disable-debug',
                                     '--enable-optimize',
-                                    '--enable-profiling',
-                                    '--enable-instruments'])
+                                    '--enable-profiling'])
 config_group_defaults['opt'] = 'debug'
 
 add_config('armsim',       [], '--enable-simulator=arm')
@@ -116,8 +115,8 @@ common_options = [
     '--with-ccache',
     '--enable-nspr-build',
     '--enable-ctypes',
-    '--disable-cranelift',
-    '--enable-warnings-as-errors'
+    '--disable-cranelift'
+#    '--enable-warnings-as-errors'
 ]
 
 if sys.platform == 'darwin':
