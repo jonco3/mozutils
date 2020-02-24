@@ -106,7 +106,7 @@ try:
         run_test('jit', 'python jit-test/jit_test.py %s %s/shell' % (testOptions, dir))
 
     if args.jstest or test_all:
-        run_test('js', 'python tests/jstests.py %s %s/shell' % (testOptions, dir))
+        run_test('js', 'python tests/jstests.py %s %s/shell /' % (testOptions, dir))
 
     if args.octane:
         os.chdir('octane')
