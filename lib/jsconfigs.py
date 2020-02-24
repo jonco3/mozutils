@@ -40,7 +40,8 @@ add_config('optdebug',     'opt', ['--enable-gczeal',
                                    '--enable-debug',
                                    '--enable-optimize'])
 add_config('opt',          'opt', ['--disable-debug',
-                                   '--enable-optimize'])
+                                   '--enable-optimize',
+                                   '--enable-release'])
 add_config('profile',      'opt',  ['--disable-debug',
                                     '--enable-optimize',
                                     '--enable-profiling'])
