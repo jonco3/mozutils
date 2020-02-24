@@ -79,7 +79,7 @@ tsan_options = [
     ]
 
 build_configs = {
-    'default': '',
+    'default': [],
     'min': minimal_options,
     'coverage': coverage_options,
     'android': android_options,
@@ -250,7 +250,7 @@ if not os.path.exists(mozconfig_file) or \
             f.write("export MOZ_PGO=1\n")
 
         if not (args.opt or args.pgo):
-            addOptions(["--enable-debug-symbols', '--disable-install-strip"])
+            addOptions(['--enable-debug-symbols', '--disable-install-strip'])
 
         if args.valgrind:
             addOptions(valgrind_options)
