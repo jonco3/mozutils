@@ -102,6 +102,7 @@ rsync \
     --exclude /js/src/configure \
     --exclude /js/src/old-configure \
     --exclude "/third_party/python/psutil/*.so" \
+    --exclude "/third_party/python/psutil/psutil/*.so" \
     --exclude "/third_party/python/psutil/*.pyd" \
     --exclude "/third_party/python/psutil/build/" \
     --exclude "/third_party/python/psutil/tmp/" \
