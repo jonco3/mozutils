@@ -116,8 +116,8 @@ common_options = [
     '--with-ccache',
     '--enable-nspr-build',
     '--enable-ctypes',
-    '--disable-cranelift'
-#    '--enable-warnings-as-errors'
+    '--disable-cranelift',
+    '--enable-warnings-as-errors'
 ]
 
 if sys.platform == 'darwin':
