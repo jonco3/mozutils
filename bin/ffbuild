@@ -192,8 +192,6 @@ if not os.path.exists(mozconfig_file) or \
 
     ensureExe("ccache")
     ensureExe("sccache")
-    if sys.platform == 'linux':
-        ensureExe("lld")
 
     with open(mozconfig_file, 'w') as f:
         f.write(". $topsrcdir/browser/config/mozconfig\n")
