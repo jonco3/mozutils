@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Common functions for python build scripts
 
 import io
@@ -76,7 +78,7 @@ def run_command(command, verbose, warnings):
             continue
 
         words = line.split()
-        if len(words) == 2 and (words[0] == "Compiling" or words[0] == "Creating"):
+        if len(words) >= 2 and (words[0] == "Compiling" or words[0] == "Creating"):
             println("  " + words[1])
         elif len(words) == 1 and re.fullmatch(r"\w[\w\-_/\.]*", words[0]):
             println("  " + words[0])
@@ -96,13 +98,64 @@ def chdir_to_source_root():
             sys.exit('Please run from within the mozilla source tree')
         lastDir = currentDir
 
-def get_icecream_path():
-    path = which('icecc')
-    if path:
-        path = os.path.dirname(path)
-        if sys.platform == 'darwin':
-            path = os.path.dirname(path)
-    return path
+def sync_branch(args):
+    libDir = os.path.dirname(__file__)
+    binDir = os.path.join(binDir, '..', 'bin')
+    cmd = [ os.path.join(binDir, 'syncBranch') ]
+    if args.sync == "js":
+        cmd.append("-j")
+    subprocess.check_call(cmd)
+
+def disable_unified_build(path):
+    with open(path, "r") as file:
+        content = file.read()
+    content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1", content)
+    with open(path, "w") as file:
+        file.write(content)
+
+def get_configs_from_args(args):
+    names = []
+    options = []
+
+    options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
+    options.append("--enable-warnings-as-errors")
+
+    if args.opt:
+        names.append('opt')
+        options.append('--enable-optimize')
+        options.append('--disable-debug')
+    elif args.optdebug:
+        names.append('optdebug')
+        options.append('--enable-optimize')
+        options.append('--enable-debug')
+        options.append('--enable-gczeal')
+    else:
+        options.append('--disable-optimize')
+        options.append('--enable-debug')
+        options.append('--enable-gczeal')
+
+    return names, options
+
+def get_build_name(config_names):
+    """
+    Get a canonical build name from a list of configs.
+    """
+    name_elements = config_names.copy()
+    if not name_elements:
+        name_elements.append("default")
+    return '-'.join(name_elements)
+
+def write_mozconfig(build_dir, options, build_config):
+    with open(build_config, "w") as file:
+        def w(line):
+            file.write(f"{line}\n")
+
+        w(f"mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/{build_dir}")
+        w("mk_add_options AUTOCLOBBER=1")
+        for option in options:
+            w(f"ac_add_options {option}")
+
+# Functions for handling remote builds:
 
 def get_build_remote():
     path = os.path.join(pathlib.Path.home(), ".build-remote")
@@ -110,3 +163,36 @@ def get_build_remote():
         sys.exit("Can't read remote host from " + path);
     with open(path, "r") as file:
         return file.readline().strip()
+
+def enter_dirs(dirs):
+    if not dirs:
+        return
+
+    for dir in dirs:
+        os.chdir(dir[0])
+    println("Entered dir: " + os.getcwd())
+
+def run_remote_comment(args):
+    localDir = os.getcwd()
+    branchName = os.path.basename(localDir)
+    script = os.path.basename(sys.argv[0])
+    command = ['ssh', get_build_remote(), '-t', '-t', script, '--dir', 'clone', '--dir',
+               branchName] + \
+              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    remoteDir = None
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        line = line.rstrip();
+        if not remoteDir:
+            match = re.match("^Entered dir: (.+)", line)
+            if match:
+                remoteDir = match.group(1)
+                println("Remote dir: " + remoteDir)
+                continue
+        if remoteDir and line.startswith(remoteDir):
+            line = localDir + line[len(remoteDir):]
+            line = re.sub("/clone/", "/work/", line)
+        line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
+        println(line)
+    proc.wait()
+    return proc.returncode

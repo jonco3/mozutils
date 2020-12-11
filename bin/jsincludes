@@ -68,6 +68,7 @@ def shouldProcessInclude(path):
                  path.endswith("javascript-trace.h") or
                  path.endswith("double-conversion.h") or
                  path.endswith("Opcodes.h") or
+                 path.endswith("ProfilingCategoryList.h") or
                  "arm" in path or
                  "mips" in path or
                  "generated" in path or

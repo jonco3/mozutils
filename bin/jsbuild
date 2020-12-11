@@ -20,20 +20,23 @@ binDir = os.path.dirname(__file__)
 libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
-from jsconfigs import *
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
-parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
-parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
-parser.add_argument('-p', '--profile', action='store_true', help = 'Profiling build')
-parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
-parser.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
+
+parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings', default=True,
                     help = 'Hide warnings')
-parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
 parser.add_argument('-n', '--dry-run', action='store_true',
                     help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
+parser.add_argument('--dir', nargs=1, action='append', dest='dirs',
+                    help = 'Change directory before building')
+parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
+parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
+                    help = 'Disable unified build')
+
+clean_group = parser.add_mutually_exclusive_group()
+clean_group.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+clean_group.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 
 sync_group = parser.add_mutually_exclusive_group()
 sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
@@ -41,140 +44,72 @@ sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', co
 sync_group.add_argument('-m', '--sync-js-only', dest='sync', action='store_const', const="js",
                         help = 'Sync js source only before build')
 
-parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
-parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
-parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
-                    help = 'Disable unified build')
-parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
-                    help = 'Build configurations to use')
+opt_group = parser.add_mutually_exclusive_group()
+opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
+opt_group.add_argument('-d', '--optdebug', action='store_true',
+                       help = 'Optimized build with assertions enabled')
+
+# todo:
+#  - armsim
+#  - tsan
+#  - 32bit
+
 args = parser.parse_args()
 
 if not args.unified and not args.sync:
     sys.exit("Disabling of uniifed build only supported with sync")
 
-if args.dist and not get_icecream_path():
-    sys.exit("icecc not found on path")
-
-if args.dir:
-    for dir in args.dir:
-        os.chdir(dir[0])
-    println("Entered dir: " + os.getcwd())
+enter_dirs(args.dirs)
 
 chdir_to_source_root()
 
 if args.remote:
-    dir = os.path.basename(os.getcwd())
-    command = ['ssh', get_build_remote(), '-t', '-t', 'jsbuild', '--dir', 'clone', '--dir', dir] + \
-              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
-    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-    remoteDir = None
-    localDir = os.getcwd()
-    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
-        line = line.rstrip();
-        if not remoteDir:
-            match = re.match("^Entered dir: (.+)", line)
-            if match:
-                remoteDir = match.group(1)
-                println("Remote dir: " + remoteDir)
-                continue
-        if remoteDir and line.startswith(remoteDir):
-            line = localDir + line[len(remoteDir):]
-            line = re.sub("/clone/", "/work/", line)
-        line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
-        println(line)
-    proc.wait()
-    sys.exit(proc.returncode)
+    sys.exit(run_remote_command(args))
 
-if args.dist and not get_icecream_path():
-    sys.exit("icecc not found on path")
+config_names, config_options = get_configs_from_args(args)
+config_options.append('--enable-application=js')
+
+build_name = get_build_name(config_names) + '-shell'
+build_dir = build_name + '-build'
+build_config = "mozconfig-" + build_name
 
 if args.dry_run:
     sys.exit(0)
 
 if os.path.isfile('.cloned-from') and args.sync:
-    cmd = [ os.path.join(binDir, 'syncBranch') ]
-    if args.sync == "js":
-        cmd.append("-j")
-    subprocess.check_call(cmd)
-
-os.chdir("js/src")
+    sync_branch(args);
 
 if not args.unified:
     # Hack to disable unified builds on remotely synced repo
-    for path in ["moz.build",
-                 "frontend/moz.build",
-                 "wasm/moz.build",
-                 "jit/moz.build",
-                 "gc/moz.build",
-                 "jsapi-tests/moz.build"]:
-        with open(path, "r") as file:
-            content = file.read()
-        content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1", content)
-        with open(path, "w") as file:
-            file.write(content)
+    disable_unified_build("js/src/moz.build")
 
-configs = get_configs_from_args(args)
-name = get_build_name(configs)
-dir = name + '-build'
-
-if (os.path.isfile('old-configure.in') and
-    (not os.path.isfile('old-configure') or
-     os.path.getmtime('old-configure.in') > os.path.getmtime('old-configure'))) or \
-    (not os.path.isfile('configure') or
-     os.path.getmtime('configure.in') > os.path.getmtime('configure')):
-    println('Autoconf')
-    autoconf = which('autoconf213') or which('autoconf2.13')
-    if not autoconf:
-        exit_fatal('Can\'t find autoconf 2.13')
-    subprocess.check_call(autoconf)
-
-    println('Clean all')
-    args.clean = False
-    for build in glob.glob('*-build'):
-        if os.path.isdir(build):
-            shutil.rmtree(build)
-
-if args.clean and os.path.exists(dir):
-    println('Clean ' + name)
+if args.clean and (os.path.exists(build_dir) or os.path.exists(build_config)):
+    println('Clean ' + build_name)
     println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
     time.sleep(5);  # so I can hit ^C after I accidentally do this
-    if os.path.isdir(dir):
-        shutil.rmtree(dir)
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+    if os.path.exists(build_config):
+        os.unlink(build_config)
 
-if not os.path.isdir(dir):
-    println('Configure ' + name)
-    os.mkdir(dir)
-    os.chdir(dir)
+if not os.path.exists(build_config):
+    write_mozconfig(build_dir, config_options, build_config)
 
-    opts = list(common_options)
-    for config in configs:
-        opts.extend(config_options[config])
-        if config in config_compiler_exes:
-            c_exe, cpp_exe = config_compiler_exes[config]
-            os.environ['CC'] = ensureExe(c_exe)
-            os.environ['CXX'] = ensureExe(cpp_exe)
-        if config in config_env_vars:
-            env_vars = config_env_vars[config]
-            for var in env_vars:
-                os.environ[var] = env_vars[var]
+if not os.path.exists(build_dir):
+    os.makedirs(build_dir)
 
-    run_command(['../configure'] + opts, args.verbose, args.warnings)
-    os.chdir('..')
+println("Build %s" % build_name)
+os.environ['MOZCONFIG'] = os.path.abspath(build_config)
+cmd = ['./mach', 'build']
+run_command(cmd, args.verbose, args.warnings)
 
-if args.dist and sys.platform != 'darwin':
-    ensureExe("icecc")
-    os.environ['CCACHE_PREFIX'] = 'icecc'
-
-ensureExe('sccache')
-os.environ['RUSTC_WRAPPER'] = 'sccache'
-
-println('Build ' + name)
-os.chdir(dir)
-job_count = 100 if args.dist else multiprocessing.cpu_count()
-run_command(['nice', 'make', '-j%d' % job_count], args.verbose, args.warnings)
+abs_build_dir = os.path.abspath(build_dir)
+js_src_build_dir = get_build_name(config_names) + '-build'
+os.chdir("js/src")
+if not os.path.exists(js_src_build_dir):
+    os.makedirs(js_src_build_dir)
+os.chdir(js_src_build_dir)
 if not os.path.lexists('shell'):
-    os.symlink('dist/bin/js', 'shell')
+    os.symlink(os.path.join(abs_build_dir, 'dist/bin/js'), 'shell')
 if not os.path.lexists('jsapi-tests'):
-    os.symlink('dist/bin/jsapi-tests', 'jsapi-tests')
-if platform.system() == 'Darwin' and not os.path.lexists('libmozglue.dylib'):
-    os.symlink('mozglue/build/libmozglue.dylib', 'libmozglue.dylib')
+    os.symlink(os.path.join(abs_build_dir, 'dist/bin/jsapi-tests'), 'jsapi-tests')

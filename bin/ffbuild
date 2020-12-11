@@ -25,7 +25,7 @@ common_options = [
     'MOZ_TELEMETRY_REPORTING=']
 
 if sys.platform == 'darwin':
-    common_options.append(' --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk')
+    common_options.append(' --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.12.sdk')
 
 debug_options = [
     '--enable-debug',
