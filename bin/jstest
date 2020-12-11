@@ -14,14 +14,16 @@ import multiprocessing
 # Import common functions
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
-from jsconfigs import *
+from mozconfig import *
 
 parser = argparse.ArgumentParser(description = 'Run SpiderMonkey tests')
-parser.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
-parser.add_argument('-d', '--optdebug', action='store_true', help = 'Optimized debug build')
-parser.add_argument('-p', '--profile', action='store_true', help = 'Profiling build')
-parser.add_argument('-i', '--dist', action='store_true', help = 'Distribute build using icecc')
-parser.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+
+parser.add_argument('-B', '--no-build', action='store_false', dest='build', default=True,
+                    help = 'Don\'t build before running tests')
+
+add_build_arguments(parser)
+add_config_arguments(parser)
+
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
 
@@ -31,45 +33,21 @@ parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit test
 parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
 parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
-sync_group = parser.add_mutually_exclusive_group()
-sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
-                        default='all', help = 'Don\'t sync cloned branch')
-sync_group.add_argument('-m', '--sync-js', dest='sync', action='store_const', const="js",
-                        help = 'Sync js source only before build')
-
-parser.add_argument('-B', '--no-build', action='store_false', dest='build', default=True,
-                    help = 'Don\'t build before running tests')
-parser.add_argument('--dir', nargs=1, action='append', help = 'Change directory before building')
-parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
-parser.add_argument('configs', nargs = '*', choices = config_names + ['default'], default = 'default',
-                    help = 'Build configurations to use')
 args = parser.parse_args()
 
-if args.dir:
-    for dir in args.dir:
-        os.chdir(dir[0])
+enter_dirs(args.dirs)
 
-configs = get_configs_from_args(args)
-name = get_build_name(configs)
-dir = name + '-build'
+if args.remote:
+    sys.exit(run_remote_command(args))
 
-def run_test(test_name, command):
-    println("Run %s %s tests" % (name, test_name))
+def run_test(build_name, test_name, command):
+    println("Run %s %s tests" % (build_name, test_name))
     rc = subprocess.call(command, shell = True)
     if rc != 0:
         sys.exit("Test failed")
     println('')
 
 chdir_to_source_root()
-
-if args.remote:
-    dir = os.path.basename(os.getcwd())
-    command = ['jstest', '--dir', 'clone', '--dir', dir] + \
-              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
-    subprocess.check_call(['ssh', 'desktop'] + command)
-    sys.exit()
-
-os.chdir("js/src")
 
 os.environ['TIMEZONE'] = 'PST'
 os.environ['LOCALE'] = 'en_US.utf8'
@@ -79,38 +57,43 @@ if args.gczeal:
 testOptions = '--tbpl' if args.tbpl else ''
 test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
+config_names, _ = get_configs_from_args(args)
+build_name = get_build_name(config_names) + '-shell'
+build_dir = build_name + '-build'
+build_config = "mozconfig-" + build_name
+
+bin_dir = os.path.join(build_dir, 'dist', 'bin')
+obj_dir = os.path.join(build_dir, 'js', 'src')
+
 try:
     if args.build:
-        command = ['jsbuild'] + configs
-        if args.clean:
-            command.append('--clean')
-        if not args.sync:
-            command.append('--no-sync')
-        elif args.sync == "js":
-            command.append('--sync-js')
-        run_command(command, True, False)
-        println('')
+        js_build(args)
 
     if (args.stylecheck) and os.path.exists("../../.hg"):
-        println("Run %s style check" % name)
-        run_command(['make', '-C', dir, 'check-style'], False, False)
-        run_command(['make', '-C', dir, 'check-masm'], False, False)
+        println("Run %s style check" % build_name)
+        run_command(['make', '-C', obj_dir, 'check-style'], False, False)
+        run_command(['make', '-C', obj_dir, 'check-masm'], False, False)
         println('')
 
     if args.jsapitest or test_all:
-        println("Run %s jsapi tests" % name)
-        run_command(os.path.join(dir, 'jsapi-tests'), False, False)
+        println("Run %s jsapi tests" % build_name)
+        run_command(os.path.join(bin_dir, 'jsapi-tests'), False, False)
         println('')
 
+    shell = os.path.abspath(os.path.join(bin_dir, 'js'))
+    os.chdir('js/src')
+
     if args.jittest or test_all:
-        run_test('jit', 'python jit-test/jit_test.py %s %s/shell' % (testOptions, dir))
+        run_test(build_name, 'jit',
+                 'jit-test/jit_test.py %s %s' % (testOptions, shell))
 
     if args.jstest or test_all:
-        run_test('js', 'python tests/jstests.py %s %s/shell /' % (testOptions, dir))
+        run_test(build_name, 'js',
+                 'tests/jstests.py %s %s /' % (testOptions, shell))
 
     if args.octane:
         os.chdir('octane')
-        run_test('octane', os.path.join('..', dir, 'shell') + ' run.js')
+        run_test(build_name, 'octane', shell + ' run.js')
         os.chdir('..')
 except KeyboardInterrupt:
     println('')

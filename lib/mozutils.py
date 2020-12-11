@@ -9,6 +9,28 @@ import re
 import subprocess
 import sys
 
+from mozconfig import *
+
+def add_build_arguments(parser):
+    parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
+    parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings', default=True,
+                        help = 'Hide warnings')
+    parser.add_argument('--dir', nargs=1, action='append', dest='dirs',
+                        help = 'Change directory before building')
+    parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
+    parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
+                        help = 'Disable unified build')
+
+    clean_group = parser.add_mutually_exclusive_group()
+    clean_group.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
+    clean_group.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
+
+    sync_group = parser.add_mutually_exclusive_group()
+    sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
+                            default='all', help = 'Don\'t sync cloned branch')
+    sync_group.add_argument('-m', '--sync-js-only', dest='sync', action='store_const', const="js",
+                            help = 'Sync js source only before build')
+
 def println(str):
     print(str, flush = True)
 
@@ -113,51 +135,52 @@ def disable_unified_build(path):
     with open(path, "w") as file:
         file.write(content)
 
-def get_configs_from_args(args):
-    names = []
-    options = []
+def js_build(args):
+    config_names, config_options = get_configs_from_args(args)
+    config_options.append('--enable-application=js')
 
-    options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
-    options.append("--enable-warnings-as-errors")
+    build_name = get_build_name(config_names) + '-shell'
+    build_dir = build_name + '-build'
+    build_config = "mozconfig-" + build_name
 
-    if args.opt:
-        names.append('opt')
-        options.append('--enable-optimize')
-        options.append('--disable-debug')
-    elif args.optdebug:
-        names.append('optdebug')
-        options.append('--enable-optimize')
-        options.append('--enable-debug')
-        options.append('--enable-gczeal')
-    else:
-        options.append('--disable-optimize')
-        options.append('--enable-debug')
-        options.append('--enable-gczeal')
+    if os.path.isfile('.cloned-from') and args.sync:
+        sync_branch(args);
 
-    if args.target32:
-        names.append('32bit')
-        options.append('--target=i686-pc-linux')
+    if not args.unified:
+        # Hack to disable unified builds on remotely synced repo
+        disable_unified_build("js/src/moz.build")
 
-    return names, options
+    if args.clean and (os.path.exists(build_dir) or os.path.exists(build_config)):
+        println('Clean ' + build_name)
+        println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
+        time.sleep(5);  # so I can hit ^C after I accidentally do this
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
+        if os.path.exists(build_config):
+            os.unlink(build_config)
 
-def get_build_name(config_names):
-    """
-    Get a canonical build name from a list of configs.
-    """
-    name_elements = config_names.copy()
-    if not name_elements:
-        name_elements.append("default")
-    return '-'.join(name_elements)
+    if not os.path.exists(build_config):
+        write_mozconfig(build_dir, config_options, build_config)
 
-def write_mozconfig(build_dir, options, build_config):
-    with open(build_config, "w") as file:
-        def w(line):
-            file.write(f"{line}\n")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
 
-        w(f"mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/{build_dir}")
-        w("mk_add_options AUTOCLOBBER=1")
-        for option in options:
-            w(f"ac_add_options {option}")
+    println("Build %s" % build_name)
+    os.environ['MOZCONFIG'] = os.path.abspath(build_config)
+    cmd = ['./mach', 'build']
+    run_command(cmd, args.verbose, args.warnings)
+
+    abs_build_dir = os.path.abspath(build_dir)
+    js_src_build_dir = get_build_name(config_names) + '-build'
+    os.chdir("js/src")
+    if not os.path.exists(js_src_build_dir):
+        os.makedirs(js_src_build_dir)
+    os.chdir(js_src_build_dir)
+    if not os.path.lexists('shell'):
+        os.symlink(os.path.join(abs_build_dir, 'dist/bin/js'), 'shell')
+    if not os.path.lexists('jsapi-tests'):
+        os.symlink(os.path.join(abs_build_dir, 'dist/bin/jsapi-tests'), 'jsapi-tests')
+    os.chdir("../../..")
 
 # Functions for handling remote builds:
 

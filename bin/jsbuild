@@ -20,41 +20,13 @@ binDir = os.path.dirname(__file__)
 libDir = os.path.join(binDir, '..', 'lib')
 sys.path.append(libDir)
 from mozutils import *
+from mozconfig import *
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
-
-parser.add_argument('-v', '--verbose', action='store_true', help = 'Show all build output')
-parser.add_argument('-W', '--no-warnings', action='store_false', dest='warnings', default=True,
-                    help = 'Hide warnings')
 parser.add_argument('-n', '--dry-run', action='store_true',
                     help = 'Dry run, check arguments but don\'t build')
-parser.add_argument('--dir', nargs=1, action='append', dest='dirs',
-                    help = 'Change directory before building')
-parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
-parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
-                    help = 'Disable unified build')
-
-clean_group = parser.add_mutually_exclusive_group()
-clean_group.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
-clean_group.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
-
-sync_group = parser.add_mutually_exclusive_group()
-sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
-                        default='all', help = 'Don\'t sync cloned branch')
-sync_group.add_argument('-m', '--sync-js-only', dest='sync', action='store_const', const="js",
-                        help = 'Sync js source only before build')
-
-opt_group = parser.add_mutually_exclusive_group()
-opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
-opt_group.add_argument('-d', '--optdebug', action='store_true',
-                       help = 'Optimized build with assertions enabled')
-
-parser.add_argument('--32bit', action='store_true', dest='target32',
-                    help='Cross compile 32bit build on 64bit host')
-
-# todo:
-#  - armsim
-#  - tsan
+add_build_arguments(parser)
+add_config_arguments(parser)
 
 args = parser.parse_args()
 
@@ -68,50 +40,5 @@ chdir_to_source_root()
 if args.remote:
     sys.exit(run_remote_command(args))
 
-config_names, config_options = get_configs_from_args(args)
-config_options.append('--enable-application=js')
-
-build_name = get_build_name(config_names) + '-shell'
-build_dir = build_name + '-build'
-build_config = "mozconfig-" + build_name
-
-if args.dry_run:
-    sys.exit(0)
-
-if os.path.isfile('.cloned-from') and args.sync:
-    sync_branch(args);
-
-if not args.unified:
-    # Hack to disable unified builds on remotely synced repo
-    disable_unified_build("js/src/moz.build")
-
-if args.clean and (os.path.exists(build_dir) or os.path.exists(build_config)):
-    println('Clean ' + build_name)
-    println("  Cleaning will commence in 5 seconds!  Interrupt now to preserve the build")
-    time.sleep(5);  # so I can hit ^C after I accidentally do this
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
-    if os.path.exists(build_config):
-        os.unlink(build_config)
-
-if not os.path.exists(build_config):
-    write_mozconfig(build_dir, config_options, build_config)
-
-if not os.path.exists(build_dir):
-    os.makedirs(build_dir)
-
-println("Build %s" % build_name)
-os.environ['MOZCONFIG'] = os.path.abspath(build_config)
-cmd = ['./mach', 'build']
-run_command(cmd, args.verbose, args.warnings)
-
-abs_build_dir = os.path.abspath(build_dir)
-js_src_build_dir = get_build_name(config_names) + '-build'
-os.chdir("js/src")
-if not os.path.exists(js_src_build_dir):
-    os.makedirs(js_src_build_dir)
-os.chdir(js_src_build_dir)
-if not os.path.lexists('shell'):
-    os.symlink(os.path.join(abs_build_dir, 'dist/bin/js'), 'shell')
-if not os.path.lexists('jsapi-tests'):
-    os.symlink(os.path.join(abs_build_dir, 'dist/bin/jsapi-tests'), 'jsapi-tests')
+if not args.dry_run:
+    js_build(args)
