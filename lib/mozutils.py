@@ -134,6 +134,10 @@ def get_configs_from_args(args):
         options.append('--enable-debug')
         options.append('--enable-gczeal')
 
+    if args.target32:
+        names.append('32bit')
+        options.append('--target=i686-pc-linux')
+
     return names, options
 
 def get_build_name(config_names):

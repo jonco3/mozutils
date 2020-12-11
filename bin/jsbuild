@@ -49,10 +49,12 @@ opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized bui
 opt_group.add_argument('-d', '--optdebug', action='store_true',
                        help = 'Optimized build with assertions enabled')
 
+parser.add_argument('--32bit', action='store_true', dest='target32',
+                    help='Cross compile 32bit build on 64bit host')
+
 # todo:
 #  - armsim
 #  - tsan
-#  - 32bit
 
 args = parser.parse_args()
 
