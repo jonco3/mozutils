@@ -166,6 +166,7 @@ def js_build(args):
         os.makedirs(build_dir)
 
     println("Build %s" % build_name)
+    setup_environment(args)
     os.environ['MOZCONFIG'] = os.path.abspath(build_config)
     cmd = ['./mach', 'build']
     run_command(cmd, args.verbose, args.warnings)

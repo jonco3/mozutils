@@ -2,6 +2,8 @@
 #  - armsim
 #  - tsan
 
+import platform
+
 def add_config_arguments(parser):
     opt_group = parser.add_mutually_exclusive_group()
     opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
@@ -56,3 +58,7 @@ def write_mozconfig(build_dir, options, build_config):
         w("mk_add_options AUTOCLOBBER=1")
         for option in options:
             w(f"ac_add_options {option}")
+
+def setup_environment(args):
+    if platform.system() == 'Linux' and args.target32:
+        os.environ['PKG_CONFIG_PATH']='/usr/lib/x86_64-linux-gnu/pkgconfig'
