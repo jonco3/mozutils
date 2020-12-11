@@ -100,7 +100,7 @@ def chdir_to_source_root():
 
 def sync_branch(args):
     libDir = os.path.dirname(__file__)
-    binDir = os.path.join(binDir, '..', 'bin')
+    binDir = os.path.join(libDir, '..', 'bin')
     cmd = [ os.path.join(binDir, 'syncBranch') ]
     if args.sync == "js":
         cmd.append("-j")
