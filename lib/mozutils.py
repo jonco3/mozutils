@@ -6,8 +6,10 @@ import io
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
+import time
 
 from mozconfig import *
 

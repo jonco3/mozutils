@@ -2,6 +2,7 @@
 #  - armsim
 #  - tsan
 
+import os
 import platform
 
 def add_config_arguments(parser):
