@@ -30,7 +30,7 @@ enter_dirs(args.dirs)
 
 chdir_to_source_root()
 
-if args.remote:
+if args.remote and not args.ignore_remote:
     sys.exit(run_remote_command(args))
 
 if args.dry_run:
