@@ -138,10 +138,12 @@ def disable_unified_build(path):
         file.write(content)
 
 def js_build(args):
-    config_names, config_options = get_configs_from_args(args)
-    config_options.append('--enable-application=js')
+    args.shell = True
+    mach_build(args)
 
-    build_name = get_build_name(config_names) + '-shell'
+def mach_build(args):
+    config_names, config_options = get_configs_from_args(args)
+    build_name = get_build_name(config_names)
     build_dir = build_name + '-build'
     build_config = "mozconfig-" + build_name
 
@@ -173,8 +175,16 @@ def js_build(args):
     cmd = ['./mach', 'build']
     run_command(cmd, args.verbose, args.warnings)
 
+def ensure_js_src_links(args):
+    config_names, _ = get_configs_from_args(args)
+    build_name = get_build_name(config_names)
+    config_names.remove('shell')
+    js_src_build_name = get_build_name(config_names)
+
+    build_dir = build_name + '-build'
+    js_src_build_dir = js_src_build_name + '-build'
+
     abs_build_dir = os.path.abspath(build_dir)
-    js_src_build_dir = get_build_name(config_names) + '-build'
     os.chdir("js/src")
     if not os.path.exists(js_src_build_dir):
         os.makedirs(js_src_build_dir)

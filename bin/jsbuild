@@ -16,9 +16,9 @@ from mozconfig import *
 
 parser = argparse.ArgumentParser(description = 'Build SpiderMonkey')
 parser.add_argument('-n', '--dry-run', action='store_true',
-                    help = 'Dry run, check arguments but don\'t build')
+                    help="Dry run: check arguments but don't build")
 add_build_arguments(parser)
-add_config_arguments(parser)
+add_common_config_arguments(parser)
 
 args = parser.parse_args()
 
@@ -32,5 +32,9 @@ chdir_to_source_root()
 if args.remote:
     sys.exit(run_remote_command(args))
 
-if not args.dry_run:
-    js_build(args)
+if args.dry_run:
+    quit()
+
+args.shell = True
+mach_build(args)
+ensure_js_src_links(args)

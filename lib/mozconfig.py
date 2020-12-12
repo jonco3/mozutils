@@ -2,10 +2,11 @@
 #  - armsim
 #  - tsan
 
+import argparse
 import os
 import platform
 
-def add_config_arguments(parser):
+def add_common_config_arguments(parser):
     opt_group = parser.add_mutually_exclusive_group()
     opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
     opt_group.add_argument('-d', '--optdebug', action='store_true',
@@ -13,6 +14,10 @@ def add_config_arguments(parser):
 
     parser.add_argument('--32bit', action='store_true', dest='target32',
                         help='Cross compile 32bit build on 64bit host')
+
+def add_browser_config_arguments(parser):
+    parser.add_argument('--minimal', action='store_true',
+                        help='Disable optional functionality to reduce build time')
 
 def get_configs_from_args(args):
     names = []
@@ -38,6 +43,21 @@ def get_configs_from_args(args):
     if args.target32:
         names.append('32bit')
         options.append('--target=i686-pc-linux')
+
+    if getattr(args, 'shell', False):
+        names.append('shell')
+        options.append('--enable-application=js')
+
+    if getattr(args, 'minimal', False):
+        names.append('minimal')
+        options.append('--disable-av1')
+        options.append('--disable-cranelift')
+        options.append('--disable-ffmpeg')
+        options.append('--disable-js-shell')
+        options.append('--disable-printing')
+        options.append('--disable-synth-speechd')
+        options.append('--disable-webspeech')
+        options.append('--disable-webrtc')
 
     return names, options
 
