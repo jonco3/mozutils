@@ -22,7 +22,7 @@ parser.add_argument('-B', '--no-build', action='store_false', dest='build', defa
                     help = 'Don\'t build before running tests')
 
 add_build_arguments(parser)
-add_config_arguments(parser)
+add_common_config_arguments(parser)
 
 parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
