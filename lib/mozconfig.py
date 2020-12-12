@@ -15,6 +15,8 @@ def add_common_config_arguments(parser):
     parser.add_argument('--32bit', action='store_true', dest='target32',
                         help='Cross compile 32bit build on 64bit host')
 
+    parser.add_argument('--tsan', action='store_true', help='Thread sanitizer build')
+
 def add_browser_config_arguments(parser):
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
@@ -43,6 +45,24 @@ def get_configs_from_args(args):
     if args.target32:
         names.append('32bit')
         options.append('--target=i686-pc-linux')
+
+    if args.tsan:
+        # From https://firefox-source-docs.mozilla.org/tools/sanitizer/tsan.html
+        names.append('tsan')
+        options.append('--enable-thread-sanitizer')
+        # export RUSTFLAGS="-Zsanitizer=thread"
+        options.append('--disable-jemalloc')
+        options.append('--disable-profiling')
+        # export MOZ_DEBUG_SYMBOLS=1
+        options.append('--enable-debug-symbols')
+        options.append('--disable-install-strip')
+        if '--enable-optimize' in options:
+            options.remove('--enable-optimize')
+            options.append('--enable-optimize="-O2 -gline-tables-only"')
+        if not args.shell:
+            options.append('--disable-elf-hack')
+            options.append('--disable-crashreporter')
+            options.append('--disable-sandbox')
 
     if getattr(args, 'shell', False):
         names.append('shell')
