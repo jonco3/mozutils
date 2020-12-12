@@ -34,6 +34,7 @@ parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests'
 parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
 args = parser.parse_args()
+args.shell = True
 
 enter_dirs(args.dirs)
 
@@ -58,16 +59,16 @@ testOptions = '--tbpl' if args.tbpl else ''
 test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
 config_names, _ = get_configs_from_args(args)
-build_name = get_build_name(config_names) + '-shell'
+build_name = get_build_name(config_names)
 build_dir = build_name + '-build'
-build_config = "mozconfig-" + build_name
 
 bin_dir = os.path.join(build_dir, 'dist', 'bin')
 obj_dir = os.path.join(build_dir, 'js', 'src')
 
 try:
     if args.build:
-        js_build(args)
+        mach_build(args)
+        ensure_js_src_links(args)
 
     if (args.stylecheck) and os.path.exists("../../.hg"):
         println("Run %s style check" % build_name)
