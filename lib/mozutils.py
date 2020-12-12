@@ -212,7 +212,7 @@ def enter_dirs(dirs):
         os.chdir(dir[0])
     println("Entered dir: " + os.getcwd())
 
-def run_remote_comment(args):
+def run_remote_command(args):
     localDir = os.getcwd()
     branchName = os.path.basename(localDir)
     script = os.path.basename(sys.argv[0])
