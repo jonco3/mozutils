@@ -3,13 +3,9 @@
 
 # ffbuild: Build Firefox
 
-import os
+import argparse
 import os.path
 import sys
-import shutil
-import argparse
-import multiprocessing
-import time
 
 # Import common functions
 binDir = os.path.dirname(__file__)
