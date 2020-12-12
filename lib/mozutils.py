@@ -20,6 +20,7 @@ def add_build_arguments(parser):
     parser.add_argument('--dir', nargs=1, action='append', dest='dirs',
                         help = 'Change directory before building')
     parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
+    parser.add_argument('-R', '--ignore-remote', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
                         help = 'Disable unified build')
 
@@ -221,8 +222,7 @@ def run_remote_command(args):
     branchName = os.path.basename(localDir)
     script = os.path.basename(sys.argv[0])
     command = ['ssh', get_build_remote(), '-t', '-t', script, '--dir', 'clone', '--dir',
-               branchName] + \
-              [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
+               branchName, '--ignore-remote'] + sys.argv[1:]
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     remoteDir = None
     for line in proc.stdout:
