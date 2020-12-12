@@ -34,7 +34,7 @@ def add_build_arguments(parser):
                             help = 'Sync js source only before build')
 
 def println(str):
-    print(str, flush = True)
+    print(str, flush=True)
 
 # based on http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -213,15 +213,19 @@ def enter_dirs(dirs):
     println("Entered dir: " + os.getcwd())
 
 def run_remote_command(args):
+    def println(str):
+        # Why do I have to add CR now???
+        print(str + "\r", flush=True)
+
     localDir = os.getcwd()
     branchName = os.path.basename(localDir)
     script = os.path.basename(sys.argv[0])
     command = ['ssh', get_build_remote(), '-t', '-t', script, '--dir', 'clone', '--dir',
                branchName] + \
               [ arg for arg in sys.argv[1:] if arg != '-r' and arg != '--remote' ]
-    proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     remoteDir = None
-    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+    for line in proc.stdout:
         line = line.rstrip();
         if not remoteDir:
             match = re.match("^Entered dir: (.+)", line)
