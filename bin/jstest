@@ -72,13 +72,13 @@ try:
 
     if (args.stylecheck) and os.path.exists("../../.hg"):
         println("Run %s style check" % build_name)
-        run_command(['make', '-C', obj_dir, 'check-style'], False, False)
-        run_command(['make', '-C', obj_dir, 'check-masm'], False, False)
+        run_command(['make', '-C', obj_dir, 'check-style'], args.verbose, False)
+        run_command(['make', '-C', obj_dir, 'check-masm'], args.verbose, False)
         println('')
 
     if args.jsapitest or test_all:
         println("Run %s jsapi tests" % build_name)
-        run_command(os.path.join(bin_dir, 'jsapi-tests'), False, False)
+        run_command(os.path.join(bin_dir, 'jsapi-tests'), args.verbose, False)
         println('')
 
     shell = os.path.abspath(os.path.join(bin_dir, 'js'))
