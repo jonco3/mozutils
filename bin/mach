@@ -3,71 +3,28 @@
 
 # Python script to run the mach command with appropriate MOZCONFIG
 
+import argparse
 import os.path
 import sys
-import types
 
 # Import common functions
-binDir = os.path.dirname(__file__)
-libDir = os.path.join(binDir, '..', 'lib')
-sys.path.append(libDir)
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
+from mozconfig import *
+
+parser = argparse.ArgumentParser(description = 'Invoke Mozilla mach command')
+add_build_arguments(parser)
+add_common_config_arguments(parser)
+add_browser_config_arguments(parser)
+
+args, remaining = parser.parse_known_args()
+args.verbose = True
+
+enter_dirs(args.dirs)
 
 chdir_to_source_root()
 
-args = types.SimpleNamespace()
-args.opt = False
-args.optdebug = False
-args.dist = False
-args.headless = False
-args.gcc = False
+if args.remote and not args.ignore_remote:
+    sys.exit(run_remote_command(args))
 
-# Only parse known arguments at the start of the arguments list.
-while len(sys.argv) > 1 and sys.argv[1].startswith('-'):
-    opt = sys.argv[1]
-    if opt == '-d':
-        args.optdebug = True
-    elif opt == '-o':
-        args.opt = True
-    elif opt == '-i':
-        args.dist = True
-    elif opt == '-h':
-        args.headless = True
-    elif opt == '-g':
-        args.gcc = True
-    else:
-        break
-
-    sys.argv.pop(1)
-
-if args.opt and args.optdebug:
-    sys.exit("Can't specify both --opt and --optdebug")
-
-chdir_to_source_root()
-
-name_elements = []
-if args.optdebug:
-    name_elements.append("optdebug")
-elif args.opt:
-    name_elements.append("opt")
-if args.gcc:
-    name_elements.append("gcc")
-if args.dist:
-    name_elements.append("dist")
-if not name_elements:
-    name_elements.append("default")
-build_name = '-'.join(name_elements)
-build_dir = build_name + "-build"
-
-mozconfig_file = "mozconfig-" + build_name
-
-if not os.path.isfile(mozconfig_file):
-    sys.exit("Can't find mozconfig file: " + mozconfig_file)
-
-os.environ['MOZCONFIG'] = os.path.abspath(mozconfig_file)
-
-if args.headless:
-    os.environ['MOZ_HEADLESS'] = '1'
-
-cmd = ['./mach'] + sys.argv[1:]
-os.execv(cmd[0], cmd)
+mach(args, remaining)

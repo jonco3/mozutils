@@ -143,17 +143,17 @@ def js_build(args):
     mach_build(args)
 
 def mach_build(args):
-    config_names, config_options = get_configs_from_args(args)
-    build_name = get_build_name(config_names)
-    build_dir = build_name + '-build'
-    build_config = "mozconfig-" + build_name
-
     if os.path.isfile('.cloned-from') and args.sync:
         sync_branch(args);
 
     if not args.unified:
         # Hack to disable unified builds on remotely synced repo
         disable_unified_build("js/src/moz.build")
+
+    config_names, config_options = get_configs_from_args(args)
+    build_name = get_build_name(config_names)
+    build_dir = build_name + '-build'
+    build_config = "mozconfig-" + build_name
 
     if args.clean and (os.path.exists(build_dir) or os.path.exists(build_config)):
         println('Clean ' + build_name)
@@ -164,16 +164,24 @@ def mach_build(args):
         if os.path.exists(build_config):
             os.unlink(build_config)
 
-    if not os.path.exists(build_config):
-        write_mozconfig(build_dir, config_options, build_config)
-
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
 
     println("Build %s" % build_name)
+    mach(args, ['build'])
+
+def mach(args, mach_args):
+    config_names, config_options = get_configs_from_args(args)
+    build_name = get_build_name(config_names)
+    build_dir = build_name + '-build'
+    build_config = "mozconfig-" + build_name
+
+    if not os.path.exists(build_config):
+        write_mozconfig(build_dir, config_options, build_config)
+
     setup_environment(args)
     os.environ['MOZCONFIG'] = os.path.abspath(build_config)
-    cmd = ['./mach', 'build']
+    cmd = ['./mach'] + mach_args
     run_command(cmd, args.verbose, args.warnings)
 
 def ensure_js_src_links(args):

@@ -19,6 +19,9 @@ def add_common_config_arguments(parser):
     san_group.add_argument('--tsan', action='store_true', help='Thread sanitizer build')
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
 
+    parser.add_argument('--small-chunk', action='store_true',
+                        help='Use 256KM chunks instead of the usual 1MB')
+
 def add_browser_config_arguments(parser):
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
@@ -71,6 +74,10 @@ def get_configs_from_args(args):
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
+
+    if args.small_chunk:
+        names.append('smallChunk')
+        options.append('--enable-small-chunk-size')
 
     return names, options
 

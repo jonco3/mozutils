@@ -8,9 +8,7 @@ import os.path
 import sys
 
 # Import common functions
-binDir = os.path.dirname(__file__)
-libDir = os.path.join(binDir, '..', 'lib')
-sys.path.append(libDir)
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 from mozconfig import *
 
@@ -23,7 +21,7 @@ add_common_config_arguments(parser)
 args = parser.parse_args()
 
 if not args.unified and not args.sync:
-    sys.exit("Disabling of uniifed build only supported with sync")
+    sys.exit("Disabling of unifed build only supported with sync")
 
 enter_dirs(args.dirs)
 
