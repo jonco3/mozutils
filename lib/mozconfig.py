@@ -22,6 +22,9 @@ def add_common_config_arguments(parser):
     parser.add_argument('--small-chunk', action='store_true',
                         help='Use 256KM chunks instead of the usual 1MB')
 
+    parser.add_argument('--concurrent', action='store_true',
+                        help='GC support for concurrent marking')
+
 def add_browser_config_arguments(parser):
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
@@ -78,6 +81,10 @@ def get_configs_from_args(args):
     if args.small_chunk:
         names.append('smallChunk')
         options.append('--enable-small-chunk-size')
+
+    if args.concurrent:
+        names.append('concurrent')
+        options.append('--enable-gc-concurrent-marking')
 
     return names, options
 
