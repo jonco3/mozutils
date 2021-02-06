@@ -1,6 +1,5 @@
 # todo:
 #  - armsim
-#  - tsan
 
 import argparse
 import os
@@ -65,7 +64,8 @@ def get_configs_from_args(args):
     if getattr(args, 'shell', False):
         names.append('shell')
         options.append('--enable-application=js')
-        options.append("--enable-warnings-as-errors")
+        if not args.tsan and not args.asan:
+            options.append("--enable-warnings-as-errors")
 
     if getattr(args, 'minimal', False):
         names.append('minimal')
@@ -102,9 +102,9 @@ def add_sanitizer_options(args, options):
         options.append('--disable-elf-hack')
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
-    # todo
-    # export RUSTFLAGS="-Zsanitizer=thread"
-    # export MOZ_DEBUG_SYMBOLS=1
+    options.append('export RUSTFLAGS="-Zsanitizer=thread"')
+    options.append('export MOZ_DEBUG_SYMBOLS=1')
+    options.append('unset RUSTFMT')
 
 def get_build_name(config_names):
     """
@@ -123,7 +123,10 @@ def write_mozconfig(build_dir, options, build_config):
         w(f"mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/{build_dir}")
         w("mk_add_options AUTOCLOBBER=1")
         for option in options:
-            w(f"ac_add_options {option}")
+            if option.startswith('--'):
+                w(f"ac_add_options {option}")
+            else:
+                w(option)
 
 def setup_environment(args):
     if platform.system() == 'Linux' and args.target32:
