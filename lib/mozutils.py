@@ -170,7 +170,7 @@ def mach_build(args):
     println("Build %s" % build_name)
     mach(args, ['build'])
 
-def mach(args, mach_args):
+def mach(args, mach_args, filter_output = True):
     config_names, config_options = get_configs_from_args(args)
     build_name = get_build_name(config_names)
     build_dir = build_name + '-build'
@@ -182,7 +182,10 @@ def mach(args, mach_args):
     setup_environment(args)
     os.environ['MOZCONFIG'] = os.path.abspath(build_config)
     cmd = ['./mach'] + mach_args
-    run_command(cmd, args.verbose, args.warnings)
+    if filter_output:
+        run_command(cmd, args.verbose, args.warnings)
+    else:
+        os.execv(cmd[0], cmd)
 
 def ensure_js_src_links(args):
     config_names, _ = get_configs_from_args(args)

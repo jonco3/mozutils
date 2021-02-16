@@ -27,4 +27,4 @@ chdir_to_source_root()
 if args.remote and not args.ignore_remote:
     sys.exit(run_remote_command(args))
 
-mach(args, remaining)
+mach(args, remaining, False)
