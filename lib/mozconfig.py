@@ -34,39 +34,6 @@ def get_configs_from_args(args):
 
     options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
 
-    if args.opt:
-        names.append('opt')
-        options.append('--enable-optimize')
-        options.append('--disable-debug')
-    elif args.optdebug:
-        names.append('optdebug')
-        options.append('--enable-optimize')
-        options.append('--enable-debug')
-        options.append('--enable-gczeal')
-    else:
-        options.append('--disable-optimize')
-        options.append('--enable-debug')
-        options.append('--enable-gczeal')
-
-    if args.target32:
-        names.append('32bit')
-        options.append('--target=i686-pc-linux')
-
-    if args.tsan:
-        names.append('tsan')
-        options.append('--enable-thread-sanitizer')
-        add_sanitizer_options(args, options)
-    elif args.asan:
-        names.append('asan')
-        options.append('--enable-address-sanitizer')
-        add_sanitizer_options(args, options)
-
-    if getattr(args, 'shell', False):
-        names.append('shell')
-        options.append('--enable-application=js')
-        if not args.tsan and not args.asan:
-            options.append("--enable-warnings-as-errors")
-
     if getattr(args, 'minimal', False):
         names.append('minimal')
         options.append('--disable-av1')
@@ -85,6 +52,39 @@ def get_configs_from_args(args):
     if args.concurrent:
         names.append('concurrent')
         options.append('--enable-gc-concurrent-marking')
+
+    if args.target32:
+        names.append('32bit')
+        options.append('--target=i686-pc-linux')
+
+    if args.opt:
+        names.append('opt')
+        options.append('--enable-optimize')
+        options.append('--disable-debug')
+    elif args.optdebug:
+        names.append('optdebug')
+        options.append('--enable-optimize')
+        options.append('--enable-debug')
+        options.append('--enable-gczeal')
+    else:
+        options.append('--disable-optimize')
+        options.append('--enable-debug')
+        options.append('--enable-gczeal')
+
+    if args.tsan:
+        names.append('tsan')
+        options.append('--enable-thread-sanitizer')
+        add_sanitizer_options(args, options)
+    elif args.asan:
+        names.append('asan')
+        options.append('--enable-address-sanitizer')
+        add_sanitizer_options(args, options)
+
+    if getattr(args, 'shell', False):
+        names.append('shell')
+        options.append('--enable-application=js')
+        if not args.tsan and not args.asan:
+            options.append("--enable-warnings-as-errors")
 
     return names, options
 
