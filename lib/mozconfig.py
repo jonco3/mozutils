@@ -32,9 +32,14 @@ def get_configs_from_args(args):
     names = []
     options = []
 
+    optionalNames = ['shell', 'minimal']
+    for name in optionalNames:
+        if not hasattr(args, name):
+            setattr(args, name, False)
+
     options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
 
-    if getattr(args, 'minimal', False):
+    if args.minimal:
         names.append('minimal')
         options.append('--disable-av1')
         options.append('--disable-cranelift')
@@ -80,7 +85,7 @@ def get_configs_from_args(args):
         options.append('--enable-address-sanitizer')
         add_sanitizer_options(args, options)
 
-    if getattr(args, 'shell', False):
+    if args.shell:
         names.append('shell')
         options.append('--enable-application=js')
         if not args.tsan and not args.asan:
