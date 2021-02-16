@@ -1,9 +1,13 @@
 # todo:
-#  - armsim
+#  - make get_configs_from_args return an object
 
 import argparse
 import os
 import platform
+import sys
+
+def platform_is_64bit():
+    return sys.maxsize > 2 ** 32
 
 def add_common_config_arguments(parser):
     opt_group = parser.add_mutually_exclusive_group()
@@ -11,8 +15,9 @@ def add_common_config_arguments(parser):
     opt_group.add_argument('-d', '--optdebug', action='store_true',
                            help = 'Optimized build with assertions enabled')
 
-    parser.add_argument('--32bit', action='store_true', dest='target32',
-                        help='Cross compile 32bit build on 64bit host')
+    if platform_is_64bit():
+        parser.add_argument('--32bit', action='store_true', dest='target32',
+                            help='Cross compile 32bit build on 64bit host')
 
     san_group = parser.add_mutually_exclusive_group()
     san_group.add_argument('--tsan', action='store_true', help='Thread sanitizer build')
@@ -25,8 +30,13 @@ def add_common_config_arguments(parser):
                         help='GC support for concurrent marking')
 
 def add_browser_config_arguments(parser):
+    add_common_config_arguments(parser)
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
+
+def add_shell_config_arguments(parser):
+    add_common_config_arguments(parser)
+    parser.add_argument('--armsim', action='store_true', help='ARM simulator build')
 
 def get_configs_from_args(args):
     names = []
@@ -84,6 +94,13 @@ def get_configs_from_args(args):
         names.append('asan')
         options.append('--enable-address-sanitizer')
         add_sanitizer_options(args, options)
+
+    if args.armsim:
+        platform = "arm"
+        if platform_is_64bit() and not args.target32:
+            platform = "arm64"
+        names.append(platform + "sim")
+        options.append('--enable-simulator=' + platform)
 
     if args.shell:
         names.append('shell')

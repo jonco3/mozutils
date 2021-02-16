@@ -16,7 +16,6 @@ parser = argparse.ArgumentParser(description = 'Build Firefox')
 parser.add_argument('-n', '--dry-run', action='store_true',
                     help="Dry run: check arguments but don't build")
 add_build_arguments(parser)
-add_common_config_arguments(parser)
 add_browser_config_arguments(parser)
 
 args = parser.parse_args()
