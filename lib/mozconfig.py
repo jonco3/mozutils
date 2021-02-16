@@ -42,14 +42,13 @@ def get_configs_from_args(args):
     names = []
     options = []
 
-    optionalNames = ['shell', 'minimal']
-    for name in optionalNames:
-        if not hasattr(args, name):
-            setattr(args, name, False)
+    def config(name):
+        # Not all names may be present
+        return getattr(args, name, False)
 
     options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
 
-    if args.minimal:
+    if config('minimal'):
         names.append('minimal')
         options.append('--disable-av1')
         options.append('--disable-cranelift')
@@ -60,23 +59,23 @@ def get_configs_from_args(args):
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
 
-    if args.small_chunk:
+    if config('small_chunk'):
         names.append('smallChunk')
         options.append('--enable-small-chunk-size')
 
-    if args.concurrent:
+    if config('concurrent'):
         names.append('concurrent')
         options.append('--enable-gc-concurrent-marking')
 
-    if args.target32:
+    if config('target32'):
         names.append('32bit')
         options.append('--target=i686-pc-linux')
 
-    if args.opt:
+    if config('opt'):
         names.append('opt')
         options.append('--enable-optimize')
         options.append('--disable-debug')
-    elif args.optdebug:
+    elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-optimize')
         options.append('--enable-debug')
@@ -86,27 +85,27 @@ def get_configs_from_args(args):
         options.append('--enable-debug')
         options.append('--enable-gczeal')
 
-    if args.tsan:
+    if config('tsan'):
         names.append('tsan')
         options.append('--enable-thread-sanitizer')
         add_sanitizer_options(args, options)
-    elif args.asan:
+    elif config('asan'):
         names.append('asan')
         options.append('--enable-address-sanitizer')
         add_sanitizer_options(args, options)
 
-    if args.armsim:
-        platform = "arm"
-        if platform_is_64bit() and not args.target32:
-            platform = "arm64"
-        names.append(platform + "sim")
+    if config('armsim'):
+        platform = 'arm'
+        if platform_is_64bit() and not config('target32'):
+            platform = 'arm64'
+        names.append(platform + 'sim')
         options.append('--enable-simulator=' + platform)
 
-    if args.shell:
+    if config('shell'):
         names.append('shell')
         options.append('--enable-application=js')
-        if not args.tsan and not args.asan:
-            options.append("--enable-warnings-as-errors")
+        if not config('tsan') and not config('asan'):
+            options.append('--enable-warnings-as-errors')
 
     return names, options
 

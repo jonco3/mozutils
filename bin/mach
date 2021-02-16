@@ -14,7 +14,6 @@ from mozconfig import *
 
 parser = argparse.ArgumentParser(description = 'Invoke Mozilla mach command')
 add_build_arguments(parser)
-add_common_config_arguments(parser)
 add_browser_config_arguments(parser)
 
 args, remaining = parser.parse_known_args()
