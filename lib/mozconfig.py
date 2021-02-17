@@ -22,6 +22,7 @@ def add_common_config_arguments(parser):
     san_group = parser.add_mutually_exclusive_group()
     san_group.add_argument('--tsan', action='store_true', help='Thread sanitizer build')
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
+    san_group.add_argument('--valgrind', action='store_true', help='Valgrind build')
 
     parser.add_argument('--small-chunk', action='store_true',
                         help='Use 256KM chunks instead of the usual 1MB')
@@ -93,6 +94,13 @@ def get_configs_from_args(args):
         names.append('asan')
         options.append('--enable-address-sanitizer')
         add_sanitizer_options(args, options)
+    elif config('valgrind'):
+        names.append('valgrind')
+        options.append('--enable-valgrind')
+        options.append('--disable-jemalloc')
+        if '--enable-optimize' in options:
+            options.remove('--enable-optimize')
+            options.append('--enable-optimize="-Og g"')
 
     if config('armsim'):
         platform = 'arm'
@@ -123,7 +131,7 @@ def add_sanitizer_options(args, options):
         options.append('--disable-elf-hack')
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
-    options.append('export RUSTFLAGS="-Zsanitizer=thread"')
+    options.append('export RUSTFLAGS="-Zsanitizer=thread"')  # todo: what about asan?
     options.append('export MOZ_DEBUG_SYMBOLS=1')
     options.append('unset RUSTFMT')
 
