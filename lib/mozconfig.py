@@ -89,6 +89,8 @@ def get_configs_from_args(args):
     if config('tsan'):
         names.append('tsan')
         options.append('--enable-thread-sanitizer')
+        options.append('export RUSTFLAGS="-Zsanitizer=thread"')
+        options.append('unset RUSTFMT')
         add_sanitizer_options(args, options)
     elif config('asan'):
         names.append('asan')
@@ -100,7 +102,7 @@ def get_configs_from_args(args):
         options.append('--disable-jemalloc')
         if '--enable-optimize' in options:
             options.remove('--enable-optimize')
-            options.append('--enable-optimize="-Og g"')
+            options.append('--enable-optimize="-Og -g"')
 
     if config('armsim'):
         platform = 'arm'
@@ -131,9 +133,7 @@ def add_sanitizer_options(args, options):
         options.append('--disable-elf-hack')
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
-    options.append('export RUSTFLAGS="-Zsanitizer=thread"')  # todo: what about asan?
     options.append('export MOZ_DEBUG_SYMBOLS=1')
-    options.append('unset RUSTFMT')
 
 def get_build_name(config_names):
     """
