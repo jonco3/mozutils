@@ -33,6 +33,11 @@ def main():
         OctaneTest('typescript')
     ]
 
+    if args.test:
+        tests = list(filter(lambda t: t.name == args.test, tests))
+        if not tests:
+            sys.exit(f"Test '{args.test}' not found")
+
     scores = []
 
     results = dict()
@@ -95,6 +100,7 @@ def canExecute(path):
 
 def parseArgs():
     parser = argparse.ArgumentParser(description = 'Benchmark SpiderMonkey')
+    parser.add_argument('-t', '--test', help='Test suite to run')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
