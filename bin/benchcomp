@@ -19,7 +19,19 @@ def main():
 
     iterations = 20
 
-    tests = [Test('splay', 'octane', 'run-splay.js')]
+    tests = [
+        OctaneTest('richards'),
+        OctaneTest('deltablue'),
+        OctaneTest('crypto'),
+        OctaneTest('raytrace'),
+        OctaneTest('earley-boyer'),
+        OctaneTest('regexp'),
+        OctaneTest('splay'),
+        OctaneTest('pdfjs'),
+        OctaneTest('code-load'),
+        OctaneTest('box2d'),
+        OctaneTest('typescript')
+    ]
 
     scores = []
 
@@ -29,8 +41,8 @@ def main():
     displayResults(builds, scores, results)
 
     for i in range(iterations):
-        for test in tests:
-            for build in builds:
+        for build in builds:
+            for test in tests:
                 result = runBenchmark(build, test)
                 for score in result.keys():
                     if score not in results:
@@ -55,6 +67,10 @@ class Test:
         self.name = name
         self.dir = dir
         self.script = script
+
+class OctaneTest(Test):
+    def __init__(self, name):
+        super().__init__(name, 'octane', f"run-{name}.js")
 
 class DelayedKeyboardInterrupt(object):
     # From https://stackoverflow.com/a/21919644
@@ -122,7 +138,7 @@ def parseOutput(text):
     return result
 
 def printHeader():
-    print((24 * " ") + "Min       Mean      Max       CofV   Runs")
+    print((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
 
 linesDisplayed = 0
 
@@ -180,7 +196,7 @@ def summariseResults(results, compareTo):
     return min_, mean, max_, cofv, len(results), diff
 
 def formatResults(min_, mean, max_, cofv, count, diff):
-    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %d" % (min_, mean, max_, cofv * 100, count)
+    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (min_, mean, max_, cofv * 100, count)
     if diff:
         text += "  %4.1f%%" % (diff * 100)
 
