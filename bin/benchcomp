@@ -4,6 +4,7 @@
 
 import ansi.cursor
 import argparse
+import math
 import os
 import os.path
 import re
@@ -33,7 +34,6 @@ def main():
                 results[score][build] = []
 
     printHeader()
-    print(repr(results))
     displayResults(builds, scores, results)
 
     for i in range(iterations):
@@ -114,7 +114,7 @@ def parseOutput(text):
     return result
 
 def printHeader():
-    print((25 * " ") + "Mean     Runs")
+    print((24 * " ") + "Min       Mean      Max       CofV   Runs")
 
 linesDisplayed = 0
 
@@ -151,9 +151,25 @@ def summariseResults(results):
     if not results:
         return ""
 
-    count = len(results)
-    mean = sum(results) / count
+    mean, stdv = meanstdv(results)
+    cofv = stdv / mean
+    min_ = min(results)
+    max_ = max(results)
 
-    return "%8.1f  %d" % (mean, count)
+    return "%8.1f  %8.1f  %8.1f  %4.1f%%  %d" % (min_, mean, max_, cofv * 100, len(results))
+
+def meanstdv(x):
+    # from http://www.physics.rutgers.edu/~masud/computing/WPark_recipes_in_python.html
+    n, mean, std = len(x), 0, 0
+    for a in x:
+        mean = mean + a
+    mean = mean / float(n)
+    for a in x:
+        std = std + (a - mean) ** 2
+    if n > 1:
+        std = math.sqrt(std / float(n - 1))
+    else:
+        std = 0.0
+    return mean, std
 
 main()
