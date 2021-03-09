@@ -145,6 +145,7 @@ def parseOutput(text):
 
 def printHeader():
     print((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
+    print(73 * "=")
 
 linesDisplayed = 0
 
@@ -204,7 +205,7 @@ def summariseResults(results, compareTo):
 def formatResults(min_, mean, max_, cofv, count, diff):
     text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (min_, mean, max_, cofv * 100, count)
     if diff:
-        text += "  %4.1f%%" % (diff * 100)
+        text += "   %4.1f%%" % (diff * 100)
 
     return text
 
