@@ -165,19 +165,33 @@ def displayResults(builds, scores, results):
         print(f"{score}:")
         linesDisplayed += 1
 
+        statsForBuild = dict()
         compareTo = None
+        low = None
+        high = None
+        first = True
         for build in builds:
             stats = summariseResults(results[score][build], compareTo)
+            statsForBuild[build] = stats
+            if stats:
+                if first:
+                    low, compareTo, high = stats[0:3]  # min, mean, max
+                    first = False
+                else:
+                    low = min(low, stats[0])
+                    high = max(high, stats[2])
 
+        for build in builds:
             text = ""
+            stats = statsForBuild[build]
             if stats:
                 text = formatResults(*stats)
 
+                if low != high and stats[4] > 1:
+                    text += "   " + formatBox(low, high, stats)
+
             print("  %20s  %s" % (build.name, text))
             linesDisplayed += 1
-
-            if stats and not compareTo:
-                compareTo = stats[1]  # mean
 
 def clearDisplay():
     global linesDisplayed
@@ -204,10 +218,47 @@ def summariseResults(results, compareTo):
 
 def formatResults(min_, mean, max_, cofv, count, diff):
     text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (min_, mean, max_, cofv * 100, count)
+
     if diff:
         text += "   %4.1f%%" % (diff * 100)
+    else:
+        text += " " * 7
 
     return text
+
+def formatBox(low, high, stats):
+    width = 40
+    min_, mean, max_, cofv = stats[0:4]
+    stdv = cofv * mean
+    devhigh = mean + stdv / 2
+    devlow = mean - stdv / 2
+
+    box = ""
+    step = (high - low) / (width - 1)
+    for i in range(width):
+        x = low + i * step
+        if x >= max_ + step:
+            c = ' '
+        elif x >= max_:
+            c = '|'
+        elif x >= devhigh:
+            c = '-'
+        elif x >= mean + step:
+            c = '='
+        elif x >= mean:
+            c = 'O'
+        elif x >= devlow:
+            c = '='
+        elif x >= min_ + step:
+            c = '-'
+        elif x >= min_:
+            c = '|'
+        else:
+            c = ' '
+
+        box += c
+
+    return box
 
 def meanstdv(x):
     # from http://www.physics.rutgers.edu/~masud/computing/WPark_recipes_in_python.html
