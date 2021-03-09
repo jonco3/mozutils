@@ -134,10 +134,19 @@ def displayResults(builds, scores, results):
         print(f"{score}:")
         linesDisplayed += 1
 
+        compareTo = None
         for build in builds:
-            result = summariseResults(results[score][build])
-            print("  %20s  %s" % (build.name, result))
+            stats = summariseResults(results[score][build], compareTo)
+
+            text = ""
+            if stats:
+                text = formatResults(*stats)
+
+            print("  %20s  %s" % (build.name, text))
             linesDisplayed += 1
+
+            if stats and not compareTo:
+                compareTo = stats[1]  # mean
 
 def clearDisplay():
     global linesDisplayed
@@ -147,16 +156,27 @@ def clearDisplay():
 
     linesDisplayed = 0
 
-def summariseResults(results):
+def summariseResults(results, compareTo):
     if not results:
-        return ""
+        return None
 
     mean, stdv = meanstdv(results)
     cofv = stdv / mean
     min_ = min(results)
     max_ = max(results)
 
-    return "%8.1f  %8.1f  %8.1f  %4.1f%%  %d" % (min_, mean, max_, cofv * 100, len(results))
+    diff = None
+    if compareTo:
+        diff = (mean - compareTo) / compareTo
+
+    return min_, mean, max_, cofv, len(results), diff
+
+def formatResults(min_, mean, max_, cofv, count, diff):
+    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %d" % (min_, mean, max_, cofv * 100, count)
+    if diff:
+        text += "  %4.1f%%" % (diff * 100)
+
+    return text
 
 def meanstdv(x):
     # from http://www.physics.rutgers.edu/~masud/computing/WPark_recipes_in_python.html
