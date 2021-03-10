@@ -178,14 +178,17 @@ def displayResults(builds, scores, results):
 
         for build in builds:
             text = ""
+            data = ""
             if build in statsForBuild:
                 stats = statsForBuild[build]
                 text = formatResults(stats)
 
                 if low != high and stats.count > 1:
                     text += "   " + formatBox(low, high, stats)
+                    data = formatData(low, high, stats)
 
             display("  %20s  %s" % (build.name, text))
+            display((76 * ' ') + data)
 
 linesDisplayed = 0
 
@@ -217,15 +220,9 @@ class Stats:
             self.diff = (self.mean - compareTo) / compareTo
 
 def formatResults(stats):
-    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (
-        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count)
-
-    if stats.diff:
-        text += "   %4.1f%%" % (stats.diff * 100)
-    else:
-        text += " " * 7
-
-    return text
+    diff = "%4.1f%%" % (stats.diff * 100) if stats.diff else ''
+    return "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d  %6s" % (
+        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff)
 
 def formatBox(low, high, stats):
     width = 40
@@ -238,7 +235,7 @@ def formatBox(low, high, stats):
     devhigh = stats.mean + stats.stdv / 2
     devlow = stats.mean - stats.stdv / 2
 
-    box = list()
+    chars = list()
     for i in range(width):
         x = low + i * scale
         if x >= stats.max:
@@ -252,13 +249,27 @@ def formatBox(low, high, stats):
         else:
             c = ' '
 
-        box.append(c)
+        chars.append(c)
 
-    box[pos(stats.min)] = "|"
-    box[pos(stats.max)] = "|"
-    box[pos(stats.mean)] = "O"
+    chars[pos(stats.min)] = "|"
+    chars[pos(stats.max)] = "|"
+    chars[pos(stats.mean)] = "O"
 
-    return ''.join(box)
+    return ''.join(chars)
+
+def formatData(low, high, stats):
+    width = 40
+    scale = (high - low) / (width - 1)
+
+    def pos(x):
+        assert x >= low
+        return int((x - low) // scale)
+
+    chars = [' '] * width
+    for x in stats.results:
+        chars[pos(x)] = 'x' if chars[pos(x)] == ' ' else 'X'
+
+    return ''.join(chars)
 
 def meanstdv(x):
     # from http://www.physics.rutgers.edu/~masud/computing/WPark_recipes_in_python.html
