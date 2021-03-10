@@ -147,11 +147,7 @@ def printHeader():
     print((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
     print(73 * "=")
 
-linesDisplayed = 0
-
 def displayResults(builds, scores, results):
-    global linesDisplayed
-
     clearDisplay()
 
     firstScore = True
@@ -159,11 +155,9 @@ def displayResults(builds, scores, results):
         if firstScore:
             firstScore = False
         else:
-            print()
-            linesDisplayed += 1
+            display()
 
-        print(f"{score}:")
-        linesDisplayed += 1
+        display(f"{score}:")
 
         statsForBuild = dict()
         compareTo = None
@@ -191,8 +185,15 @@ def displayResults(builds, scores, results):
                 if low != high and stats.count > 1:
                     text += "   " + formatBox(low, high, stats)
 
-            print("  %20s  %s" % (build.name, text))
-            linesDisplayed += 1
+            display("  %20s  %s" % (build.name, text))
+
+linesDisplayed = 0
+
+def display(text=''):
+    global linesDisplayed
+
+    print(text)
+    linesDisplayed += 1
 
 def clearDisplay():
     global linesDisplayed
