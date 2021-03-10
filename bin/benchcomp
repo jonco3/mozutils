@@ -171,23 +171,24 @@ def displayResults(builds, scores, results):
         high = None
         first = True
         for build in builds:
-            stats = summariseResults(results[score][build], compareTo)
-            statsForBuild[build] = stats
-            if stats:
+            data = results[score][build]
+            if data:
+                stats = Stats(data, compareTo)
+                statsForBuild[build] = stats
                 if first:
-                    low, compareTo, high = stats[0:3]  # min, mean, max
+                    compareTo = stats.mean
+                    low, high = stats.min, stats.max
                     first = False
                 else:
-                    low = min(low, stats[0])
-                    high = max(high, stats[2])
+                    low, high = min(low, stats.min), max(high, stats.max)
 
         for build in builds:
             text = ""
-            stats = statsForBuild[build]
-            if stats:
-                text = formatResults(*stats)
+            if build in statsForBuild:
+                stats = statsForBuild[build]
+                text = formatResults(stats)
 
-                if low != high and stats[4] > 1:
+                if low != high and stats.count > 1:
                     text += "   " + formatBox(low, high, stats)
 
             print("  %20s  %s" % (build.name, text))
@@ -201,26 +202,24 @@ def clearDisplay():
 
     linesDisplayed = 0
 
-def summariseResults(results, compareTo):
-    if not results:
-        return None
+class Stats:
+    def __init__(self, results, compareTo):
+        self.count = len(results)
+        self.mean, self.stdv = meanstdv(results)
+        self.cofv = self.stdv / self.mean
+        self.min = min(results)
+        self.max = max(results)
 
-    mean, stdv = meanstdv(results)
-    cofv = stdv / mean
-    min_ = min(results)
-    max_ = max(results)
+        self.diff = None
+        if compareTo:
+            self.diff = (self.mean - compareTo) / compareTo
 
-    diff = None
-    if compareTo:
-        diff = (mean - compareTo) / compareTo
+def formatResults(stats):
+    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (
+        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count)
 
-    return min_, mean, max_, cofv, len(results), diff
-
-def formatResults(min_, mean, max_, cofv, count, diff):
-    text = "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (min_, mean, max_, cofv * 100, count)
-
-    if diff:
-        text += "   %4.1f%%" % (diff * 100)
+    if stats.diff:
+        text += "   %4.1f%%" % (stats.diff * 100)
     else:
         text += " " * 7
 
@@ -228,30 +227,28 @@ def formatResults(min_, mean, max_, cofv, count, diff):
 
 def formatBox(low, high, stats):
     width = 40
-    min_, mean, max_, cofv = stats[0:4]
-    stdv = cofv * mean
-    devhigh = mean + stdv / 2
-    devlow = mean - stdv / 2
+    devhigh = stats.mean + stats.stdv / 2
+    devlow = stats.mean - stats.stdv / 2
 
     box = ""
     step = (high - low) / (width - 1)
     for i in range(width):
         x = low + i * step
-        if x >= max_ + step:
+        if x >= stats.max + step:
             c = ' '
-        elif x >= max_:
+        elif x >= stats.max:
             c = '|'
         elif x >= devhigh:
             c = '-'
-        elif x >= mean + step:
+        elif x >= stats.mean + step:
             c = '='
-        elif x >= mean:
+        elif x >= stats.mean:
             c = 'O'
         elif x >= devlow:
             c = '='
-        elif x >= min_ + step:
+        elif x >= stats.min + step:
             c = '-'
-        elif x >= min_:
+        elif x >= stats.min:
             c = '|'
         else:
             c = ' '
