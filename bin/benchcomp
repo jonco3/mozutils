@@ -57,12 +57,15 @@ def main():
                     displayResults(builds, scores, results)
 
 class Build:
-    def __init__(self, path):
+    def __init__(self, str):
+        args = str.split()
+        path = args[0]
         shell = os.path.join(path, "shell")
         ensure(canExecute(shell), f"Executeable shell not found at: {shell}")
         self.path = os.path.normpath(path)
         self.name = os.path.basename(self.path)
         self.shell = os.path.abspath(shell)
+        self.args = args[1:]
 
     def __repr__(self):
         return f"Build({self.name})"
@@ -107,7 +110,7 @@ def parseArgs():
 def runBenchmark(build, test):
     oldcwd = os.getcwd()
     os.chdir(test.dir)
-    cmd = [build.shell, test.script]
+    cmd = [build.shell] + build.args + [test.script]
     env = dict()
     env['JSGC_DISABLE_POISONING'] = '1'
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
