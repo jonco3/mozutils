@@ -57,15 +57,16 @@ def main():
                     displayResults(builds, scores, results)
 
 class Build:
-    def __init__(self, str):
-        args = str.split()
-        path = args[0]
+    def __init__(self, spec):
+        command = spec.split()
+        path = command[0]
         shell = os.path.join(path, "shell")
         ensure(canExecute(shell), f"Executeable shell not found at: {shell}")
+        self.spec = spec
         self.path = os.path.normpath(path)
         self.name = os.path.basename(self.path)
         self.shell = os.path.abspath(shell)
-        self.args = args[1:]
+        self.args = command[1:]
 
     def __repr__(self):
         return f"Build({self.name})"
@@ -190,7 +191,7 @@ def displayResults(builds, scores, results):
                     text += "   " + formatBox(low, high, stats)
                     data = formatData(low, high, stats)
 
-            display("  %20s  %s" % (build.name, text))
+            display("  %20s  %s" % (build.spec[-20:], text))
             display((76 * ' ') + data)
 
 linesDisplayed = 0
