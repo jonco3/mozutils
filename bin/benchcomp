@@ -155,6 +155,10 @@ def printHeader():
 def displayResults(builds, scores, results, showSamples):
     clearDisplay()
 
+    geomean = dict()
+    for build in builds:
+        geomean[build] = 0
+
     firstScore = True
     for score in scores:
         if firstScore:
@@ -174,6 +178,7 @@ def displayResults(builds, scores, results, showSamples):
             if data:
                 stats = Stats(data, compareTo)
                 statsForBuild[build] = stats
+                geomean[build] += math.log(stats.mean)
                 if first:
                     compareTo = stats.mean
                     low, high = stats.min, stats.max
@@ -196,6 +201,24 @@ def displayResults(builds, scores, results, showSamples):
             display("  %20s  %s" % (build.spec[-20:], text))
             if showSamples:
                 display((76 * ' ') + samples)
+
+    count = len(scores)
+    if count > 1:
+        display()
+        display("Geometric mean:")
+        compareTo = None
+        first = True
+        for build in builds:
+            if geomean[build] != 0:
+                mean = math.exp(geomean[build] / count)
+                text = "          %8.1f" % mean
+                if first:
+                    compareTo = mean
+                    first = False
+                else:
+                    diff = (mean - compareTo) / compareTo
+                    text += "                         %4.1f%%" % (diff * 100)
+                display("  %20s  %s" % (build.spec[-20:], text))
 
 linesDisplayed = 0
 
