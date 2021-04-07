@@ -163,8 +163,6 @@ def displayResults(builds, scores, results, showSamples):
     for score in scores:
         if firstScore:
             firstScore = False
-        else:
-            display()
 
         display(f"{score}:")
 
@@ -315,4 +313,7 @@ def meanstdv(x):
         std = 0.0
     return mean, std
 
-main()
+try:
+    main()
+except KeyboardInterrupt:
+    pass
