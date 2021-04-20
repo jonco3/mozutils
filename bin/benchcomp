@@ -27,9 +27,13 @@ def main():
         OctaneTest('earley-boyer'),
         OctaneTest('regexp'),
         OctaneTest('splay'),
+        OctaneTest('navier-stokes'),
         OctaneTest('pdfjs'),
+        OctaneTest('mandreel'),
+        OctaneTest('gbemu'),
         OctaneTest('code-load'),
         OctaneTest('box2d'),
+        OctaneTest('zlib'),
         OctaneTest('typescript')
     ]
 
