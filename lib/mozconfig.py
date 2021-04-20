@@ -129,7 +129,7 @@ def add_sanitizer_options(args, options):
     if '--enable-optimize' in options:
         options.remove('--enable-optimize')
         options.append('--enable-optimize="-O2 -gline-tables-only"')
-    if not args.shell:
+    if not getattr(args, 'shell', False):
         options.append('--disable-elf-hack')
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
