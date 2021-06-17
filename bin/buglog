@@ -87,7 +87,7 @@ def run():
         if phase != 'public':
             continue
 
-        match = re.match(r'Bug (\d+)', desc, re.IGNORECASE)
+        match = re.search(r'bug (\d+)', desc.lower())
         if not match:
             result = "(skipped)"
         else:
