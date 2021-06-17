@@ -106,6 +106,11 @@ rsync \
     --exclude "/third_party/python/psutil/*.pyd" \
     --exclude "/third_party/python/psutil/build/" \
     --exclude "/third_party/python/psutil/tmp/" \
+    --exclude "/testing/raptor/.raptor-venv/" \
+    --exclude "/testing/raptor/raptor-venv/" \
+    --exclude "/testing/raptor/tests/json/" \
+    --exclude "/testing/raptor/webext/raptor/auto_gen_test_config.js" \
+    --exclude "/tools/browsertime/node_modules/" \
     --exclude GTAGS \
     --exclude GRTAGS \
     --exclude GSYMS \
