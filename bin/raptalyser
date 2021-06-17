@@ -25,11 +25,12 @@ def main():
     builds = list(map(Build, args.builds))
     test = tests[0]
 
-    printHeader()
-    displayResults(builds, test)
+    if args.headless:
+        os.environ['MOZ_HEADLESS'] = '1'
 
     for i in range(args.test_iterations):
         for build in builds:
+            display('')
             runTest(build, test, args)
             displayResults(builds, test)
 
@@ -38,12 +39,16 @@ def parseArgs():
         description = 'Run raptor tests and compare the results')
     #parser.add_argument('-t', '--test', help='Test suite to run')
     #parser.add_argument('--show-samples', action='store_true')
-    parser.add_argument('--reuse-data', action='store_true',
+    parser.add_argument('--reuse-data', action='store_true', default=False,
                         help='For testing this script, reuse any old data')
     parser.add_argument('--test-iterations', type=int, default=10,
                         help='The number of times to run the tests for each build')
     parser.add_argument('--page-cycles', type=int, default=5,
                         help='The number of page cycles in each test run')
+    parser.add_argument('--use-replicates', action='store_true', default=False,
+                        help='Use individual test results rather than the averaged value for each test run')
+    parser.add_argument('--headless', action='store_true', default=False,
+                        help='Run the browser in headless mode')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -149,6 +154,8 @@ def runTest(build, test, args):
         if os.path.exists(resultsPath):
             os.remove(resultsPath)
 
+        display(f'Running {test.name} test for {build.name} build')
+
         cmd = ['./mach', 'raptor', '--post-startup-delay', '1000',
                '--page-cycles', str(args.page_cycles)] + test.args
         os.environ['MOZCONFIG'] = build.mozconfig
@@ -164,11 +171,11 @@ def runTest(build, test, args):
 
         parseOutput(build.results, test, proc.stdout + proc.stderr)
 
-    parseResults(build.results, test, resultsPath)
+    parseResults(build.results, test, resultsPath, args)
 
     os.chdir(oldcwd)
 
-def parseResults(results, test, path):
+def parseResults(results, test, path, args):
     ensure(os.path.exists(path), "Couldn't find results file: " + path)
     with open(path) as file:
         resultData = json.loads(file.read())
@@ -179,18 +186,18 @@ def parseResults(results, test, path):
         for subtest in suite['subtests']:
             name = subtest['name']
             key = f'{test.name} {name}'
-            replicates = subtest['replicates']
-            ensure(len(replicates) > 1, "Expected more than more result")
-            for value in replicates[1:]:
-                results.addResult(key, value)
+            if args.use_replicates:
+                replicates = subtest['replicates']
+                # Skip first replicate
+                ensure(len(replicates) > 1, "Expected more than more result")
+                for value in replicates[1:]:
+                    results.addResult(key, value)
+            else:
+                results.addResult(key, subtest['value'])
 
 def parseOutput(results, test, text):
     # todo: Extract key/value pairs from the test output
     pass
-
-def printHeader():
-    print((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
-    print(73 * "=")
 
 def displayResults(builds, test):
     clearDisplay()
@@ -203,6 +210,8 @@ def displayResults(builds, test):
     if not keysToDisplay:
         display("No results to display")
         return
+
+    displayHeader()
 
     for key in keysToDisplay:
         display(f"{key}:")
@@ -235,6 +244,10 @@ def findInterestingKeys(statsSets):
         else:
             result = result.union(keys)
     return result
+
+def displayHeader():
+    display((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
+    display(73 * "=")
 
 def formatStats(stats):
     return "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (
