@@ -38,6 +38,7 @@ def add_browser_config_arguments(parser):
 def add_shell_config_arguments(parser):
     add_common_config_arguments(parser)
     parser.add_argument('--armsim', action='store_true', help='ARM simulator build')
+    parser.add_argument('--gcc', action='store_true', help='Build with GCC rather than clang')
 
 def get_configs_from_args(args):
     names = []
@@ -71,6 +72,11 @@ def get_configs_from_args(args):
     if config('target32'):
         names.append('32bit')
         options.append('--target=i686-pc-linux')
+
+    if config('gcc'):
+        names.append('gcc')
+        options.append('export CC=gcc')
+        options.append('export CXX=g++')
 
     if config('opt'):
         names.append('opt')
