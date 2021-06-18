@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+
+# Try to convert a mercurial ignore file to an rsync exclude file.
+#
+# hgignore files use a regexp match against the full path.
+#
+# rsync filters use globbing patterns against every individual path component
+# (for patterns that don't contain '/'or '**'), or against full paths of every
+# node from root to leaf.
+#
+# This script doesn't handle all possibilities.
+#
+# See: https://www.selenic.com/mercurial/hgignore.5.html
+
+import copy
+import fileinput
+import re
+import sys
+
+def isNormalChar(char):
+    return char.isalnum() or char in '~_-'
+
+# Matching state is tuple of:
+#  - remaining input (list of chars)
+#  - output so far (string)
+
+class State:
+    def __init__(self, input):
+        self.input = list(input)    # Remaining input
+        self.output = ''            # Output so far
+        self.inSubExpr = False      # Whether we're inside a sub expression
+        self.anchorBeginning = False
+        self.anchorEnd = False
+
+    def finished(self):
+        return not self.input
+
+    def matchNext(self, queue):
+        char = self.input.pop(0)
+
+        if char == '\\':
+            if self.finished():
+                sys.exit('Unterminated backslash escape')
+            self.output += self.input.pop(0)
+            return
+
+        if char == '^' and not self.output:
+            self.anchorBeginning = True
+            self.output += '/'
+            return
+
+        if char == '.':
+            if self.input:
+                next = self.input[0]
+                if next == '*':
+                    self.input.pop(0)
+                    self.output += '**'
+                    return
+
+                if next == '+':
+                    self.input.pop(0)
+                    self.output += '?**'
+                    return
+
+            self.output += '?'
+            return
+
+        if char == '[':
+            self.output += char
+            while not self.finished() and self.input[0] != ']':
+                next = self.input.pop(0)
+                if not next.isalnum() and not isNormalChar(next):
+                    sys.exit('Unhandled character in character class: ' + next)
+                self.output += next
+
+            if self.finished():
+                sys.exit('Unterminated character class')
+
+            assert self.input[0] == ']'
+            self.output += ']'
+            self.input.pop(0);
+            return
+
+        if char == '(':
+            if self.inSubExpr:
+                sys.exit('Nested subexpressions not supported')
+            self.enterSubExpr()
+            return
+
+        if char == ')':
+            self.exitSubExpr()
+            return
+
+        if char == '|':
+            if not self.inSubExpr:
+                sys.exit('Alternation outside subexpressions not supported')
+            queue.append(self.backtrack(input))
+            self.skipToChar(')', "Unterminated subexpression")
+            return
+
+        if char == '/' and not self.output:
+            self.anchorBeginning = True
+            # I don't know why but '*/foo' will not macth '/foo' but will match
+            # 'sub/foo'.
+            self.output += '*/'
+            return
+
+        if char == '/':
+            if self.finished():
+                self.anchorEnd = True
+            self.output += char
+            return
+
+        if isNormalChar(char):
+            self.output += char
+            return
+
+        if char == '$' and self.finished():
+            self.anchorEnd = True
+            return
+
+        sys.exit(f"Unhandled char: '{char}'")
+
+    def enterSubExpr(self):
+        assert not self.inSubExpr
+        self.inSubExpr = True
+        self.backtrackState = copy.deepcopy(self)
+
+    def exitSubExpr(self):
+        assert self.inSubExpr
+        self.inSubExpr = False
+        self.backtrackState = None
+
+    # Create a new state based on previous state but with different input.
+    def backtrack(self, input):
+        state = copy.deepcopy(self.backtrackState)
+        state.input = self.input.copy()
+        state.backtrackState = self.backtrackState
+        return state
+
+    def skipToChar(self, char, error):
+        while not self.finished() and self.input[0] != char:
+            self.input.pop(0);
+        if self.finished():
+            sys.exit(error)
+
+def convertLine(line):
+    # Remove some constructs we can't handle:
+    line = line.replace('(?i)', '')  # rsync doesn't support case insensitive matching
+
+    # Clean up input to remove dubious constructs:
+    line = line.replace('.[^/]*', '')
+    line = re.sub('g\*$', 'g', line)
+    line = line.replace('^[^/]*', '')
+
+    line = line.replace('^\.?', '^')  # todo: this is not legit
+
+    results = []
+
+    queue = [State(list(line))]
+    while queue:
+        state = queue[0]
+        if state.finished():
+            output = state.output
+            if not state.anchorBeginning:
+                output = '*' + output
+            if not state.anchorEnd:
+                output += '*'
+
+            if output not in results:
+                results.append(output)
+            queue.pop(0)
+            continue
+
+        state.matchNext(queue)
+
+    return results
+
+# Tests
+def testEq(a, b):
+    if a != b:
+        raise Exception(f"Test failure: expected {b} but got {a}")
+
+testEq(convertLine('(^|/)foo$'), ['/foo', '*/foo'])
+testEq(convertLine('^foo$'), ['/foo'])
+testEq(convertLine('^foo'), ['/foo*'])
+testEq(convertLine('foo$'), ['*foo'])
+testEq(convertLine('foo'), ['*foo*'])
+testEq(convertLine('/foo$'), ['*/foo'])
+testEq(convertLine('^(foo|bar|baz)$'), ['/foo', '/bar', '/baz'])
+
+for line in fileinput.input():
+    line = line.rstrip()
+
+    # Assume default regexp syntax in use
+    if line.startswith('synax:'):
+        sys.exit('Unhandled syntax directive')
+
+    # Skip comments
+    if not line or line.startswith('#'):
+        continue
+
+    print(f'# {line}')
+
+    if '(?!' in line:
+        print("# Skipping pattern including negative lookahead assertion")
+        print()
+        continue
+
+    for result in convertLine(line):
+        print(result)
+    print()

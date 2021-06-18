@@ -1,0 +1,376 @@
+# ~$
+*~
+
+# \.py(c|o)$
+*.pyc
+*.pyo
+
+# (?i)(^|/)TAGS$
+/TAGS
+*/TAGS
+
+# (^|/)ID$
+/ID
+*/ID
+
+# (^|/)\.DS_Store$
+/.DS_Store
+*/.DS_Store
+
+# \.pdb
+*.pdb*
+
+# \.egg-info
+*.egg-info*
+
+# \.eslintcache
+*.eslintcache*
+
+# \.gcda
+*.gcda*
+
+# \.gcno
+*.gcno*
+
+# \.gcov
+*.gcov*
+
+# compile_commands\.json
+*compile_commands.json*
+
+# ^\.sw.$
+/.sw?
+
+# .[^/]*\.sw.$
+*.sw?
+
+# \.dir-locals\.el
+*.dir-locals.el*
+
+# \.projectile
+*.projectile*
+
+# ^\.mozconfig
+/.mozconfig*
+
+# ^mozconfig*
+/mozconfig*
+
+# ^configure$
+/configure
+
+# ^old-configure$
+/old-configure
+
+# ^config\.cache$
+/config.cache
+
+# ^config\.log$
+/config.log
+
+# ^\.clang_complete
+/.clang_complete*
+
+# ^\.?machrc$
+/machrc
+
+# ^\.python-version$
+/.python-version
+
+# ^security/manager/\.nss\.checkout$
+/security/manager/.nss.checkout
+
+# ^obj
+/obj*
+
+# ^gecko\.log
+/gecko.log*
+
+# ^browser/components/newtab/logs/
+/browser/components/newtab/logs/
+
+# _DBG\.OBJ/
+*_DBG.OBJ/
+
+# _OPT\.OBJ/
+*_OPT.OBJ/
+
+# ^js/src/.*-obj/
+/js/src/**-obj/
+
+# ^js/src/obj-.*/
+/js/src/obj-**/
+
+# ^js/src/configure$
+/js/src/configure
+
+# ^js/src/old-configure$
+/js/src/old-configure
+
+# ^js/src/autom4te.cache$
+/js/src/autom4te?cache
+
+# ^js/src/tests/results-.*\.(html|txt)$
+/js/src/tests/results-**.html
+/js/src/tests/results-**.txt
+
+# ^js/src/devtools/rootAnalysis/t/out
+/js/src/devtools/rootAnalysis/t/out*
+
+# ^js/src/jit-test/etc/wasm/generate-spectests/specs/
+/js/src/jit-test/etc/wasm/generate-spectests/specs/
+
+# ^js/src/jit-test/etc/wasm/generate-spectests/tests/
+/js/src/jit-test/etc/wasm/generate-spectests/tests/
+
+# ^js/src/jit-test/etc/wasm/generate-spectests/target/
+/js/src/jit-test/etc/wasm/generate-spectests/target/
+
+# ^parser/html/java/(html|java)parser/
+/parser/html/java/htmlparser/
+/parser/html/java/javaparser/
+
+# \.svn/
+*.svn/
+
+# \.project$
+*.project
+
+# \.cproject$
+*.cproject
+
+# \.settings/
+*.settings/
+
+# \.idea/
+*.idea/
+
+# \.iml$
+*.iml
+
+# ^captures/
+/captures/
+
+# ^.gradle/
+/?gradle/
+
+# ^tools/infer/test/.gradle/
+/tools/infer/test/?gradle/
+
+# ^local.properties$
+/local?properties
+
+# .git/
+*?git/
+
+# ^devtools/client/chrome.manifest$
+/devtools/client/chrome?manifest
+
+# ^devtools/shared/chrome.manifest$
+/devtools/shared/chrome?manifest
+
+# ^devtools/.*/node_modules/
+/devtools/**/node_modules/
+
+# ^remote/test/puppeteer/package-lock.json
+/remote/test/puppeteer/package-lock?json*
+
+# ^remote/test/puppeteer/node_modules/
+/remote/test/puppeteer/node_modules/
+
+# ^remote/test/puppeteer/.local-chromium/
+/remote/test/puppeteer/?local-chromium/
+
+# ^remote/test/puppeteer/.local-firefox/
+/remote/test/puppeteer/?local-firefox/
+
+# ^remote/test/puppeteer/experimental/
+/remote/test/puppeteer/experimental/
+
+# ^remote/test/puppeteer/lib/
+/remote/test/puppeteer/lib/
+
+# ^remote/test/puppeteer/test/output-firefox
+/remote/test/puppeteer/test/output-firefox*
+
+# ^remote/test/puppeteer/test/output-chromium
+/remote/test/puppeteer/test/output-chromium*
+
+# ^media/libstagefright/android$
+/media/libstagefright/android
+
+# (^|/)GTAGS$
+/GTAGS
+*/GTAGS
+
+# (^|/)GRTAGS$
+/GRTAGS
+*/GRTAGS
+
+# (^|/)GSYMS$
+/GSYMS
+*/GSYMS
+
+# (^|/)GPATH$
+/GPATH
+*/GPATH
+
+# ^testing/web-platform/sync/
+/testing/web-platform/sync/
+
+# ^testing/web-platform/products/
+/testing/web-platform/products/
+
+# ^mobile/android/gradle/.gradle
+/mobile/android/gradle/?gradle*
+
+# ^[^/]*\.xcodeproj/
+*.xcodeproj/
+
+# ^target/
+/target/
+
+# ^testing/mozharness/.tox/
+/testing/mozharness/?tox/
+
+# ^testing/mozharness/build/
+/testing/mozharness/build/
+
+# ^testing/mozharness/logs/
+/testing/mozharness/logs/
+
+# ^testing/mozharness/.coverage
+/testing/mozharness/?coverage*
+
+# ^testing/mozharness/nosetests.xml
+/testing/mozharness/nosetests?xml*
+
+# .tox/
+*?tox/
+
+# ^node_modules/
+/node_modules/
+
+# ^tools/browsertime/node_modules/
+/tools/browsertime/node_modules/
+
+# ^tools/lint/eslint/eslint-plugin-mozilla/node_modules/
+/tools/lint/eslint/eslint-plugin-mozilla/node_modules/
+
+# ^browser/components/newtab/node_modules/
+/browser/components/newtab/node_modules/
+
+# ^testing/talos/.Python
+/testing/talos/?Python*
+
+# ^testing/talos/bin/
+/testing/talos/bin/
+
+# ^testing/talos/include/
+/testing/talos/include/
+
+# ^testing/talos/lib/
+/testing/talos/lib/
+
+# ^testing/talos/talos/fis/tp5n.zip
+/testing/talos/talos/fis/tp5n?zip*
+
+# ^testing/talos/talos/fis/tp5n.tar.gz
+/testing/talos/talos/fis/tp5n?tar?gz*
+
+# ^testing/talos/talos/fis/tp5n
+/testing/talos/talos/fis/tp5n*
+
+# ^testing/talos/talos/tests/tp5n.zip
+/testing/talos/talos/tests/tp5n?zip*
+
+# ^testing/talos/talos/tests/tp5n.tar.gz
+/testing/talos/talos/tests/tp5n?tar?gz*
+
+# ^testing/talos/talos/tests/tp5n
+/testing/talos/talos/tests/tp5n*
+
+# ^testing/talos/talos/tests/devtools/damp.manifest.develop
+/testing/talos/talos/tests/devtools/damp?manifest?develop*
+
+# ^testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint.manifest.develop
+/testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint?manifest?develop*
+
+# ^testing/talos/talos/webextensions/
+/testing/talos/talos/webextensions/
+
+# ^testing/talos/talos/tests/about-newtab/about_newtab.manifest.develop
+/testing/talos/talos/tests/about-newtab/about_newtab?manifest?develop*
+
+# ^talos-venv
+/talos-venv*
+
+# ^py3venv
+/py3venv*
+
+# ^testing/talos/talos/mitmproxy/mitmdump
+/testing/talos/talos/mitmproxy/mitmdump*
+
+# ^testing/talos/talos/mitmproxy/mitmproxy
+/testing/talos/talos/mitmproxy/mitmproxy*
+
+# ^testing/talos/talos/mitmproxy/mitmweb
+/testing/talos/talos/mitmproxy/mitmweb*
+
+# ^testing/talos/talos/tests/webkit/PerformanceTests
+/testing/talos/talos/tests/webkit/PerformanceTests*
+
+# ^toolchains\.json
+/toolchains.json*
+
+# ^lextab.py$
+/lextab?py
+
+# tps\.log
+*tps.log*
+
+# tps_result\.json
+*tps_result.json*
+
+# \.vscode/(?!extensions\.json|tasks\.json)
+# Skipping pattern including negative lookahead assertion
+
+# ^infer-out/
+/infer-out/
+
+# ^comm/
+/comm/
+
+# ^testing/raptor/.raptor-venv
+/testing/raptor/?raptor-venv*
+
+# ^testing/raptor/raptor-venv
+/testing/raptor/raptor-venv*
+
+# ^testing/raptor/raptor/tests/json/
+/testing/raptor/raptor/tests/json/
+
+# ^testing/raptor/webext/raptor/auto_gen_test_config.js
+/testing/raptor/webext/raptor/auto_gen_test_config?js*
+
+# ^browsertime-results
+/browsertime-results*
+
+# gfx/wgpu/target
+*gfx/wgpu/target*
+
+# gfx/wgpu/.*/build
+*gfx/wgpu/**/build*
+
+# gfx/wr/target/
+*gfx/wr/target/
+
+# toolkit/components/certviewer/content/node_modules/
+*toolkit/components/certviewer/content/node_modules/
+
+# toolkit/components/certviewer/content/package-lock.json
+*toolkit/components/certviewer/content/package-lock?json*
+
+# ^taskcluster/docker/image_builder/build-image/target
+/taskcluster/docker/image_builder/build-image/target*
+

@@ -6,6 +6,13 @@ set -euf -o pipefail
 
 REMOTE_FILE=.cloned-from
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+EXCLUDE_FILE=$SCRIPT_DIR/../etc/rsyncExcludes
+if ! [[ -f $EXCLUDE_FILE ]]; then
+   echo "Can't find rsync exclude file: $EXCLUDE_FILE"
+   exit 1
+fi
+
 VERBOSE=
 if [[ $# -gt 0 && $1 == "-v" ]]; then
     VERBOSE=$1
@@ -81,39 +88,19 @@ echo "Syncing $SOURCE to $TARGET"
 rsync \
     $VERBOSE \
     --recursive --rsh=ssh --times --delete --links \
+    --exclude-from="$EXCLUDE_FILE" \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
-    --exclude "/mozconfig-*" \
     --exclude "/*-build/" \
     --exclude "/src/*-build/" \
     --exclude "/js/src/*-build/" \
-    --exclude /target/ \
-    --exclude "/obj-*/" \
     --exclude __pycache__/ \
-    --exclude "*.pyc" \
-    --exclude "*~" \
     --exclude "#*#" \
-    --exclude .DS_Store \
-    --exclude .js-cache/ \
-    --exclude /configure \
-    --exclude /old-configure \
     --exclude /src/configure \
     --exclude /src/old-configure \
-    --exclude /js/src/configure \
-    --exclude /js/src/old-configure \
     --exclude "/third_party/python/psutil/*.so" \
     --exclude "/third_party/python/psutil/psutil/*.so" \
     --exclude "/third_party/python/psutil/*.pyd" \
     --exclude "/third_party/python/psutil/build/" \
     --exclude "/third_party/python/psutil/tmp/" \
-    --exclude "/testing/raptor/.raptor-venv/" \
-    --exclude "/testing/raptor/raptor-venv/" \
-    --exclude "/testing/raptor/tests/json/" \
-    --exclude "/testing/raptor/webext/raptor/auto_gen_test_config.js" \
-    --exclude "/tools/browsertime/node_modules/" \
-    --exclude GTAGS \
-    --exclude GRTAGS \
-    --exclude GSYMS \
-    --exclude GPATH \
-    --exclude GSTALE \
     $SOURCE/ $TARGET/ || exit $?
