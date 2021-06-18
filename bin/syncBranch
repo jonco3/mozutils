@@ -91,6 +91,7 @@ rsync \
     --include "*.egg-info" \
     --include "/gfx/wgpu/wgpu-core/build.rs" \
     --include "/testing/**/*.swf" \
+    --include "/third_party/**/*.xcodeproj" \
     --exclude-from="$EXCLUDE_FILE" \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
