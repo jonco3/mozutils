@@ -88,6 +88,9 @@ echo "Syncing $SOURCE to $TARGET"
 rsync \
     $VERBOSE \
     --recursive --rsh=ssh --times --delete --links \
+    --include "*.egg-info" \
+    --include "/gfx/wgpu/wgpu-core/build.rs" \
+    --include "/testing/**/*.swf" \
     --exclude-from="$EXCLUDE_FILE" \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
@@ -98,9 +101,4 @@ rsync \
     --exclude "#*#" \
     --exclude /src/configure \
     --exclude /src/old-configure \
-    --exclude "/third_party/python/psutil/*.so" \
-    --exclude "/third_party/python/psutil/psutil/*.so" \
-    --exclude "/third_party/python/psutil/*.pyd" \
-    --exclude "/third_party/python/psutil/build/" \
-    --exclude "/third_party/python/psutil/tmp/" \
     $SOURCE/ $TARGET/ || exit $?
