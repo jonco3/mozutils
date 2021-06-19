@@ -18,12 +18,22 @@ import sys
 
 def main():
     tests = [
-        BrowserTimeTest('reddit')
+        BrowserTimeTest('reddit'),
+        BrowserTimeTest('wasm-godot'),
+        BrowserTimeTest('wasm-godot-baseline'),
+        BrowserTimeTest('wasm-godot-optimizing')
     ]
 
     args = parseArgs()
     builds = list(map(Build, args.builds))
-    test = tests[0]
+
+    test = None
+    for t in tests:
+        if t.name == args.test:
+            test = t
+            break
+    if not test:
+        sys.exit(f'Test not found: {args.test}')
 
     if args.headless:
         os.environ['MOZ_HEADLESS'] = '1'
@@ -37,7 +47,7 @@ def main():
 def parseArgs():
     parser = argparse.ArgumentParser(
         description = 'Run raptor tests and compare the results')
-    #parser.add_argument('-t', '--test', help='Test suite to run')
+    parser.add_argument('-t', '--test', help='Test suite to run', default='reddit')
     #parser.add_argument('--show-samples', action='store_true')
     parser.add_argument('--reuse-data', action='store_true', default=False,
                         help='For testing this script, reuse any old data')
