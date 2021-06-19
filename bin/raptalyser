@@ -26,14 +26,7 @@ def main():
 
     args = parseArgs()
     builds = list(map(Build, args.builds))
-
-    test = None
-    for t in tests:
-        if t.name == args.test:
-            test = t
-            break
-    if not test:
-        sys.exit(f'Test not found: {args.test}')
+    test = findTest(tests, args)
 
     if args.headless:
         os.environ['MOZ_HEADLESS'] = '1'
@@ -61,6 +54,12 @@ def parseArgs():
                         help='Run the browser in headless mode')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
+
+def findTest(tests, args):
+    for test in tests:
+        if test.name == args.test:
+            return test
+    sys.exit(f'Test not found: {args.test}')
 
 class Build:
     def __init__(self, path):
