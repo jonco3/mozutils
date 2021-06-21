@@ -48,8 +48,10 @@ def parseArgs():
                         help='For testing this script, reuse any old data')
     parser.add_argument('--test-iterations', type=int, default=10,
                         help='The number of times to run the tests for each build')
-    parser.add_argument('--page-cycles', type=int, default=5,
+    parser.add_argument('--page-cycles', type=int,
                         help='The number of page cycles in each test run')
+    parser.add_argument('--post-startup-delay', type=int,
+                        help='How long to wait (ms) after browser start-up before starting the tests')
     parser.add_argument('--use-replicates', action='store_true', default=False,
                         help='Use individual test results rather than the averaged value for each test run')
     parser.add_argument('--headless', action='store_true', default=False,
@@ -183,8 +185,11 @@ def runTest(build, test, args):
 
         display(f'Running {test.name} test for {build.name} build')
 
-        cmd = ['./mach', 'raptor', '--post-startup-delay', '1000',
-               '--page-cycles', str(args.page_cycles)] + test.args
+        cmd = ['./mach', 'raptor'] + test.args
+        if args.page_cycles:
+            cmd.extend(['--page-cycles', str(args.page_cycles)])
+        if args.post_startup_delay:
+            cmd.extend(['--post-startup-delay', str(args.post_startup_delay)])
         os.environ['MOZCONFIG'] = build.mozconfig
         proc = subprocess.run(cmd, capture_output=True, text=True)
         if proc.returncode != 0:
