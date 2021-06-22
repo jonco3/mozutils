@@ -102,4 +102,5 @@ rsync \
     --exclude "#*#" \
     --exclude /src/configure \
     --exclude /src/old-configure \
+    --exclude GSTALE \
     $SOURCE/ $TARGET/ || exit $?
