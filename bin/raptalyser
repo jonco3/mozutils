@@ -36,7 +36,6 @@ def main():
 
     for i in range(args.test_iterations):
         for build in builds:
-            display('')
             runTest(build, test, args)
             displayResults(builds, test)
 
@@ -197,7 +196,7 @@ def runTest(build, test, args):
         if os.path.exists(resultsPath):
             os.remove(resultsPath)
 
-        display(f'Running {test.name} test for {build.name} build')
+        display(f'Running {test.name} test for {build.name} build...')
 
         cmd = ['./mach', 'raptor'] + test.args
         if args.page_cycles:
