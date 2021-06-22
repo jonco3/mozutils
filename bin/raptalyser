@@ -19,7 +19,7 @@ import sys
 
 def main():
     tests = [
-        BrowserTimeTest('reddit'),
+        PageLoadTest('reddit'),
         BrowserTimeTest('wasm-godot'),
         BrowserTimeTest('wasm-godot-baseline'),
         BrowserTimeTest('wasm-godot-optimizing')
@@ -28,6 +28,7 @@ def main():
     args = parseArgs()
     builds = list(map(Build, args.builds))
     test = findTest(tests, args)
+    test.checkArgs(args)
     openLogFile(args)
 
     if args.headless:
@@ -50,6 +51,8 @@ def parseArgs():
                         help='The number of times to run the tests for each build')
     parser.add_argument('--page-cycles', type=int,
                         help='The number of page cycles in each test run')
+    parser.add_argument('--browser-cycles', type=int,
+                        help='The number of browser cycles in each test run')
     parser.add_argument('--post-startup-delay', type=int,
                         help='How long to wait (ms) after browser start-up before starting the tests')
     parser.add_argument('--use-replicates', action='store_true', default=False,
@@ -118,9 +121,20 @@ class Test:
         self.name = name
         self.args = args
 
+        def checkArgs(self, args):
+            pass
+
 class BrowserTimeTest(Test):
-    def __init__(self, name):
-        super().__init__(name, ['--browsertime', '-t', name])
+    def __init__(self, name, args = []):
+        super().__init__(name, ['--browsertime', '-t', name] + args)
+
+class PageLoadTest(BrowserTimeTest):
+    def __init__(self, name, args = []):
+        super().__init__(name, ['--chimera', '--page-cycles', '2'])
+
+    def checkArgs(self, args):
+        if args.page_cycles is not None:
+            sys.exit("Can't specifiy --page-cycles with pageload test")
 
 # The results from many test runs
 class ResultSet:
@@ -188,9 +202,12 @@ def runTest(build, test, args):
         cmd = ['./mach', 'raptor'] + test.args
         if args.page_cycles:
             cmd.extend(['--page-cycles', str(args.page_cycles)])
+        if args.browser_cycles:
+            cmd.extend(['--browser-cycles', str(args.browser_cycles)])
         if args.post_startup_delay:
             cmd.extend(['--post-startup-delay', str(args.post_startup_delay)])
         os.environ['MOZCONFIG'] = build.mozconfig
+        log(f'Running command: {" ".join(cmd)}')
         proc = subprocess.run(cmd, capture_output=True, text=True)
         if proc.returncode != 0:
             print(f"Error running benchmark {test.name} for build {build.name}:")
@@ -210,16 +227,28 @@ def runTest(build, test, args):
 def parseResults(results, build, test, path, args):
     log(f'Results for {build.name} {test.name}:')
 
+    isPageLoadTest = '--chimera' in test.args
+
     ensure(os.path.exists(path), "Couldn't find results file: " + path)
     with open(path) as file:
-        resultData = json.loads(file.read())
+        jsonText = file.read()
+        log(f'JSON input: {" ".join(jsonText.split())}')
+        resultData = json.loads(jsonText)
     ensure('suites' in resultData, "JSON results missing 'suites'")
     suites = resultData['suites']
-    for suite in suites:
+    if isPageLoadTest:
+        assert len(suites) == 2
+
+    for i in range(len(suites)):
+        suite = suites[i]
+        testName = test.name
+        if isPageLoadTest:
+            testName += ' cold' if i == 0 else ' warm'
+
         ensure('subtests' in suite, "JSON results missing 'subtests'")
         for subtest in suite['subtests']:
             name = subtest['name']
-            key = f'{test.name} {name}'
+            key = f'{testName} {name}'
             value = subtest['value']
             replicates = subtest['replicates']
             if args.use_replicates:
@@ -280,7 +309,7 @@ def findInterestingKeys(statsSets):
             result = keys
         else:
             result = result.union(keys)
-    return result
+    return sorted(list(result))
 
 def displayHeader():
     display((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
