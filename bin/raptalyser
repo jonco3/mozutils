@@ -89,9 +89,9 @@ class Build:
         self.path = os.path.abspath(path)
         ensure(os.path.isdir(self.path), "Build path is not a directory")
         ensure(canExecute(os.path.join(self.path, 'dist', 'bin', 'firefox')),
-               "Build does not contain FF executable")
+               f"Build {self.name} does not contain FF executable")
         ensure(canExecute(os.path.join(self.path, '..', 'mach')),
-               "Build does not contain mach executable")
+               f"Build {self.name} does not contain mach executable")
 
         self.dir = os.path.dirname(self.path)
         self.mozconfig = self.findMozConfig()
@@ -291,10 +291,13 @@ def displayResults(builds, test):
             if key not in stats:
                 continue
 
-            text = formatStats(stats[key])
+            main = formatStats(stats[key])
+
+            comp = ''
             if compareTo and not first:
-                text += " " + formatComparison(stats[key], compareTo[key])
-            display("  %20s  %s" % (build.name[-20:], text))
+                comp = formatComparison(stats[key], compareTo[key])
+
+            display("  %20s  %s %s" % (build.name[-20:], main, comp))
 
             if first:
                 first = False
