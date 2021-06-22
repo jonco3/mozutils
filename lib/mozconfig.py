@@ -2,6 +2,7 @@
 #  - make get_configs_from_args return an object
 
 import argparse
+import multiprocessing
 import os
 import platform
 import sys
@@ -48,7 +49,9 @@ def get_configs_from_args(args):
         # Not all names may be present
         return getattr(args, name, False)
 
-    options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
+    # Don't use sccache on machines with lots of cores because it's slower.
+    if multiprocessing.cpu_count() < 32:
+        options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
 
     if config('minimal'):
         names.append('minimal')
