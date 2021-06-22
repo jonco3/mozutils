@@ -10,11 +10,14 @@ import sys
 def platform_is_64bit():
     return sys.maxsize > 2 ** 32
 
-def add_common_config_arguments(parser):
+def add_common_config_arguments(parser, isBrowserConfig):
     opt_group = parser.add_mutually_exclusive_group()
     opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
     opt_group.add_argument('-d', '--optdebug', action='store_true',
                            help = 'Optimized build with assertions enabled')
+    if isBrowserConfig:
+        opt_group.add_argument('-p', '--pgo', action='store_true',
+                               help='Profile guided optimization build')
 
     if platform_is_64bit():
         parser.add_argument('--32bit', action='store_true', dest='target32',
@@ -32,12 +35,12 @@ def add_common_config_arguments(parser):
                         help='GC support for concurrent marking')
 
 def add_browser_config_arguments(parser):
-    add_common_config_arguments(parser)
+    add_common_config_arguments(parser, True)
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
 
 def add_shell_config_arguments(parser):
-    add_common_config_arguments(parser)
+    add_common_config_arguments(parser, False)
     parser.add_argument('--armsim', action='store_true', help='ARM simulator build')
     parser.add_argument('--gcc', action='store_true', help='Build with GCC rather than clang')
 
@@ -85,6 +88,11 @@ def get_configs_from_args(args):
         names.append('opt')
         options.append('--enable-optimize')
         options.append('--disable-debug')
+    if config('pgo'):
+        names.append('pgo')
+        options.append('--enable-optimize')
+        options.append('--disable-debug')
+        options.append('ac_add_options MOZ_PGO=1')
     elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-optimize')
