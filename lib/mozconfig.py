@@ -88,7 +88,7 @@ def get_configs_from_args(args):
         names.append('opt')
         options.append('--enable-optimize')
         options.append('--disable-debug')
-    if config('pgo'):
+    elif config('pgo'):
         names.append('pgo')
         options.append('--enable-optimize')
         options.append('--disable-debug')
