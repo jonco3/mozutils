@@ -66,6 +66,8 @@ def parseArgs():
                         help='Run the browser in headless mode')
     parser.add_argument('--webrender', action='store_true', default=False,
                         help='Enable webrender (deafult disabled)')
+    parser.add_argument('--visualmetrics', action='store_true', default=False,
+                        help='Enable browsertime visual metrics')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -219,6 +221,9 @@ def runTest(build, test, args):
             cmd.extend(['--setenv', 'MOZ_ACCELERATED=1'])
         else:
             cmd.extend(['--setpref', 'gfx.webrender.enabled=false'])
+
+        if args.visualmetrics and isinstance(test, PageLoadTest):
+            cmd.append('--browsertime-visualmetrics');
 
         os.environ['MOZCONFIG'] = build.mozconfig
         log(f'Running command: {" ".join(cmd)}')
