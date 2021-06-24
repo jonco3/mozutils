@@ -58,6 +58,8 @@ def parseArgs():
                         help='Use individual test results rather than the averaged value for each test run')
     parser.add_argument('--headless', action='store_true', default=False,
                         help='Run the browser in headless mode')
+    parser.add_argument('--webrender', action='store_true', default=False,
+                        help='Enable webrender (deafult disabled)')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -205,6 +207,13 @@ def runTest(build, test, args):
             cmd.extend(['--browser-cycles', str(args.browser_cycles)])
         if args.post_startup_delay:
             cmd.extend(['--post-startup-delay', str(args.post_startup_delay)])
+
+        if args.webrender:
+            cmd.extend(['--setpref', 'gfx.webrender.enabled=true'])
+            cmd.extend(['--setenv', 'MOZ_ACCELERATED=1'])
+        else:
+            cmd.extend(['--setpref', 'gfx.webrender.enabled=false'])
+
         os.environ['MOZCONFIG'] = build.mozconfig
         log(f'Running command: {" ".join(cmd)}')
         proc = subprocess.run(cmd, capture_output=True, text=True)
