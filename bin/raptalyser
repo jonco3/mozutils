@@ -21,6 +21,8 @@ import sys
 def main():
     tests = [
         PageLoadTest('reddit'),
+        PageLoadTest('nytimes'),
+        PageLoadTest('tumblr'),
         BrowserTimeTest('wasm-godot'),
         BrowserTimeTest('wasm-godot-baseline'),
         BrowserTimeTest('wasm-godot-optimizing')
