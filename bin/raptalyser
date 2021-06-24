@@ -34,6 +34,9 @@ def main():
     if args.headless:
         os.environ['MOZ_HEADLESS'] = '1'
 
+    if platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
+        sys.exit('DISPLAY not set in environment')
+
     for i in range(args.test_iterations):
         for build in builds:
             runTest(build, test, args)
