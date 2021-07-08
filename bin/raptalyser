@@ -191,13 +191,14 @@ class Stats:
         return mean, std
 
 class Task:
-    def __init__(self, cmd, env):
+    def __init__(self, cmd, env, cwd):
         self.cmd = cmd
         self.env = env
+        self.cwd = cwd
         self.running = False
 
     def start(self):
-        self.proc = subprocess.Popen(self.cmd, env=self.env, text=True,
+        self.proc = subprocess.Popen(self.cmd, env=self.env, cwd=self.cwd, text=True,
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.running = True
 
@@ -225,13 +226,6 @@ def canExecute(path):
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 def runTest(build, test, args):
-    oldcwd = os.getcwd()
-    os.chdir(build.dir)
-
-    resultsPath = os.path.join(build.dir, 'testing', 'mozharness', 'build', 'raptor.json')
-    if os.path.exists(resultsPath):
-        os.remove(resultsPath)
-
     display(f'Running {test.name} test for {build.name} build...')
 
     cmd = ['./mach', 'raptor'] + test.args
@@ -256,7 +250,7 @@ def runTest(build, test, args):
 
     log(f'Running command: {" ".join(cmd)}')
 
-    task = Task(cmd, env)
+    task = Task(cmd, env, build.dir)
     task.start()
     while task.running:
         display("waiting...")
@@ -271,21 +265,23 @@ def runTest(build, test, args):
         print(task.stderr)
         sys.exit(1)
 
-    parseOutput(build.results, test, task.stdout + task.stderr)
-    parseResults(build.results, build, test, resultsPath, args)
+    parseOutput(build, test, args, task.stdout + task.stderr)
 
-    os.chdir(oldcwd)
+def parseOutput(build, test, args, text):
+    resultsTag = 'PERFHERDER_DATA:'
+    for line in text.splitlines():
+        if resultsTag not in line:
+            continue
 
-def parseResults(results, build, test, path, args):
+        parseResults(build, test, args, line.split(resultsTag)[1])
+        break
+
+def parseResults(build, test, args, jsonText):
     log(f'Results for {build.name} {test.name}:')
 
     isPageLoadTest = '--chimera' in test.args
 
-    ensure(os.path.exists(path), "Couldn't find results file: " + path)
-    with open(path) as file:
-        jsonText = file.read()
-        log(f'JSON input: {" ".join(jsonText.split())}')
-        resultData = json.loads(jsonText)
+    resultData = json.loads(jsonText)
     ensure('suites' in resultData, "JSON results missing 'suites'")
     suites = resultData['suites']
     if isPageLoadTest:
@@ -307,15 +303,11 @@ def parseResults(results, build, test, path, args):
                 # Skip first replicate
                 ensure(len(replicates) > 1, "Expected more than more result")
                 for value in replicates[1:]:
-                    results.addResult(key, value)
+                    build.results.addResult(key, value)
             else:
-                results.addResult(key, subtest['value'])
+                build.results.addResult(key, subtest['value'])
 
             log(f'  {name} {value} {replicates}')
-
-def parseOutput(results, test, text):
-    # todo: Extract key/value pairs from the test output
-    pass
 
 def displayResults(builds, test):
     clearDisplay()
