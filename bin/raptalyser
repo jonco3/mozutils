@@ -23,6 +23,9 @@ def main():
         PageLoadTest('reddit'),
         PageLoadTest('nytimes'),
         PageLoadTest('tumblr'),
+        PageLoadTest('google-mail'),
+        PageLoadTest('google-docs'),
+        PageLoadTest('yahoo-mail'),
         BrowserTimeTest('wasm-godot'),
         BrowserTimeTest('wasm-godot-baseline'),
         BrowserTimeTest('wasm-godot-optimizing')
