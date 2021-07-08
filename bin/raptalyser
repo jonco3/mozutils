@@ -17,6 +17,7 @@ import math
 import re
 import subprocess
 import sys
+import time
 
 def main():
     tests = [
@@ -44,9 +45,13 @@ def main():
         sys.exit('DISPLAY not set in environment')
 
     for i in range(args.test_iterations):
-        for build in builds:
-            runTest(build, test, args)
-            displayResults(builds, test)
+        if args.parallel:
+            tasks = list(map(lambda build: makeTask(build, test, args), builds))
+            runTasksInParallel(builds, tasks, args)
+        else:
+            for build in builds:
+                runTest(build, test, args)
+                displayResults(builds, test)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
@@ -69,6 +74,8 @@ def parseArgs():
                         help='Enable webrender (deafult disabled)')
     parser.add_argument('--visualmetrics', action='store_true', default=False,
                         help='Enable browsertime visual metrics')
+    parser.add_argument('--parallel', '-p', action='store_true', default=False,
+                        help='Run tests in parallel (may affect the results)')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -93,6 +100,7 @@ def openLogFile(args):
 def log(text):
     assert LogFile
     print(text, file=LogFile)
+    LogFile.flush()
 
 class Build:
     def __init__(self, path):
@@ -191,7 +199,9 @@ class Stats:
         return mean, std
 
 class Task:
-    def __init__(self, cmd, env, cwd):
+    def __init__(self, build, test, cmd, env, cwd):
+        self.build = build
+        self.test = test
         self.cmd = cmd
         self.env = env
         self.cwd = cwd
@@ -226,8 +236,10 @@ def canExecute(path):
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 def runTest(build, test, args):
-    display(f'Running {test.name} test for {build.name} build...')
+    task = makeTask(build, test, args)
+    runTask(task,args)
 
+def makeTask(build, test, args):
     cmd = ['./mach', 'raptor'] + test.args
     if args.page_cycles:
         cmd.extend(['--page-cycles', str(args.page_cycles)])
@@ -248,24 +260,58 @@ def runTest(build, test, args):
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
 
-    log(f'Running command: {" ".join(cmd)}')
+    return Task(build, test, cmd, env, build.dir)
 
-    task = Task(cmd, env, build.dir)
+def runTask(task, args):
+    display(f'Running {task.test.name} test for {task.build.name} build...')
+
+    log(f'Running command: {" ".join(task.cmd)}')
+
     task.start()
     while task.running:
         display("waiting...")
         task.poll(5)
 
     if task.failed():
-        print(f"Error running benchmark {test.name} for build {build.name}:")
-        print(' '.join(cmd))
-        print('stdout:')
-        print(task.stdout)
-        print('stderr:')
-        print(task.stderr)
-        sys.exit(1)
+        reportFailedTaskAndExit(task)
 
-    parseOutput(build, test, args, task.stdout + task.stderr)
+    parseTaskOutput(task, args)
+
+def runTasksInParallel(builds, tasks, args):
+    for task in tasks:
+        display(f'Running {task.test.name} test for {task.build.name} build in parallel...')
+        log(f'Running command: {" ".join(task.cmd)}')
+        task.start()
+        time.sleep(1)
+
+    while tasks:
+        for task in tasks:
+            assert task.running
+            task.poll(1)
+            if task.running:
+                continue
+
+            if task.failed():
+                reportFailedTaskAndExit(task)
+
+            display("Finished one")
+            tasks.remove(task)
+            parseTaskOutput(task, args)
+            displayResults(builds, task.test)
+
+    assert not tasks
+
+def reportFailedTaskAndExit(task):
+    print(f"Error running benchmark {task.test.name} for build {task.build.name}:")
+    print(' '.join(task.cmd))
+    print('stdout:')
+    print(task.stdout)
+    print('stderr:')
+    print(task.stderr)
+    sys.exit(1)
+
+def parseTaskOutput(task, args):
+    parseOutput(task.build, task.test, args, task.stdout + task.stderr)
 
 def parseOutput(build, test, args, text):
     resultsTag = 'PERFHERDER_DATA:'
