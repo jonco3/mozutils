@@ -44,14 +44,17 @@ def main():
     if platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
         sys.exit('DISPLAY not set in environment')
 
+    tasks = []
     for i in range(args.test_iterations):
-        if args.parallel:
-            tasks = list(map(lambda build: makeTask(build, test, args), builds))
-            runTasksInParallel(builds, tasks, args)
-        else:
-            for build in builds:
-                runTest(build, test, args)
-                displayResults(builds, test)
+        for build in builds:
+            tasks.append(makeTask(build, test, args))
+
+    if args.parallel:
+        runTasksInParallel(builds, tasks, args)
+    else:
+        for task in tasks:
+            runTask(task, args)
+            displayResults(builds, test)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
@@ -224,8 +227,8 @@ class Task:
         except subprocess.TimeoutExpired:
             pass
         except:
-            proc.kill()
-            proc.wait()
+            self.proc.kill()
+            self.proc.wait()
             raise
 
 def ensure(condition, error):
@@ -237,7 +240,7 @@ def canExecute(path):
 
 def runTest(build, test, args):
     task = makeTask(build, test, args)
-    runTask(task,args)
+    runTask(task, args)
 
 def makeTask(build, test, args):
     cmd = ['./mach', 'raptor'] + test.args
@@ -278,14 +281,20 @@ def runTask(task, args):
     parseTaskOutput(task, args)
 
 def runTasksInParallel(builds, tasks, args):
-    for task in tasks:
-        display(f'Running {task.test.name} test for {task.build.name} build in parallel...')
-        log(f'Running command: {" ".join(task.cmd)}')
-        task.start()
-        time.sleep(1)
+    MaxRunning = 8
 
-    while tasks:
-        for task in tasks:
+    running = []
+
+    while tasks or running:
+        while tasks and len(running) < MaxRunning:
+            task = tasks.pop(0)
+            display(f'Starting {task.test.name} test for {task.build.name} build...')
+            log(f'Running command: {" ".join(task.cmd)}')
+            task.start()
+            running.append(task)
+            time.sleep(3)
+
+        for task in running:
             assert task.running
             task.poll(1)
             if task.running:
@@ -294,12 +303,9 @@ def runTasksInParallel(builds, tasks, args):
             if task.failed():
                 reportFailedTaskAndExit(task)
 
-            display("Finished one")
-            tasks.remove(task)
+            running.remove(task)
             parseTaskOutput(task, args)
             displayResults(builds, task.test)
-
-    assert not tasks
 
 def reportFailedTaskAndExit(task):
     print(f"Error running benchmark {task.test.name} for build {task.build.name}:")
