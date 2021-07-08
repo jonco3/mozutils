@@ -53,8 +53,6 @@ def parseArgs():
         description = 'Run raptor tests and compare the results')
     parser.add_argument('-t', '--test', help='Test suite to run', default='reddit')
     #parser.add_argument('--show-samples', action='store_true')
-    parser.add_argument('--reuse-data', action='store_true', default=False,
-                        help='For testing this script, reuse any old data')
     parser.add_argument('--test-iterations', type=int, default=10,
                         help='The number of times to run the tests for each build')
     parser.add_argument('--page-cycles', type=int,
@@ -231,52 +229,49 @@ def runTest(build, test, args):
     os.chdir(build.dir)
 
     resultsPath = os.path.join(build.dir, 'testing', 'mozharness', 'build', 'raptor.json')
+    if os.path.exists(resultsPath):
+        os.remove(resultsPath)
 
-    if not args.reuse_data or not os.path.exists(resultsPath):
-        if os.path.exists(resultsPath):
-            os.remove(resultsPath)
+    display(f'Running {test.name} test for {build.name} build...')
 
-        display(f'Running {test.name} test for {build.name} build...')
+    cmd = ['./mach', 'raptor'] + test.args
+    if args.page_cycles:
+        cmd.extend(['--page-cycles', str(args.page_cycles)])
+    if args.browser_cycles:
+        cmd.extend(['--browser-cycles', str(args.browser_cycles)])
+    if args.post_startup_delay:
+        cmd.extend(['--post-startup-delay', str(args.post_startup_delay)])
 
-        cmd = ['./mach', 'raptor'] + test.args
-        if args.page_cycles:
-            cmd.extend(['--page-cycles', str(args.page_cycles)])
-        if args.browser_cycles:
-            cmd.extend(['--browser-cycles', str(args.browser_cycles)])
-        if args.post_startup_delay:
-            cmd.extend(['--post-startup-delay', str(args.post_startup_delay)])
+    if args.webrender:
+        cmd.extend(['--setpref', 'gfx.webrender.enabled=true'])
+        cmd.extend(['--setenv', 'MOZ_ACCELERATED=1'])
+    else:
+        cmd.extend(['--setpref', 'gfx.webrender.enabled=false'])
 
-        if args.webrender:
-            cmd.extend(['--setpref', 'gfx.webrender.enabled=true'])
-            cmd.extend(['--setenv', 'MOZ_ACCELERATED=1'])
-        else:
-            cmd.extend(['--setpref', 'gfx.webrender.enabled=false'])
+    if args.visualmetrics and isinstance(test, PageLoadTest):
+        cmd.append('--browsertime-visualmetrics');
 
-        if args.visualmetrics and isinstance(test, PageLoadTest):
-            cmd.append('--browsertime-visualmetrics');
+    env = os.environ.copy()
+    env['MOZCONFIG'] = build.mozconfig
 
-        env = os.environ.copy()
-        env['MOZCONFIG'] = build.mozconfig
+    log(f'Running command: {" ".join(cmd)}')
 
-        log(f'Running command: {" ".join(cmd)}')
+    task = Task(cmd, env)
+    task.start()
+    while task.running:
+        display("waiting...")
+        task.poll(5)
 
-        task = Task(cmd, env)
-        task.start()
-        while task.running:
-            display("waiting...")
-            task.poll(5)
+    if task.failed():
+        print(f"Error running benchmark {test.name} for build {build.name}:")
+        print(' '.join(cmd))
+        print('stdout:')
+        print(task.stdout)
+        print('stderr:')
+        print(task.stderr)
+        sys.exit(1)
 
-        if task.failed():
-            print(f"Error running benchmark {test.name} for build {build.name}:")
-            print(' '.join(cmd))
-            print('stdout:')
-            print(task.stdout)
-            print('stderr:')
-            print(task.stderr)
-            sys.exit(1)
-
-        parseOutput(build.results, test, task.stdout + task.stderr)
-
+    parseOutput(build.results, test, task.stdout + task.stderr)
     parseResults(build.results, build, test, resultsPath, args)
 
     os.chdir(oldcwd)
