@@ -54,13 +54,13 @@ def main():
     else:
         for task in tasks:
             runTask(task, args)
-            displayResults(builds, test)
+            displayResults(builds, test, args)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
         description = 'Run raptor tests and compare the results')
     parser.add_argument('-t', '--test', help='Test suite to run', default='reddit')
-    #parser.add_argument('--show-samples', action='store_true')
+    parser.add_argument('--show-samples', action='store_true')
     parser.add_argument('--test-iterations', type=int, default=10,
                         help='The number of times to run the tests for each build')
     parser.add_argument('--page-cycles', type=int,
@@ -184,6 +184,7 @@ class Stats:
         self.cofv = self.stdv / self.mean
         self.min = min(results)
         self.max = max(results)
+        self.samples = results
 
     def meanstdv(x):
         assert(isinstance(x, list))
@@ -305,7 +306,7 @@ def runTasksInParallel(builds, tasks, args):
 
             running.remove(task)
             parseTaskOutput(task, args)
-            displayResults(builds, task.test)
+            displayResults(builds, task.test, args)
 
 def reportFailedTaskAndExit(task):
     print(f"Error running benchmark {task.test.name} for build {task.build.name}:")
@@ -320,6 +321,16 @@ def parseTaskOutput(task, args):
     parseOutput(task.build, task.test, args, task.stdout + task.stderr)
 
 def parseOutput(build, test, args, text):
+    log('')
+    log(f'Output for {build.name} {test.name}:')
+    log(text)
+    log('')
+
+    if "failed to load, the firefox are still on about:blank" in text:
+        # Something went wrong and the results will be far larger than
+        # normal. Drop this on the floor.
+        return
+
     resultsTag = 'PERFHERDER_DATA:'
     for line in text.splitlines():
         if resultsTag not in line:
@@ -361,7 +372,7 @@ def parseResults(build, test, args, jsonText):
 
             log(f'  {name} {value} {replicates}')
 
-def displayResults(builds, test):
+def displayResults(builds, test, args):
     clearDisplay()
 
     statsSets = dict()
@@ -378,26 +389,35 @@ def displayResults(builds, test):
     for key in keysToDisplay:
         display(f"{key}:")
 
-        compareTo = None
-        if len(builds) > 1:
-            compareTo = statsSets[builds[0].name]
+        statsSetsForKey = [statsSets[build.name][key] for build in builds
+                           if key in statsSets[build.name]]
+        minAll = min(map(lambda stats: stats.min, statsSetsForKey))
+        maxAll = max(map(lambda stats: stats.max, statsSetsForKey))
 
-        first = True
+        compareTo = None
+        if len(statsSetsForKey) > 1:
+            compareTo = statsSetsForKey[0]
+
         for build in builds:
-            stats = statsSets[build.name]
-            if key not in stats:
+            if key not in statsSets[build.name]:
                 continue
 
-            main = formatStats(stats[key])
+            stats = statsSets[build.name][key]
+            main = formatStats(stats)
 
             comp = ''
-            if compareTo and not first:
-                comp = formatComparison(stats[key], compareTo[key])
+            if compareTo and compareTo != stats:
+                comp = formatComparison(stats, compareTo)
 
-            display("  %20s  %s %s" % (build.name[-20:], main, comp))
+            box = ''
+            if minAll != maxAll and stats.count > 1:
+                box = formatBox(minAll, maxAll, stats)
 
-            if first:
-                first = False
+            display("  %20s  %s  %-6s  %s" % (build.name[-20:], main, comp, box))
+
+            if args.show_samples and minAll != maxAll:
+                samples = formatSamples(minAll, maxAll, stats)
+                display("%76s%s" % ('', samples))
 
 def findInterestingKeys(statsSets):
     # todo: returns any existing keys for now
@@ -411,17 +431,64 @@ def findInterestingKeys(statsSets):
     return sorted(list(result))
 
 def displayHeader():
-    display((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
-    display(73 * "=")
+    display((24 * " ") + "Min       Mean      Max       CofV    Runs  Change")
+    display(74 * "=")
 
 def formatStats(stats):
-    return "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d" % (
+    return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d" % (
         stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count)
 
 def formatComparison(stats, base):
     diff = (stats.mean - base.mean) / base.mean
     return "%4.1f%%" % (diff * 100)
     # todo: significance
+
+def formatBox(minAll, maxAll, stats):
+    width = 40
+    scale = (maxAll - minAll) / (width - 1)
+
+    def pos(x):
+        assert x >= minAll
+        return int((x - minAll) // scale)
+
+    maxDev = stats.mean + stats.stdv / 2
+    minDev = stats.mean - stats.stdv / 2
+
+    chars = list()
+    for i in range(width):
+        x = minAll + i * scale
+        if x >= stats.max:
+            c = ' '
+        elif x >= maxDev:
+            c = '-'
+        elif x >= minDev:
+            c = '='
+        elif x >= stats.min:
+            c = '-'
+        else:
+            c = ' '
+
+        chars.append(c)
+
+    chars[pos(stats.min)] = "|"
+    chars[pos(stats.max)] = "|"
+    chars[pos(stats.mean)] = "O"
+
+    return ''.join(chars)
+
+def formatSamples(minAll, maxAll, stats):
+    width = 40
+    scale = (maxAll - minAll) / (width - 1)
+
+    def pos(x):
+        assert x >= minAll
+        return int((x - minAll) // scale)
+
+    chars = [' '] * width
+    for x in stats.samples:
+        chars[pos(x)] = 'x' if chars[pos(x)] == ' ' else 'X'
+
+    return ''.join(chars)
 
 linesDisplayed = 0
 
