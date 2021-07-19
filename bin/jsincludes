@@ -40,8 +40,13 @@ def dirContainsSource(name):
                 "build" in name or
                 "devtools" in name or
                 "libffi" in name or
+                "none" in name or
                 "arm" in name or
-                "mips" in name)
+                "mips" in name or
+                "x64" in name or
+                "vtune" in name or
+                "zydis" in name or
+                "gdb" in name)
 
 def findPathsBySuffix(rootPath, suffix):
     paths = []
