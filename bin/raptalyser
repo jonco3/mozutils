@@ -253,7 +253,6 @@ def runTask(task, args):
 
     task.start()
     while task.running:
-        display("waiting...")
         task.poll(5)
 
     if task.failed():
