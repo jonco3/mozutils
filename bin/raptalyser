@@ -19,6 +19,10 @@ import subprocess
 import sys
 import time
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
+
+from display import *;
+
 def main():
     tests = [
         PageLoadTest('reddit'),
@@ -489,22 +493,6 @@ def formatSamples(minAll, maxAll, stats):
         chars[pos(x)] = 'x' if chars[pos(x)] == ' ' else 'X'
 
     return ''.join(chars)
-
-linesDisplayed = 0
-
-def display(text=''):
-    global linesDisplayed
-
-    print(text)
-    linesDisplayed += 1
-
-def clearDisplay():
-    global linesDisplayed
-
-    for i in range(linesDisplayed):
-        print(ansi.cursor.up() + ansi.cursor.erase_line(), end='')
-
-    linesDisplayed = 0
 
 try:
     main()
