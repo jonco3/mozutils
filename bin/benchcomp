@@ -13,8 +13,9 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
-from display import *;
-from stats import *;
+from display import *
+from format import *
+from stats import *
 
 def main():
     args = parseArgs()
@@ -157,8 +158,9 @@ def parseOutput(text):
     return result
 
 def printHeader():
-    print((24 * " ") + "Min       Mean      Max       CofV   Runs  Change")
-    print(73 * "=")
+    header = (24 * " ") + statsHeader() + "  Change"
+    print(header)
+    print(len(header) * "=")
 
 def displayResults(builds, scores, results, showSamples):
     clearDisplay()
@@ -197,7 +199,9 @@ def displayResults(builds, scores, results, showSamples):
             samples = ""
             if build in statsForBuild:
                 stats = statsForBuild[build]
-                text = formatResults(stats)
+                text = formatStats(stats)
+                diff = "%5.1f%%" % (stats.diff * 100) if stats.diff else ''
+                text += "  %6s" % diff
 
                 if low != high and stats.count > 1:
                     text += "   " + formatBox(low, high, stats)
@@ -225,58 +229,6 @@ def displayResults(builds, scores, results, showSamples):
                     diff = (mean - compareTo) / compareTo
                     text += "                         %4.1f%%" % (diff * 100)
                 display("  %20s  %s" % (build.spec[-20:], text))
-
-def formatResults(stats):
-    diff = "%4.1f%%" % (stats.diff * 100) if stats.diff else ''
-    return "%8.1f  %8.1f  %8.1f  %4.1f%%  %4d  %6s" % (
-        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff)
-
-def formatBox(low, high, stats):
-    width = 40
-    scale = (high - low) / (width - 1)
-
-    def pos(x):
-        assert x >= low
-        return int((x - low) // scale)
-
-    devhigh = stats.mean + stats.stdv / 2
-    devlow = stats.mean - stats.stdv / 2
-
-    chars = list()
-    for i in range(width):
-        x = low + i * scale
-        if x >= stats.max:
-            c = ' '
-        elif x >= devhigh:
-            c = '-'
-        elif x >= devlow:
-            c = '='
-        elif x >= stats.min:
-            c = '-'
-        else:
-            c = ' '
-
-        chars.append(c)
-
-    chars[pos(stats.min)] = "|"
-    chars[pos(stats.max)] = "|"
-    chars[pos(stats.mean)] = "O"
-
-    return ''.join(chars)
-
-def formatSamples(low, high, stats):
-    width = 40
-    scale = (high - low) / (width - 1)
-
-    def pos(x):
-        assert x >= low
-        return int((x - low) // scale)
-
-    chars = [' '] * width
-    for x in stats.samples:
-        chars[pos(x)] = 'x' if chars[pos(x)] == ' ' else 'X'
-
-    return ''.join(chars)
 
 try:
     main()

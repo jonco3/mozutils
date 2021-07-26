@@ -21,8 +21,9 @@ import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
-from display import *;
-from stats import *;
+from display import *
+from format import *
+from stats import *
 
 def main():
     tests = [
@@ -239,7 +240,7 @@ def makeTask(build, test, args):
         cmd.extend(['--setpref', 'gfx.webrender.enabled=false'])
 
     if args.visualmetrics and isinstance(test, PageLoadTest):
-        cmd.append('--browsertime-visualmetrics');
+        cmd.append('--browsertime-visualmetrics')
 
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
@@ -410,64 +411,9 @@ def findInterestingKeys(statsSets):
     return sorted(list(result))
 
 def displayHeader():
-    display((24 * " ") + "Min       Mean      Max       CofV    Runs  Change")
-    display(74 * "=")
-
-def formatStats(stats):
-    return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d" % (
-        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count)
-
-def formatComparison(stats, base):
-    diff = (stats.mean - base.mean) / base.mean
-    return "%4.1f%%" % (diff * 100)
-    # todo: significance
-
-def formatBox(minAll, maxAll, stats):
-    width = 40
-    scale = (maxAll - minAll) / (width - 1)
-
-    def pos(x):
-        assert x >= minAll
-        return int((x - minAll) // scale)
-
-    maxDev = stats.mean + stats.stdv / 2
-    minDev = stats.mean - stats.stdv / 2
-
-    chars = list()
-    for i in range(width):
-        x = minAll + i * scale
-        if x >= stats.max:
-            c = ' '
-        elif x >= maxDev:
-            c = '-'
-        elif x >= minDev:
-            c = '='
-        elif x >= stats.min:
-            c = '-'
-        else:
-            c = ' '
-
-        chars.append(c)
-
-    chars[pos(stats.min)] = "|"
-    chars[pos(stats.max)] = "|"
-    chars[pos(stats.mean)] = "O"
-
-    return ''.join(chars)
-
-def formatSamples(minAll, maxAll, stats):
-    width = 40
-    scale = (maxAll - minAll) / (width - 1)
-
-    def pos(x):
-        assert x >= minAll
-        return int((x - minAll) // scale)
-
-    chars = [' '] * width
-    for x in stats.samples:
-        chars[pos(x)] = 'x' if chars[pos(x)] == ' ' else 'X'
-
-    return ''.join(chars)
+    header = (24 * " ") + statsHeader() + "  Change"
+    print(header)
+    print(len(header) * "=")
 
 try:
     main()
