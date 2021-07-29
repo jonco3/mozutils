@@ -24,7 +24,11 @@ def main():
 
     iterations = 20
 
-    tests = [
+    allTests = [
+        # Run all tests sequentially in a single runtime.
+        OctaneTest('octane', 'run.js'),
+
+        # Run individual tests independently.
         OctaneTest('richards'),
         OctaneTest('deltablue'),
         OctaneTest('crypto'),
@@ -42,8 +46,9 @@ def main():
         OctaneTest('typescript')
     ]
 
+    tests = [allTests[0]]
     if args.test:
-        tests = list(filter(lambda t: t.name == args.test, tests))
+        tests = list(filter(lambda t: t.name == args.test, allTests))
         if not tests:
             sys.exit(f"Test '{args.test}' not found")
 
@@ -87,8 +92,10 @@ class Test:
         self.script = script
 
 class OctaneTest(Test):
-    def __init__(self, name):
-        super().__init__(name, 'octane', f"run-{name}.js")
+    def __init__(self, name, script=None):
+        if not script:
+            script = f"run-{name}.js"
+        super().__init__(name, 'octane', script)
 
 class DelayedKeyboardInterrupt(object):
     # From https://stackoverflow.com/a/21919644
