@@ -8,7 +8,10 @@ class Stats:
     def __init__(self, results, compareTo = None):
         self.count = len(results)
         self.mean, self.stdv = Stats.meanstdv(results)
-        self.cofv = self.stdv / self.mean
+        if self.mean:
+            self.cofv = self.stdv / self.mean
+        else:
+            self.cofv = 0
         self.min = min(results)
         self.max = max(results)
         self.samples = results

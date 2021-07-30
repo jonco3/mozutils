@@ -16,6 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from display import *
 from format import *
 from stats import *
+import gcprofile
 
 def main():
     args = parseArgs()
@@ -62,7 +63,7 @@ def main():
     for i in range(iterations):
         for build in builds:
             for test in tests:
-                result = runBenchmark(build, test)
+                result = runBenchmark(build, test, args)
                 for score in result.keys():
                     if score not in results:
                         addScore(builds, scores, results, score)
@@ -122,15 +123,20 @@ def parseArgs():
     parser = argparse.ArgumentParser(description = 'Benchmark SpiderMonkey')
     parser.add_argument('-t', '--test', help='Test suite to run')
     parser.add_argument('--show-samples', action='store_true')
+    parser.add_argument('--gc-profile', action='store_true')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
-def runBenchmark(build, test):
+def runBenchmark(build, test, args):
     oldcwd = os.getcwd()
     os.chdir(test.dir)
     cmd = [build.shell] + build.args + [test.script]
     env = dict()
-    env['JSGC_DISABLE_POISONING'] = '1'
+
+    if args.gc_profile:
+        env['JS_GC_PROFILE'] = '1'  # Ignore trivial slices for now
+        env['JS_GC_PROFILE_NURSERY'] = '0'
+
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
         print(f"Error running benchmark {test.name} with shell {build.shell}:")
@@ -139,7 +145,7 @@ def runBenchmark(build, test):
         sys.exit(1)
     os.chdir(oldcwd)
 
-    return parseOutput(proc.stdout)
+    return parseOutput(proc.stdout, proc.stderr, args)
 
 def addScore(builds, scores, results, score):
     assert score not in results
@@ -151,12 +157,15 @@ def addScore(builds, scores, results, score):
     for build in builds:
         results[score][build] = []
 
-def parseOutput(text):
+def parseOutput(stdout, stderr, args):
     result = dict()
-    for line in text.splitlines():
+    for line in stdout.splitlines():
         match = re.match(r'(\w+):\s(\d+)', line)
         if match:
             result[match.group(1)] = int(match.group(2))
+
+    if args.gc_profile:
+        gcprofile.parseOutput(stderr, result)
 
     if not result:
         print(text)
@@ -193,7 +202,8 @@ def displayResults(builds, scores, results, showSamples):
             if data:
                 stats = Stats(data, compareTo)
                 statsForBuild[build] = stats
-                geomean[build] += math.log(stats.mean)
+                if stats.mean != 0:
+                    geomean[build] += math.log(stats.mean)
                 if first:
                     compareTo = stats.mean
                     low, high = stats.min, stats.max
