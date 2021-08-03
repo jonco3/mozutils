@@ -24,6 +24,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from display import *
 from format import *
 from stats import *
+import gcprofile
 
 def main():
     tests = [
@@ -85,6 +86,10 @@ def parseArgs():
                         help='Enable browsertime visual metrics')
     parser.add_argument('--parallel', '-p', action='store_true', default=False,
                         help='Run tests in parallel (may affect the results)')
+    parser.add_argument('--max-tasks', '-j', type=int, default=8,
+                        help='Maximum number of tasks/jobs for parallel testing')
+    parser.add_argument('--gc-profile', action='store_true', default=False,
+                        help='Collect information about garbage collections')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -245,6 +250,11 @@ def makeTask(build, test, args):
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
 
+    if args.gc_profile:
+        cmd.append('--verbose');
+        env['JS_GC_PROFILE'] = '0'
+        env['JS_GC_PROFILE_NURSERY'] = '0'
+
     return Task(build, test, cmd, env, build.dir)
 
 def runTask(task, args):
@@ -262,12 +272,10 @@ def runTask(task, args):
     parseTaskOutput(task, args)
 
 def runTasksInParallel(builds, tasks, args):
-    MaxRunning = 8
-
     running = []
 
     while tasks or running:
-        while tasks and len(running) < MaxRunning:
+        while tasks and len(running) < args.max_tasks:
             task = tasks.pop(0)
             display(f'Starting {task.test.name} test for {task.build.name} build...')
             log(f'Running command: {" ".join(task.cmd)}')
@@ -307,17 +315,20 @@ def parseOutput(build, test, args, text):
     log('')
 
     if "failed to load, the firefox are still on about:blank" in text:
-        # Something went wrong and the results will be far larger than
-        # normal. Drop this on the floor.
+        log('Error during test, ignoring results')
         return
 
     resultsTag = 'PERFHERDER_DATA:'
     for line in text.splitlines():
-        if resultsTag not in line:
-            continue
+        if resultsTag in line:
+            parseResults(build, test, args, line.split(resultsTag)[1])
+            break  # Ignore everything after the test result
 
-        parseResults(build, test, args, line.split(resultsTag)[1])
-        break
+    if args.gc_profile:
+        result = dict()
+        gcprofile.parseOutput(text, result)
+        for key in result.keys():
+            build.results.addResult(key, result[key])
 
 def parseResults(build, test, args, jsonText):
     log(f'Results for {build.name} {test.name}:')

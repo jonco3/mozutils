@@ -98,10 +98,12 @@ def get_configs_from_args(args):
         options.append('--enable-optimize')
         options.append('--enable-debug')
         options.append('--enable-gczeal')
+        options.append('--enable-debug-symbols')
     else:
         options.append('--disable-optimize')
         options.append('--enable-debug')
         options.append('--enable-gczeal')
+        options.append('--enable-debug-symbols')
 
     if config('tsan'):
         names.append('tsan')
