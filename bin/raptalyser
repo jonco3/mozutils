@@ -412,8 +412,8 @@ def findInterestingKeys(statsSets):
 
 def displayHeader():
     header = (24 * " ") + statsHeader() + "  Change"
-    print(header)
-    print(len(header) * "=")
+    display(header)
+    display(len(header) * "=")
 
 try:
     main()
