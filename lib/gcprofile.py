@@ -2,13 +2,34 @@
 #
 # Summarise GC profiling information from log data.
 
+# Detect whether we're currently running a raptor test, or between
+# tests.
+StartTestText = 'Testing url'
+EndTestText = 'PageCompleteCheck returned true'
+
 def parseOutput(text, result):
     majorFields = dict()
     majorData = list()
     minorFields = dict()
     minorData = list()
 
+    inTest = False
+    testCount = 0
+    testNum = 0
+
     for line in text.splitlines():
+        if StartTestText in line:
+            assert not inTest
+            inTest = True
+            testCount += 1
+            testNum = testCount
+            continue
+
+        if inTest and EndTestText in line:
+            inTest = False
+            testNum = 0
+            continue
+
         if 'MajorGC:' in line:
             line = line.split('MajorGC: ', maxsplit=1)[1]
             line = line[:54] + line[75:] # remove annoying to parse fields
@@ -20,6 +41,7 @@ def parseOutput(text, result):
             if 'TOTALS:' in fields:
                 continue
 
+            fields.append(testNum)
             majorData.append(fields)
             continue
 
@@ -32,10 +54,20 @@ def parseOutput(text, result):
             if 'TOTALS:' in fields:
                 continue
 
+            fields.append(testNum)
             minorData.append(fields)
             continue
 
-    summariseAllData(result, majorFields, majorData, minorFields, minorData)
+    mainRuntime = findMainRuntime(majorData + minorData)
+
+    majorData = filterByRuntime(majorData, mainRuntime)
+    minorData = filterByRuntime(minorData, mainRuntime)
+
+    if testCount == 0:
+        summariseAllData(result, majorFields, majorData, minorFields, minorData)
+    else:
+        summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
+        summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, False)
 
 def makeFieldMap(fields):
     # Add our generated fields:
@@ -51,29 +83,33 @@ def makeFieldMap(fields):
 
     return fieldMap
 
-def summariseAllData(result, majorFields, majorData, minorFields, minorData):
-    mainRuntime = findMainRuntime(majorData + minorData)
+def summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, inTest):
+    majorData = filterByInTest(majorFields, majorData, inTest)
+    minorData = filterByInTest(minorFields, minorData, inTest)
 
-    majorData = filterByRuntime(majorData, mainRuntime)
-    minorData = filterByRuntime(minorData, mainRuntime)
-    summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData)
+    suffix = ' in test' if inTest else ' outside test'
 
-    result['ALLOC_TRIGGER slices'] = \
+    summariseAllData(result, majorFields, majorData, minorFields, minorData, suffix)
+
+def summariseAllData(result, majorFields, majorData, minorFields, minorData, keySuffix = ''):
+    summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData, keySuffix)
+
+    result['ALLOC_TRIGGER slices' + keySuffix] = \
         len(filterByReason(majorFields, majorData, 'ALLOC_TRIGGER'))
 
-    result['Full store buffer collections'] = \
+    result['Full store buffer collections' + keySuffix] = \
         len(filterByFullStoreBufferReason(minorFields, minorData))
 
-def summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData):
+def summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData, keySuffix):
     majorCount, majorTime = summariseData(majorFields, majorData)
     minorCount, minorTime = summariseData(minorFields, minorData)
     minorTime /= 1000
     totalTime = majorTime + minorTime
-    result['Major GC slices'] = majorCount
-    result['Major GC time'] = majorTime
-    result['Minor GC count'] = minorCount
-    result['Minor GC time'] = minorTime
-    result['Total GC time'] = majorTime + minorTime
+    result['Major GC slices' + keySuffix] = majorCount
+    result['Major GC time' + keySuffix] = majorTime
+    result['Minor GC count' + keySuffix] = minorCount
+    result['Minor GC time' + keySuffix] = minorTime
+    result['Total GC time' + keySuffix] = majorTime + minorTime
 
 def summariseData(fieldMap, data):
     count = 0

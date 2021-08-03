@@ -11,6 +11,9 @@ def formatStats(stats):
         stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count)
 
 def formatComparison(stats, base):
+    if base.mean == 0:
+        return "%4.1f" % stats.mean
+
     diff = (stats.mean - base.mean) / base.mean
     return "%4.1f%%" % (diff * 100)
     # todo: significance
