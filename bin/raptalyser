@@ -277,7 +277,6 @@ def runTasksInParallel(builds, tasks, args):
     while tasks or running:
         while tasks and len(running) < args.max_tasks:
             task = tasks.pop(0)
-            display(f'Starting {task.test.name} test for {task.build.name} build...')
             log(f'Running command: {" ".join(task.cmd)}')
             task.start()
             running.append(task)
