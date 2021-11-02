@@ -36,7 +36,10 @@ def main():
         PageLoadTest('yahoo-mail'),
         BrowserTimeTest('wasm-godot'),
         BrowserTimeTest('wasm-godot-baseline'),
-        BrowserTimeTest('wasm-godot-optimizing')
+        BrowserTimeTest('wasm-godot-optimizing'),
+        BrowserTimeTest('speedometer-desktop'),
+        BrowserTimeTest('ares6'),
+        BrowserTimeTest('jetstream2')
     ]
 
     args = parseArgs()
@@ -49,7 +52,8 @@ def main():
         os.environ['MOZ_HEADLESS'] = '1'
 
     if platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
-        sys.exit('DISPLAY not set in environment')
+        print("Setting DISPLAY to :0")
+        os.environ['DISPLAY'] = ':0'
 
     tasks = []
     for i in range(args.test_iterations):
@@ -153,8 +157,8 @@ class Test:
         self.name = name
         self.args = args
 
-        def checkArgs(self, args):
-            pass
+    def checkArgs(self, args):
+        pass
 
 class BrowserTimeTest(Test):
     def __init__(self, name, args = []):
@@ -343,12 +347,18 @@ def parseResults(build, test, args, jsonText):
     for i in range(len(suites)):
         suite = suites[i]
         testName = test.name
+
         if isPageLoadTest:
             testName += ' cold' if i == 0 else ' warm'
 
         ensure('subtests' in suite, "JSON results missing 'subtests'")
         for subtest in suite['subtests']:
             name = subtest['name']
+
+            # Skip sub-tests
+            if '/' in name:
+                continue
+
             key = f'{testName} {name}'
             value = subtest['value']
             replicates = subtest['replicates']
