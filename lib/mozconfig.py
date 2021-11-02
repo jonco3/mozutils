@@ -135,6 +135,8 @@ def get_configs_from_args(args):
         options.append('--enable-application=js')
         if not config('tsan') and not config('asan'):
             options.append('--enable-warnings-as-errors')
+    else:
+        options.append('--without-wasm-sandboxed-libraries')
 
     return names, options
 
