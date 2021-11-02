@@ -35,26 +35,34 @@ def parseOutput(text, result):
             line = line[:54] + line[75:] # remove annoying to parse fields
             fields = line.split()
             if 'PID' in fields:
-                majorFields = makeFieldMap(fields)
+                if not majorFields:
+                    majorFields = makeFieldMap(fields)
                 continue
 
             if 'TOTALS:' in fields:
                 continue
 
             fields.append(testNum)
+            if len(fields) != len(majorFields):
+                continue
+
             majorData.append(fields)
             continue
 
         if 'MinorGC:' in line:
             fields = line.split('MinorGC: ', maxsplit=1)[1].split()
             if 'PID' in fields:
-                minorFields = makeFieldMap(fields)
+                if not minorFields:
+                    minorFields = makeFieldMap(fields)
                 continue
 
             if 'TOTALS:' in fields:
                 continue
 
             fields.append(testNum)
+            if len(fields) != len(minorFields):
+                continue
+
             minorData.append(fields)
             continue
 
