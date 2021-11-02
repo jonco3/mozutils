@@ -134,7 +134,7 @@ def sync_branch(args):
 def disable_unified_build(path):
     with open(path, "r") as file:
         content = file.read()
-    content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1", content)
+    content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1\n", content)
     with open(path, "w") as file:
         file.write(content)
 
