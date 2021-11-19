@@ -4,6 +4,7 @@
 # Python script to run the mach command with appropriate MOZCONFIG
 
 import argparse
+import os
 import os.path
 import sys
 
@@ -15,6 +16,7 @@ from mozconfig import *
 parser = argparse.ArgumentParser(description = 'Invoke Mozilla mach command')
 add_build_arguments(parser)
 add_browser_config_arguments(parser)
+parser.add_argument('-H', '--headless', action='store_true', help = 'Run in headless mode')
 
 args, remaining = parser.parse_known_args()
 args.verbose = True
@@ -25,5 +27,8 @@ chdir_to_source_root()
 
 if args.remote and not args.ignore_remote:
     sys.exit(run_remote_command(args))
+
+if args.headless:
+    os.environ['MOZ_HEADLESS'] = '1'
 
 mach(args, remaining, False)
