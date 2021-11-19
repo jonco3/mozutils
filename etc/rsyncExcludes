@@ -20,9 +20,6 @@
 # \.pdb
 *.pdb*
 
-# \.egg-info
-*.egg-info*
-
 # \.eslintcache
 *.eslintcache*
 
@@ -37,6 +34,9 @@
 
 # compile_commands\.json
 *compile_commands.json*
+
+# ^(?=.*\.egg-info/)(?!^third_party/python/)(?!^testing/web-platform/tests/tools/third_party/)
+# Skipping pattern including negative lookahead assertion
 
 # ^\.sw.$
 /.sw?
@@ -153,9 +153,6 @@
 
 # ^.gradle/
 /?gradle/
-
-# ^tools/infer/test/.gradle/
-/tools/infer/test/?gradle/
 
 # ^local.properties$
 /local?properties
@@ -299,9 +296,6 @@
 # ^testing/talos/talos/webextensions/
 /testing/talos/talos/webextensions/
 
-# ^testing/talos/talos/tests/about-newtab/about_newtab.manifest.develop
-/testing/talos/talos/tests/about-newtab/about_newtab?manifest?develop*
-
 # ^talos-venv
 /talos-venv*
 
@@ -332,11 +326,11 @@
 # tps_result\.json
 *tps_result.json*
 
+# \.vs/
+*.vs/
+
 # \.vscode/(?!extensions\.json|tasks\.json)
 # Skipping pattern including negative lookahead assertion
-
-# ^infer-out/
-/infer-out/
 
 # ^comm/
 /comm/
