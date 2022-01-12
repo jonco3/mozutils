@@ -175,6 +175,12 @@
 # ^remote/test/puppeteer/node_modules/
 /remote/test/puppeteer/node_modules/
 
+# ^remote/test/puppeteer/.github
+/remote/test/puppeteer/?github*
+
+# ^remote/test/puppeteer/.husky
+/remote/test/puppeteer/?husky*
+
 # ^remote/test/puppeteer/.local-chromium/
 /remote/test/puppeteer/?local-chromium/
 
@@ -192,6 +198,9 @@
 
 # ^remote/test/puppeteer/test/output-chromium
 /remote/test/puppeteer/test/output-chromium*
+
+# ^remote/test/puppeteer/website
+/remote/test/puppeteer/website*
 
 # ^media/libstagefright/android$
 /media/libstagefright/android
@@ -317,6 +326,9 @@
 # ^toolchains\.json
 /toolchains.json*
 
+# \.pytest_cache/
+*.pytest_cache/
+
 # ^lextab.py$
 /lextab?py
 
@@ -367,4 +379,7 @@
 
 # ^taskcluster/docker/image_builder/build-image/target
 /taskcluster/docker/image_builder/build-image/target*
+
+# ^config/external/icu4x
+/config/external/icu4x*
 
