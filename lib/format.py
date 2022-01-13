@@ -3,13 +3,16 @@
 # Format benchmark data for display.
 
 def statsHeader():
-    return "%-8s  %-8s  %-8s  %-6s  %-4s  %-8s  %-6s" % (
-        "Min", "Mean", "Max", "CofV", "Runs", "Change", "%")
+    return "%-8s  %-8s  %-8s  %-6s  %-4s  %-8s  %-6s  %-7s" % (
+        "Min", "Mean", "Max", "CofV", "Runs", "Change", "%", "P-value")
 
 def formatStats(stats, comp = None):
-    diff = "%8.1f  %5.1f%%" % (comp.diff, comp.factor * 100) if comp else ''
-    return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d  %16s" % (
-        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff)
+    diff = "%8.1f" % comp.diff if comp else ""
+    percent = "%5.1f%%" % (comp.factor * 100) if comp and comp.factor != None else ""
+    pvalue = "%7.2f" % comp.pvalue if comp and comp.pvalue != None else ""
+
+    return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d  %8s  %6s  %7s" % (
+        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff, percent, pvalue)
 
 def formatBox(minAll, maxAll, stats):
     width = 40

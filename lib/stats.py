@@ -3,6 +3,7 @@
 # Caclulate some basic statistics on a list of samples.
 
 import math
+from scipy import stats
 
 class Stats:
     def __init__(self, results):
@@ -33,9 +34,10 @@ class Stats:
         return mean, std
 
 class Comparison:
-    def __init__(self, diff, factor):
+    def __init__(self, diff, factor, pvalue):
         self.diff = diff
         self.factor = factor
+        self.pvalue = pvalue
 
 def compareStats(a, b):
     if b is None or a is b:
@@ -45,8 +47,15 @@ def compareStats(a, b):
     assert isinstance(b, Stats)
 
     diff = a.mean - b.mean
-    factor = 0
-    if diff != 0 and b.mean != 0:
+
+    if b.mean == 0:
+        factor = None
+    else:
         factor = diff / b.mean
 
-    return Comparison(diff, factor)
+    if a.count > 1 and b.count > 1 and a.mean != b.mean:
+        p = stats.ttest_ind(a.samples, b.samples, equal_var=False).pvalue
+    else:
+        p = None
+
+    return Comparison(diff, factor, p)
