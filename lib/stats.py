@@ -33,8 +33,9 @@ class Stats:
         return mean, std
 
 class Comparison:
-    def __init__(self, diff):
+    def __init__(self, diff, factor):
         self.diff = diff
+        self.factor = factor
 
 def compareStats(a, b):
     if b is None or a is b:
@@ -43,8 +44,9 @@ def compareStats(a, b):
     assert isinstance(a, Stats)
     assert isinstance(b, Stats)
 
-    diff = 0
-    if a.mean != b.mean:
-        diff = (a.mean - b.mean) / b.mean
+    diff = a.mean - b.mean
+    factor = 0
+    if diff != 0 and b.mean != 0:
+        factor = diff / b.mean
 
-    return Comparison(diff)
+    return Comparison(diff, factor)

@@ -421,7 +421,7 @@ def displayResults(builds, test, args):
             if minAll != maxAll and stats.count > 1:
                 box = formatBox(minAll, maxAll, stats)
 
-            display("  %20s  %-6s  %s" % (build.name[-20:], main, box))
+            display("  %20s  %s  %s" % (build.name[-20:], main, box))
 
             if args.show_samples and minAll != maxAll:
                 samples = formatSamples(minAll, maxAll, stats)
