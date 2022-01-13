@@ -5,7 +5,7 @@
 import math
 
 class Stats:
-    def __init__(self, results, compareTo = None):
+    def __init__(self, results):
         self.count = len(results)
         self.mean, self.stdv = Stats.meanstdv(results)
         if self.mean:
@@ -15,10 +15,6 @@ class Stats:
         self.min = min(results)
         self.max = max(results)
         self.samples = results
-
-        self.diff = None
-        if compareTo:
-            self.diff = (self.mean - compareTo) / compareTo
 
     def meanstdv(x):
         assert(isinstance(x, list))
@@ -35,3 +31,20 @@ class Stats:
         else:
             std = 0.0
         return mean, std
+
+class Comparison:
+    def __init__(self, diff):
+        self.diff = diff
+
+def compareStats(a, b):
+    if b is None or a is b:
+        return None
+
+    assert isinstance(a, Stats)
+    assert isinstance(b, Stats)
+
+    diff = 0
+    if a.mean != b.mean:
+        diff = (a.mean - b.mean) / b.mean
+
+    return Comparison(diff)

@@ -70,7 +70,7 @@ def main():
                         addScore(builds, scores, results, score)
                     results[score][build].append(result[score])
                 with DelayedKeyboardInterrupt():
-                    displayResults(builds, scores, results, args.show_samples)
+                    displayResults(builds, scores, results, args)
 
 class Build:
     def __init__(self, spec):
@@ -182,22 +182,18 @@ def parseOutput(stdout, stderr, args, profilePath):
     return result
 
 def printHeader():
-    header = (24 * " ") + statsHeader() + "  Change"
+    header = (24 * " ") + statsHeader()
     print(header)
     print(len(header) * "=")
 
-def displayResults(builds, scores, results, showSamples):
+def displayResults(builds, scores, results, args):
     clearDisplay()
 
     geomean = dict()
     for build in builds:
         geomean[build] = 0
 
-    firstScore = True
     for score in scores:
-        if firstScore:
-            firstScore = False
-
         display(f"{score}:")
 
         statsForBuild = dict()
@@ -208,12 +204,12 @@ def displayResults(builds, scores, results, showSamples):
         for build in builds:
             data = results[score][build]
             if data:
-                stats = Stats(data, compareTo)
+                stats = Stats(data)
                 statsForBuild[build] = stats
                 if stats.mean != 0:
                     geomean[build] += math.log(stats.mean)
                 if first:
-                    compareTo = stats.mean
+                    compareTo = stats
                     low, high = stats.min, stats.max
                     first = False
                 else:
@@ -224,21 +220,20 @@ def displayResults(builds, scores, results, showSamples):
             samples = ""
             if build in statsForBuild:
                 stats = statsForBuild[build]
-                text = formatStats(stats)
-                diff = "%5.1f%%" % (stats.diff * 100) if stats.diff else ''
-                text += "  %6s" % diff
+                comp = compareStats(stats, compareTo)
+                text = formatStats(stats, comp)
 
                 if low != high and stats.count > 1:
                     text += "   " + formatBox(low, high, stats)
-                    if showSamples:
+                    if args.show_samples:
                         samples = formatSamples(low, high, stats)
 
             display("  %20s  %s" % (build.spec[-20:], text))
-            if showSamples:
+            if args.show_samples:
                 display((76 * ' ') + samples)
 
     count = len(scores)
-    if count > 1:
+    if count > 1 and not args.gc_profile:
         display()
         display("Geometric mean:")
         compareTo = None

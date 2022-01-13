@@ -415,17 +415,14 @@ def displayResults(builds, test, args):
                 continue
 
             stats = statsSets[build.name][key]
-            main = formatStats(stats)
-
-            comp = ''
-            if compareTo and compareTo != stats:
-                comp = formatComparison(stats, compareTo)
+            comp = compareStats(stats, compareTo)
+            main = formatStats(stats, comp)
 
             box = ''
             if minAll != maxAll and stats.count > 1:
                 box = formatBox(minAll, maxAll, stats)
 
-            display("  %20s  %s  %-6s  %s" % (build.name[-20:], main, comp, box))
+            display("  %20s  %-6s  %s" % (build.name[-20:], main, box))
 
             if args.show_samples and minAll != maxAll:
                 samples = formatSamples(minAll, maxAll, stats)
@@ -443,7 +440,7 @@ def findInterestingKeys(statsSets):
     return sorted(list(result))
 
 def displayHeader():
-    header = (24 * " ") + statsHeader() + "  Change"
+    header = (24 * " ") + statsHeader()
     display(header)
     display(len(header) * "=")
 
