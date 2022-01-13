@@ -17,6 +17,7 @@ import math
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
@@ -193,12 +194,13 @@ class ResultSet:
         return stats
 
 class Task:
-    def __init__(self, build, test, cmd, env, cwd):
+    def __init__(self, build, test, cmd, env, cwd, profilePath):
         self.build = build
         self.test = test
         self.cmd = cmd
         self.env = env
         self.cwd = cwd
+        self.profilePath = profilePath
         self.running = False
 
     def start(self):
@@ -254,12 +256,16 @@ def makeTask(build, test, args):
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
 
+    profilePath = None
     if args.gc_profile:
-        cmd.append('--verbose');
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        temp.close()
+        profilePath = temp.name
         env['JS_GC_PROFILE'] = '0'
         env['JS_GC_PROFILE_NURSERY'] = '0'
+        env['JS_GC_PROFILE_FILE'] = profilePath
 
-    return Task(build, test, cmd, env, build.dir)
+    return Task(build, test, cmd, env, build.dir, profilePath)
 
 def runTask(task, args):
     display(f'Running {task.test.name} test for {task.build.name} build...')
@@ -311,6 +317,11 @@ def reportFailedTaskAndExit(task):
 def parseTaskOutput(task, args):
     parseOutput(task.build, task.test, args, task.stdout + task.stderr)
 
+    if args.gc_profile:
+        with open(task.profilePath) as f:
+            parseProfile(task.build, f.read())
+        os.remove(task.profilePath)
+
 def parseOutput(build, test, args, text):
     log('')
     log(f'Output for {build.name} {test.name}:')
@@ -326,12 +337,6 @@ def parseOutput(build, test, args, text):
         if resultsTag in line:
             parseResults(build, test, args, line.split(resultsTag)[1])
             break  # Ignore everything after the test result
-
-    if args.gc_profile:
-        result = dict()
-        gcprofile.parseOutput(text, result)
-        for key in result.keys():
-            build.results.addResult(key, result[key])
 
 def parseResults(build, test, args, jsonText):
     log(f'Results for {build.name} {test.name}:')
@@ -371,6 +376,13 @@ def parseResults(build, test, args, jsonText):
                 build.results.addResult(key, subtest['value'])
 
             log(f'  {name} {value} {replicates}')
+
+def parseProfile(build, text):
+    print("parseProfile" + text)
+    result = dict()
+    gcprofile.parseOutput(text, result)
+    for key in result.keys():
+        build.results.addResult(key, result[key])
 
 def displayResults(builds, test, args):
     clearDisplay()

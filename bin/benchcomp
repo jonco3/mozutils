@@ -10,6 +10,7 @@ import re
 import signal
 import subprocess
 import sys
+import tempfile
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
@@ -133,9 +134,14 @@ def runBenchmark(build, test, args):
     cmd = [build.shell] + build.args + [test.script]
     env = dict()
 
+    profilePath = None
     if args.gc_profile:
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        temp.close()
+        profilePath = temp.name
         env['JS_GC_PROFILE'] = '1'  # Ignore trivial slices for now
         env['JS_GC_PROFILE_NURSERY'] = '0'
+        env['JS_GC_PROFILE_FILE'] = profilePath
 
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -145,7 +151,7 @@ def runBenchmark(build, test, args):
         sys.exit(1)
     os.chdir(oldcwd)
 
-    return parseOutput(proc.stdout, proc.stderr, args)
+    return parseOutput(proc.stdout, proc.stderr, args, profilePath)
 
 def addScore(builds, scores, results, score):
     assert score not in results
@@ -157,15 +163,17 @@ def addScore(builds, scores, results, score):
     for build in builds:
         results[score][build] = []
 
-def parseOutput(stdout, stderr, args):
+def parseOutput(stdout, stderr, args, profilePath):
     result = dict()
     for line in stdout.splitlines():
         match = re.match(r'(\w+):\s(\d+)', line)
         if match:
             result[match.group(1)] = int(match.group(2))
 
-    if args.gc_profile:
-        gcprofile.parseOutput(stderr, result)
+    if profilePath:
+        with open(profilePath) as f:
+            gcprofile.parseOutput(f.read(), result)
+        os.remove(profilePath)
 
     if not result:
         print(text)
