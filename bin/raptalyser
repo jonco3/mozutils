@@ -378,7 +378,6 @@ def parseResults(build, test, args, jsonText):
             log(f'  {name} {value} {replicates}')
 
 def parseProfile(build, text):
-    print("parseProfile" + text)
     result = dict()
     gcprofile.parseOutput(text, result)
     for key in result.keys():
