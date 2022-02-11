@@ -89,6 +89,9 @@
 # ^browser/components/newtab/logs/
 /browser/components/newtab/logs/
 
+# browser/components/pocket/content/panels/css/main.compiled.css.map
+*browser/components/pocket/content/panels/css/main?compiled?css?map*
+
 # _DBG\.OBJ/
 *_DBG.OBJ/
 
@@ -382,4 +385,7 @@
 
 # ^config/external/icu4x
 /config/external/icu4x*
+
+# ^.cache/clangd/index/
+/?cache/clangd/index/
 
