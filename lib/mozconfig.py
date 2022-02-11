@@ -137,6 +137,7 @@ def get_configs_from_args(args):
             options.append('--enable-warnings-as-errors')
     else:
         options.append('--without-wasm-sandboxed-libraries')
+        options.append('--enable-js-shell') # Required for mach jstestbrowser
 
     return names, options
 
