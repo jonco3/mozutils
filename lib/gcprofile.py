@@ -66,7 +66,7 @@ def parseOutput(text, result):
             minorData.append(fields)
             continue
 
-    mainRuntime = findMainRuntime(majorData + minorData)
+    mainRuntime = findMainRuntime(minorData)
 
     majorData = filterByRuntime(majorData, mainRuntime)
     minorData = filterByRuntime(minorData, mainRuntime)
@@ -105,8 +105,11 @@ def summariseAllData(result, majorFields, majorData, minorFields, minorData, key
     result['ALLOC_TRIGGER slices' + keySuffix] = \
         len(filterByReason(majorFields, majorData, 'ALLOC_TRIGGER'))
 
-    result['Full store buffer collections' + keySuffix] = \
+    result['Full store buffer nursery collections' + keySuffix] = \
         len(filterByFullStoreBufferReason(minorFields, minorData))
+
+    result['Mean full nusery promotion rate' + keySuffix] = \
+        meanPromotionRate(minorFields, filterByReason(minorFields, minorData, 'OUT_OF_NURSERY'))
 
 def summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData, keySuffix):
     majorCount, majorTime = summariseData(majorFields, majorData)
@@ -128,13 +131,25 @@ def summariseData(fieldMap, data):
         totalTime += time
     return count, totalTime
 
+# Work out which runtime we're interested in. This is a heuristic that
+# may not always work.
 def findMainRuntime(data):
+    mainParentProcessRuntime = None
     lineCount = dict()
     for fields in data:
         runtime = (fields[0], fields[1])
+
+        if not mainParentProcessRuntime:
+            mainParentProcessRuntime = runtime
+
         if runtime not in lineCount:
             lineCount[runtime] = 0
         lineCount[runtime] += 1
+
+    # Ignore the parent process' main runtime since that often has a lot
+    # of data but is rarely what we're trying to measure.
+    # todo: add an option for this
+    del lineCount[mainParentProcessRuntime]
 
     mostFrequent = None
     count = 0
@@ -160,6 +175,16 @@ def filterByReason(fields, data, reason):
 def filterByFullStoreBufferReason(fields, data):
     i = fields['Reason']
     return list(filter(lambda f: f[i].startswith('FULL') and f[i].endswith('BUFFER'), data))
+
+def meanPromotionRate(fields, data):
+    i = fields['PRate']
+    sum = 0
+    for line in data:
+        rate = line[i]
+        ensure(rate.endswith('%'), "Bad promotion rate" + rate)
+        rate = float(rate[:-1])
+        sum += rate
+    return sum / len(data)
 
 def ensure(condition, error):
     if not condition:
