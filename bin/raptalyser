@@ -64,12 +64,7 @@ def main():
     tasks = []
     for i in range(args.test_iterations):
         for build in builds:
-            tasks.append(makeTask(build, test, args))
-
-    if args.parallel:
-        runTasksInParallel(builds, tasks, args)
-    else:
-        for task in tasks:
+            task = makeTask(build, test, args)
             runTask(task, args)
             displayResults(builds, test, args)
 
@@ -94,10 +89,6 @@ def parseArgs():
                         help='Enable webrender (deafult disabled)')
     parser.add_argument('--visualmetrics', action='store_true', default=False,
                         help='Enable browsertime visual metrics')
-    parser.add_argument('--parallel', '-p', action='store_true', default=False,
-                        help='Run tests in parallel (may affect the results)')
-    parser.add_argument('--max-tasks', '-j', type=int, default=8,
-                        help='Maximum number of tasks/jobs for parallel testing')
     parser.add_argument('--gc-profile', action='store_true', default=False,
                         help='Collect information about garbage collections')
     parser.add_argument('builds', nargs="+")
@@ -236,10 +227,6 @@ def ensure(condition, error):
 def canExecute(path):
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
-def runTest(build, test, args):
-    task = makeTask(build, test, args)
-    runTask(task, args)
-
 def makeTask(build, test, args):
     cmd = ['./mach', 'raptor'] + test.args
     if args.page_cycles:
@@ -285,30 +272,6 @@ def runTask(task, args):
         reportFailedTaskAndExit(task)
 
     parseTaskOutput(task, args)
-
-def runTasksInParallel(builds, tasks, args):
-    running = []
-
-    while tasks or running:
-        while tasks and len(running) < args.max_tasks:
-            task = tasks.pop(0)
-            log(f'Running command: {" ".join(task.cmd)}')
-            task.start()
-            running.append(task)
-            time.sleep(3)
-
-        for task in running:
-            assert task.running
-            task.poll(1)
-            if task.running:
-                continue
-
-            if task.failed():
-                reportFailedTaskAndExit(task)
-
-            running.remove(task)
-            parseTaskOutput(task, args)
-            displayResults(builds, task.test, args)
 
 def reportFailedTaskAndExit(task):
     print(f"Error running benchmark {task.test.name} for build {task.build.name}:")
