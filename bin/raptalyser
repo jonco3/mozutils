@@ -30,17 +30,22 @@ import gcprofile
 def main():
     tests = [
         PageLoadTest('reddit'),
+        PageLoadTest('reddit-billgates-ama'),
+        PageLoadTest('reddit-billgates-post-1'),
+        PageLoadTest('reddit-billgates-post-2'),
         PageLoadTest('nytimes'),
         PageLoadTest('tumblr'),
         PageLoadTest('google-mail'),
         PageLoadTest('google-docs'),
+        PageLoadTest('google-docs-canvas'),
         PageLoadTest('yahoo-mail'),
         BrowserTimeTest('wasm-godot'),
         BrowserTimeTest('wasm-godot-baseline'),
         BrowserTimeTest('wasm-godot-optimizing'),
         BrowserTimeTest('speedometer-desktop'),
         BrowserTimeTest('ares6'),
-        BrowserTimeTest('jetstream2')
+        BrowserTimeTest('jetstream2'),
+        BrowserTimeTest('matrix-react-bench')
     ]
 
     args = parseArgs()
