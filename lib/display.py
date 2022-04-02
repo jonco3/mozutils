@@ -4,19 +4,31 @@
 
 import ansi.cursor
 
-linesDisplayed = 0
+class Null:
+    def print(self, text=''):
+        pass
+    def clear(self):
+        pass
 
-def display(text=''):
-    global linesDisplayed
+class Terminal:
+    def __init__(self):
+        self.linesDisplayed = 0
 
-    print(text)
-    linesDisplayed += 1
+    def print(self, text=''):
+        print(text)
+        self.linesDisplayed += 1
 
-def clearDisplay():
-    global linesDisplayed
+    def clear(self):
+        for i in range(self.linesDisplayed):
+            print(ansi.cursor.up() + ansi.cursor.erase_line(), end='')
+        self.linesDisplayed = 0
 
-    for i in range(linesDisplayed):
-        print(ansi.cursor.up() + ansi.cursor.erase_line(), end='')
+class File:
+    def __init__(self, file):
+        self.file = file
 
-    linesDisplayed = 0
+    def print(self, text=''):
+        self.file.write(text + "\n")
 
+    def clear(self):
+        pass

@@ -22,10 +22,10 @@ import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
-from display import *
+import display
+import gcprofile
 from format import *
 from stats import *
-import gcprofile
 
 def main():
     tests = [
@@ -58,15 +58,34 @@ def main():
         os.environ['MOZ_HEADLESS'] = '1'
 
     if platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
-        print("Setting DISPLAY to :0")
         os.environ['DISPLAY'] = ':0'
 
+    if sys.stdout.isatty():
+        out = display.Terminal()
+    else:
+        out = display.Null()
+
     tasks = []
-    for i in range(args.test_iterations):
-        for build in builds:
-            task = makeTask(build, test, args)
-            runTask(task, args)
-            displayResults(builds, test, args)
+    try:
+        for i in range(args.test_iterations):
+            for build in builds:
+                if sys.stdout.isatty():
+                    out.print(f'Running {test.name} test for {build.name} build...')
+
+                task = makeTask(build, test, args)
+                runTask(task, args)
+                displayResults(out, builds, args)
+    except KeyboardInterrupt:
+        out.print("Interrupted")
+        log("Interrupted")
+    except:
+        raise
+
+    if not sys.stdout.isatty():
+        out = display.File(sys.stdout)
+
+    displayResults(out, builds, args)
+    displayResults(display.File(LogFile), builds, args)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
@@ -260,8 +279,6 @@ def makeTask(build, test, args):
     return Task(build, test, cmd, env, build.dir, profilePath)
 
 def runTask(task, args):
-    display(f'Running {task.test.name} test for {task.build.name} build...')
-
     log(f'Running command: {" ".join(task.cmd)}')
 
     task.start()
@@ -351,8 +368,8 @@ def parseProfile(build, text):
     for key in result.keys():
         build.results.addResult(key, result[key])
 
-def displayResults(builds, test, args):
-    clearDisplay()
+def displayResults(out, builds, args):
+    out.clear()
 
     statsSets = dict()
     for build in builds:
@@ -360,13 +377,13 @@ def displayResults(builds, test, args):
 
     keysToDisplay = findInterestingKeys(statsSets)
     if not keysToDisplay:
-        display("No results to display")
+        out.print("No results to display")
         return
 
-    displayHeader()
+    displayHeader(out)
 
     for key in keysToDisplay:
-        display(f"{key}:")
+        out.print(f"{key}:")
 
         statsSetsForKey = [statsSets[build.name][key] for build in builds
                            if key in statsSets[build.name]]
@@ -389,11 +406,11 @@ def displayResults(builds, test, args):
             if minAll != maxAll and stats.count > 1:
                 box = formatBox(minAll, maxAll, stats)
 
-            display("  %20s  %s  %s" % (build.name[-20:], main, box))
+            out.print("  %20s  %s  %s" % (build.name[-20:], main, box))
 
             if args.show_samples and minAll != maxAll:
                 samples = formatSamples(minAll, maxAll, stats)
-                display("%76s%s" % ('', samples))
+                out.print("%76s%s" % ('', samples))
 
 def findInterestingKeys(statsSets):
     # todo: returns any existing keys for now
@@ -406,10 +423,10 @@ def findInterestingKeys(statsSets):
             result = result.union(keys)
     return sorted(list(result))
 
-def displayHeader():
+def displayHeader(out):
     header = (24 * " ") + statsHeader()
-    display(header)
-    display(len(header) * "=")
+    out.print(header)
+    out.print(len(header) * "=")
 
 try:
     main()
