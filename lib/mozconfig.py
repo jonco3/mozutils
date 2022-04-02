@@ -136,6 +136,7 @@ def get_configs_from_args(args):
         if not config('tsan') and not config('asan'):
             options.append('--enable-warnings-as-errors')
     else:
+        options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
