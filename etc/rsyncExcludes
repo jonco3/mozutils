@@ -347,6 +347,9 @@
 # \.vscode/(?!extensions\.json|tasks\.json)
 # Skipping pattern including negative lookahead assertion
 
+# \.user$
+*.user
+
 # ^comm/
 /comm/
 
@@ -361,6 +364,9 @@
 
 # ^testing/raptor/webext/raptor/auto_gen_test_config.js
 /testing/raptor/webext/raptor/auto_gen_test_config?js*
+
+# ^testing/condprofile/build
+/testing/condprofile/build*
 
 # ^browsertime-results
 /browsertime-results*
@@ -388,4 +394,7 @@
 
 # ^.cache/clangd/index/
 /?cache/clangd/index/
+
+# \.mypy_cache/
+*.mypy_cache/
 
