@@ -14,7 +14,7 @@ import tempfile
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
-from display import *
+import display
 from format import *
 from stats import *
 import gcprofile
@@ -58,8 +58,10 @@ def main():
 
     results = dict()
 
+    out = display.Terminal()
+
     printHeader()
-    displayResults(builds, scores, results, args.show_samples)
+    displayResults(out, builds, scores, results, args.show_samples)
 
     for i in range(iterations):
         for build in builds:
@@ -70,7 +72,7 @@ def main():
                         addScore(builds, scores, results, score)
                     results[score][build].append(result[score])
                 with DelayedKeyboardInterrupt():
-                    displayResults(builds, scores, results, args)
+                    displayResults(out, builds, scores, results, args)
 
 class Build:
     def __init__(self, spec):
@@ -186,15 +188,15 @@ def printHeader():
     print(header)
     print(len(header) * "=")
 
-def displayResults(builds, scores, results, args):
-    clearDisplay()
+def displayResults(out, builds, scores, results, args):
+    out.clear()
 
     geomean = dict()
     for build in builds:
         geomean[build] = 0
 
     for score in scores:
-        display(f"{score}:")
+        out.print(f"{score}:")
 
         statsForBuild = dict()
         compareTo = None
@@ -228,14 +230,14 @@ def displayResults(builds, scores, results, args):
                     if args.show_samples:
                         samples = formatSamples(low, high, stats)
 
-            display("  %20s  %s" % (build.spec[-20:], text))
+            out.print("  %20s  %s" % (build.spec[-20:], text))
             if args.show_samples:
-                display((76 * ' ') + samples)
+                out.print((76 * ' ') + samples)
 
     count = len(scores)
     if count > 1 and not args.gc_profile:
-        display()
-        display("Geometric mean:")
+        out.print()
+        out.print("Geometric mean:")
         compareTo = None
         first = True
         for build in builds:
@@ -248,7 +250,7 @@ def displayResults(builds, scores, results, args):
                 else:
                     diff = (mean - compareTo) / compareTo
                     text += "                         %4.1f%%" % (diff * 100)
-                display("  %20s  %s" % (build.spec[-20:], text))
+                out.print("  %20s  %s" % (build.spec[-20:], text))
 
 try:
     main()
