@@ -7,7 +7,7 @@
 StartTestText = 'Testing url'
 EndTestText = 'PageCompleteCheck returned true'
 
-def parseOutput(text, result):
+def parseOutput(text, result, filterMostActiveProcess = True):
     majorFields = dict()
     majorData = list()
     minorFields = dict()
@@ -66,16 +66,18 @@ def parseOutput(text, result):
             minorData.append(fields)
             continue
 
-    mainRuntime = findMainRuntime(minorData)
+    assert len(minorData) != 0, "No profile data present"
 
-    majorData = filterByRuntime(majorData, mainRuntime)
-    minorData = filterByRuntime(minorData, mainRuntime)
+    if filterMostActiveProcess:
+        runtime = findMostActiveRuntime(minorData)
+        majorData = filterByRuntime(majorData, runtime)
+        minorData = filterByRuntime(minorData, runtime)
 
     if testCount == 0:
         summariseAllData(result, majorFields, majorData, minorFields, minorData)
     else:
         summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
-        summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, False)
+        # summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, False)
 
 def makeFieldMap(fields):
     # Add our generated fields:
@@ -85,7 +87,7 @@ def makeFieldMap(fields):
     for i in range(len(fields)):
         fieldMap[fields[i]] = i
 
-    # Assumed by findMainRuntime
+    # Assumed by findMostActiveRuntime
     assert fieldMap.get('PID') == 0
     assert fieldMap.get('Runtime') == 1
 
@@ -133,7 +135,7 @@ def summariseData(fieldMap, data):
 
 # Work out which runtime we're interested in. This is a heuristic that
 # may not always work.
-def findMainRuntime(data):
+def findMostActiveRuntime(data):
     mainParentProcessRuntime = None
     lineCount = dict()
     for fields in data:
@@ -177,6 +179,9 @@ def filterByFullStoreBufferReason(fields, data):
     return list(filter(lambda f: f[i].startswith('FULL') and f[i].endswith('BUFFER'), data))
 
 def meanPromotionRate(fields, data):
+    if len(data) == 0:
+        return 0
+
     i = fields['PRate']
     sum = 0
     for line in data:
@@ -184,6 +189,7 @@ def meanPromotionRate(fields, data):
         ensure(rate.endswith('%'), "Bad promotion rate" + rate)
         rate = float(rate[:-1])
         sum += rate
+
     return sum / len(data)
 
 def ensure(condition, error):
