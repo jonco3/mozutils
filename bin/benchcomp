@@ -127,6 +127,7 @@ def parseArgs():
     parser.add_argument('-t', '--test', help='Test suite to run')
     parser.add_argument('--show-samples', action='store_true')
     parser.add_argument('--gc-profile', action='store_true')
+    parser.add_argument('--sys-usage', action='store_true')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -144,6 +145,9 @@ def runBenchmark(build, test, args):
         env['JS_GC_PROFILE'] = '1'  # Ignore trivial slices for now
         env['JS_GC_PROFILE_NURSERY'] = '0'
         env['JS_GC_PROFILE_FILE'] = profilePath
+
+    if args.sys_usage:
+        cmd = ['/usr/bin/time', '-v'] + cmd
 
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -174,14 +178,33 @@ def parseOutput(stdout, stderr, args, profilePath):
 
     if profilePath:
         with open(profilePath) as f:
-            gcprofile.parseOutput(f.read(), result)
+            gcprofile.parseOutput(f.read(), result, False)
         os.remove(profilePath)
+
+    if args.sys_usage:
+        parseSysUsage(result, stderr)
 
     if not result:
         print(text)
         sys.exit("Can't parse output")
 
     return result
+
+def parseSysUsage(result, text):
+    for line in text.splitlines():
+        match = re.match(r'\s+([^:]+):\s([\d\.]+)', line)
+        if not match:
+            continue
+
+        key, value = match.group(1), match.group(2)
+        if '(seconds)' in key:
+            value = float(value)
+        elif '(kbytes)' in key:
+            value = int(value)
+        else:
+            continue
+
+        result[key] = value
 
 def printHeader():
     header = (24 * " ") + statsHeader()
@@ -196,8 +219,6 @@ def displayResults(out, builds, scores, results, args):
         geomean[build] = 0
 
     for score in scores:
-        out.print(f"{score}:")
-
         statsForBuild = dict()
         compareTo = None
         low = None
@@ -217,6 +238,10 @@ def displayResults(out, builds, scores, results, args):
                 else:
                     low, high = min(low, stats.min), max(high, stats.max)
 
+        if low == 0 and high == 0:
+            continue
+
+        out.print(f"{score}:")
         for build in builds:
             text = ""
             samples = ""
