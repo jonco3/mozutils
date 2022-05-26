@@ -174,7 +174,8 @@ def parseOutput(stdout, stderr, args, profilePath):
     for line in stdout.splitlines():
         match = re.match(r'(\w+):\s(\d+)', line)
         if match:
-            result[match.group(1)] = int(match.group(2))
+            key, value = match.group(1), match.group(2)
+            result['!' + key] = int(value)
 
     if profilePath:
         with open(profilePath) as f:
@@ -214,6 +215,7 @@ def printHeader():
 def displayResults(out, builds, scores, results, args):
     out.clear()
 
+    count = 0
     geomean = dict()
     for build in builds:
         geomean[build] = 0
@@ -229,7 +231,7 @@ def displayResults(out, builds, scores, results, args):
             if data:
                 stats = Stats(data)
                 statsForBuild[build] = stats
-                if stats.mean != 0:
+                if score.startswith('!') and stats.mean != 0:
                     geomean[build] += math.log(stats.mean)
                 if first:
                     compareTo = stats
@@ -240,6 +242,10 @@ def displayResults(out, builds, scores, results, args):
 
         if low == 0 and high == 0:
             continue
+
+        if score.startswith('!'):
+            score = score[1:]
+            count += 1
 
         out.print(f"{score}:")
         for build in builds:
@@ -259,7 +265,6 @@ def displayResults(out, builds, scores, results, args):
             if args.show_samples:
                 out.print((76 * ' ') + samples)
 
-    count = len(scores)
     if count > 1 and not args.gc_profile:
         out.print()
         out.print("Geometric mean:")
