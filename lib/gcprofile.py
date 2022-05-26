@@ -32,7 +32,7 @@ def parseOutput(text, result, filterMostActiveProcess = True):
 
         if 'MajorGC:' in line:
             line = line.split('MajorGC: ', maxsplit=1)[1]
-            line = line[:54] + line[75:] # remove annoying to parse fields
+            line = line[:55] + line[69:] # remove annoying to parse fields
             fields = line.split()
             if 'PID' in fields:
                 if not majorFields:
@@ -103,6 +103,8 @@ def summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorD
 
 def summariseAllData(result, majorFields, majorData, minorFields, minorData, keySuffix = ''):
     summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData, keySuffix)
+
+    result['Max heap size / KB' + keySuffix] = findMax(majorFields, majorData, 'SizeKB')
 
     result['ALLOC_TRIGGER slices' + keySuffix] = \
         len(filterByReason(majorFields, majorData, 'ALLOC_TRIGGER'))
@@ -191,6 +193,15 @@ def meanPromotionRate(fields, data):
         sum += rate
 
     return sum / len(data)
+
+def findMax(fields, data, key):
+    i = fields[key]
+    result = 0
+
+    for line in data:
+        result = max(result, int(line[i]))
+
+    return result
 
 def ensure(condition, error):
     if not condition:
