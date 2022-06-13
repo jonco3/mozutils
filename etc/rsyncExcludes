@@ -50,6 +50,9 @@
 # \.projectile
 *.projectile*
 
+# ^\.clang-tidy
+/.clang-tidy*
+
 # ^\.mozconfig
 /.mozconfig*
 
@@ -397,4 +400,10 @@
 
 # \.mypy_cache/
 *.mypy_cache/
+
+# ^browser/components/storybook/node_modules/
+/browser/components/storybook/node_modules/
+
+# ^browser/components/storybook/storybook-static/
+/browser/components/storybook/storybook-static/
 
