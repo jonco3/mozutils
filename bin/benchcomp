@@ -198,9 +198,7 @@ def parseSysUsage(result, text):
             continue
 
         key, value = match.group(1), match.group(2)
-        if '(seconds)' in key:
-            value = float(value)
-        elif '(kbytes)' in key:
+        if '(kbytes)' in key:
             value = int(value)
         else:
             continue
