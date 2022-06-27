@@ -108,8 +108,11 @@ def parseArgs():
                         help='Enable webrender (deafult disabled)')
     parser.add_argument('--visualmetrics', action='store_true', default=False,
                         help='Enable browsertime visual metrics')
-    parser.add_argument('--gc-profile', action='store_true', default=False,
-                        help='Collect information about garbage collections')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--gc-profile', action='store_true', default=False,
+                       help='Collect information about garbage collections')
+    group.add_argument('--gc-profile-via-raptor', action='store_true', default=False,
+                       help='Use --verbose to get profile; requires raptor patch')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
 
@@ -264,6 +267,10 @@ def makeTask(build, test, args):
     if args.visualmetrics and isinstance(test, PageLoadTest):
         cmd.append('--browsertime-visualmetrics')
 
+    if args.gc_profile_via_raptor:
+        # This requires raptor is patched to not fail when passing --verbose.
+        cmd.append('--verbose')
+
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
 
@@ -272,9 +279,11 @@ def makeTask(build, test, args):
         temp = tempfile.NamedTemporaryFile(delete=False)
         temp.close()
         profilePath = temp.name
+        env['JS_GC_PROFILE_FILE'] = profilePath
+
+    if args.gc_profile or args.gc_profile_via_raptor:
         env['JS_GC_PROFILE'] = '0'
         env['JS_GC_PROFILE_NURSERY'] = '0'
-        env['JS_GC_PROFILE_FILE'] = profilePath
 
     return Task(build, test, cmd, env, build.dir, profilePath)
 
@@ -300,12 +309,16 @@ def reportFailedTaskAndExit(task):
     sys.exit(1)
 
 def parseTaskOutput(task, args):
-    parseOutput(task.build, task.test, args, task.stdout + task.stderr)
+    text = task.stdout + task.stderr
+    parseOutput(task.build, task.test, args, text)
 
     if args.gc_profile:
         with open(task.profilePath) as f:
             parseProfile(task.build, f.read())
         os.remove(task.profilePath)
+
+    if args.gc_profile_via_raptor:
+        parseProfile(task.build, text)
 
 def parseOutput(build, test, args, text):
     log('')
