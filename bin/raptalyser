@@ -140,7 +140,9 @@ def log(text):
     LogFile.flush()
 
 class Build:
-    def __init__(self, path):
+    def __init__(self, spec):
+        elements = spec.split()
+        path = elements[0]
         self.name = os.path.normpath(path)
         self.path = os.path.abspath(path)
         ensure(os.path.isdir(self.path), "Build path is not a directory")
@@ -155,6 +157,12 @@ class Build:
                "Can't find MOZCONFIG line in config/autoconf.mk")
         ensure(os.path.isfile(self.mozconfig),
                "Can't find MOZCONFIG file: " + self.mozconfig)
+
+        self.prefs = []
+        for pref in elements[1:]:
+            ensure(re.match(r'[\w\.]+=', pref),
+                   "Bad pref setting: " + pref)
+            self.prefs.append(pref)
 
         self.results = ResultSet()
 
@@ -270,6 +278,9 @@ def makeTask(build, test, args):
     if args.gc_profile_via_raptor:
         # This requires raptor is patched to not fail when passing --verbose.
         cmd.append('--verbose')
+
+    for pref in build.prefs:
+        cmd.extend(['--setpref', pref])
 
     env = os.environ.copy()
     env['MOZCONFIG'] = build.mozconfig
