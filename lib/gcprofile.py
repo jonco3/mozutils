@@ -7,7 +7,7 @@
 StartTestText = 'Testing url'
 EndTestText = 'PageCompleteCheck returned true'
 
-def parseOutput(text, result, filterMostActiveProcess = True):
+def parseOutput(text, result, filterMostActiveRuntime = True):
     majorFields = dict()
     majorData = list()
     minorFields = dict()
@@ -68,7 +68,7 @@ def parseOutput(text, result, filterMostActiveProcess = True):
 
     assert len(minorData) != 0, "No profile data present"
 
-    if filterMostActiveProcess:
+    if filterMostActiveRuntime:
         runtime = findMostActiveRuntime(minorData)
         majorData = filterByRuntime(majorData, runtime)
         minorData = filterByRuntime(minorData, runtime)
