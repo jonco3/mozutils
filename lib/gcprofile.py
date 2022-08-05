@@ -7,7 +7,62 @@
 StartTestText = 'Testing url'
 EndTestText = 'PageCompleteCheck returned true'
 
-def parseOutput(text, result, filterMostActiveRuntime = True):
+def summariseProfile(text, result, filterMostActiveRuntime = True):
+    majorFields, majorData, minorFields, minorData, testCount = parseOutput(text)
+
+    if filterMostActiveRuntime:
+        runtime = findMostActiveRuntimeByFrequency(majorData + minorData)
+        majorData = filterByRuntime(majorData, runtime)
+        minorData = filterByRuntime(minorData, runtime)
+
+    summariseAllData(result, majorFields, majorData, minorFields, minorData)
+    if testCount != 0:
+        summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
+
+    if len(majorData) > 0:
+        first = majorData[0]
+        result['First major GC'] = float(first[majorFields.get('Timestamp')])
+        result['Heap size / KB at first major GC'] = int(first[majorFields.get('SizeKB')])
+
+def extractHeapSizeData(text):
+    majorFields, majorData, _, _, _ = parseOutput(text)
+
+    pidField = majorFields.get('PID')
+    runtimeField = majorFields.get('Runtime')
+    timestampField = majorFields.get('Timestamp')
+    sizeField = majorFields.get('SizeKB')
+    assert pidField is not None
+    assert runtimeField is not None
+    assert sizeField is not None
+
+    runtimes = dict()
+
+    # Estimate global time from times in previous traces.
+    latestTimestamp = None
+    startTimes = dict()
+
+    for line in majorData:
+        key = (line[pidField], line[runtimeField])
+        timestamp = float(line[timestampField])
+        size = int(line[sizeField])
+
+        if key not in runtimes:
+            runtimes[key] = list()
+            if latestTimestamp is None:
+                startTimes[key] = 0
+                latestTimestamp = timestamp
+            else:
+                startTimes[key] = max(latestTimestamp - timestamp, 0)
+            runtimes[key].append((startTimes[key], 0))
+
+        timestamp += startTimes[key]
+        latestTimestamp = timestamp
+
+        runtimes[key].append((timestamp, size))
+
+    return runtimes
+
+def parseOutput(text):
     majorFields = dict()
     majorData = list()
     minorFields = dict()
@@ -32,7 +87,9 @@ def parseOutput(text, result, filterMostActiveRuntime = True):
 
         if 'MajorGC:' in line:
             line = line.split('MajorGC: ', maxsplit=1)[1]
-            line = line[:55] + line[69:] # remove annoying to parse fields
+            line = line[:76] + line[83:] # remove optional budget field
+            line = line[:55] + line[69:] # remove other annoying to parse fields
+
             fields = line.split()
             if 'PID' in fields:
                 if not majorFields:
@@ -44,6 +101,9 @@ def parseOutput(text, result, filterMostActiveRuntime = True):
 
             fields.append(testNum)
             if len(fields) != len(majorFields):
+                # todo: this would skip lines without budget (including
+                # non-incremental slices) if we didn't strip that field
+                # above
                 continue
 
             majorData.append(fields)
@@ -66,18 +126,9 @@ def parseOutput(text, result, filterMostActiveRuntime = True):
             minorData.append(fields)
             continue
 
-    assert len(minorData) != 0, "No profile data present"
+    assert len(minorData) != 0 or len(majorData) != 0, "No profile data present"
 
-    if filterMostActiveRuntime:
-        runtime = findMostActiveRuntime(minorData)
-        majorData = filterByRuntime(majorData, runtime)
-        minorData = filterByRuntime(minorData, runtime)
-
-    if testCount == 0:
-        summariseAllData(result, majorFields, majorData, minorFields, minorData)
-    else:
-        summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
-        # summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, False)
+    return majorFields, majorData, minorFields, minorData, testCount
 
 def makeFieldMap(fields):
     # Add our generated fields:
@@ -137,33 +188,25 @@ def summariseData(fieldMap, data):
 
 # Work out which runtime we're interested in. This is a heuristic that
 # may not always work.
-def findMostActiveRuntime(data):
-    mainParentProcessRuntime = None
+def findMostActiveRuntimeByFrequency(data):
     lineCount = dict()
     for fields in data:
         runtime = (fields[0], fields[1])
 
-        if not mainParentProcessRuntime:
-            mainParentProcessRuntime = runtime
-
         if runtime not in lineCount:
             lineCount[runtime] = 0
+
         lineCount[runtime] += 1
 
-    # Ignore the parent process' main runtime since that often has a lot
-    # of data but is rarely what we're trying to measure.
-    # todo: add an option for this
-    del lineCount[mainParentProcessRuntime]
-
-    mostFrequent = None
-    count = 0
+    mostActive = None
+    maxCount = 0
     for runtime in lineCount:
-        if lineCount[runtime] > count:
-            mostFrequent = runtime
-            count = lineCount[runtime]
+        if lineCount[runtime] > maxCount:
+            mostActive = runtime
+            maxCount = lineCount[runtime]
 
-    assert mostFrequent
-    return mostFrequent
+    assert mostActive
+    return mostActive
 
 def filterByRuntime(data, runtime):
     return list(filter(lambda f: f[0] == runtime[0] and f[1] == runtime[1], data))

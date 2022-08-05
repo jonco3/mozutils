@@ -179,7 +179,7 @@ def parseOutput(stdout, stderr, args, profilePath):
 
     if profilePath:
         with open(profilePath) as f:
-            gcprofile.parseOutput(f.read(), result, False)
+            gcprofile.summariseProfile(f.read(), result, False)
         os.remove(profilePath)
 
     if args.sys_usage:

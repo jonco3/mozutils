@@ -143,7 +143,7 @@ class Build:
     def __init__(self, spec):
         elements = spec.split()
         path = elements[0]
-        self.name = os.path.normpath(path)
+        self.name = os.path.normpath(path) + ' '.join(elements[1:])
         self.path = os.path.abspath(path)
         ensure(os.path.isdir(self.path), "Build path is not a directory")
         ensure(canExecute(os.path.join(self.path, 'dist', 'bin', 'firefox')),
@@ -325,8 +325,14 @@ def parseTaskOutput(task, args):
 
     if args.gc_profile:
         with open(task.profilePath) as f:
-            parseProfile(task.build, f.read())
+            profileText = f.read()
         os.remove(task.profilePath)
+
+        log(f'GC profile:')
+        log(profileText)
+        log('')
+
+        parseProfile(task.build, profileText)
 
     if args.gc_profile_via_raptor:
         parseProfile(task.build, text)
@@ -388,7 +394,7 @@ def parseResults(build, test, args, jsonText):
 
 def parseProfile(build, text):
     result = dict()
-    gcprofile.parseOutput(text, result)
+    gcprofile.summariseProfile(text, result)
     for key in result.keys():
         build.results.addResult(key, result[key])
 
