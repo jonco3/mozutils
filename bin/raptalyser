@@ -13,51 +13,63 @@ import json
 import os
 import os.path
 import platform
-import math
-import re
-import subprocess
 import sys
 import tempfile
-import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
+import benchcomp
+from benchcomp import ensure
 import display
 import gcprofile
-from format import *
-from stats import *
+
+class BrowserTimeTest(benchcomp.Test):
+    def __init__(self, name, args = []):
+        super().__init__(name, ['--browsertime', '-t', name] + args)
+
+class PageLoadTest(BrowserTimeTest):
+    def __init__(self, name, args = []):
+        super().__init__(name, ['--chimera', '--page-cycles', '2'])
+
+    def checkArgs(self, args):
+        if args.page_cycles is not None:
+            sys.exit("Can't specifiy --page-cycles with pageload test")
+
+Tests = [
+    PageLoadTest('reddit'),
+    PageLoadTest('reddit-billgates-ama'),
+    PageLoadTest('reddit-billgates-post-1'),
+    PageLoadTest('reddit-billgates-post-2'),
+    PageLoadTest('nytimes'),
+    PageLoadTest('tumblr'),
+    PageLoadTest('google-mail'),
+    PageLoadTest('google-docs'),
+    PageLoadTest('google-docs-canvas'),
+    PageLoadTest('yahoo-mail'),
+    BrowserTimeTest('wasm-godot'),
+    BrowserTimeTest('wasm-godot-baseline'),
+    BrowserTimeTest('wasm-godot-optimizing'),
+    BrowserTimeTest('speedometer-desktop'),
+    BrowserTimeTest('ares6'),
+    BrowserTimeTest('jetstream2'),
+    BrowserTimeTest('matrix-react-bench')
+]
 
 def main():
-    tests = [
-        PageLoadTest('reddit'),
-        PageLoadTest('reddit-billgates-ama'),
-        PageLoadTest('reddit-billgates-post-1'),
-        PageLoadTest('reddit-billgates-post-2'),
-        PageLoadTest('nytimes'),
-        PageLoadTest('tumblr'),
-        PageLoadTest('google-mail'),
-        PageLoadTest('google-docs'),
-        PageLoadTest('google-docs-canvas'),
-        PageLoadTest('yahoo-mail'),
-        BrowserTimeTest('wasm-godot'),
-        BrowserTimeTest('wasm-godot-baseline'),
-        BrowserTimeTest('wasm-godot-optimizing'),
-        BrowserTimeTest('speedometer-desktop'),
-        BrowserTimeTest('ares6'),
-        BrowserTimeTest('jetstream2'),
-        BrowserTimeTest('matrix-react-bench')
-    ]
-
     args = parseArgs()
-    builds = list(map(Build, args.builds))
-    test = findTest(tests, args)
+
+    builds = list(map(benchcomp.Build, args.builds))
+
+    test = benchcomp.findTest(Tests, args.test)
+    if not test:
+        sys.exit(f'Test not found: {args.test}')
     test.checkArgs(args)
+
     openLogFile(args)
 
     if args.headless:
         os.environ['MOZ_HEADLESS'] = '1'
-
-    if platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
+    elif platform.system() == 'Linux' and 'DISPLAY' not in os.environ:
         os.environ['DISPLAY'] = ':0'
 
     if sys.stdout.isatty():
@@ -65,7 +77,6 @@ def main():
     else:
         out = display.Null()
 
-    tasks = []
     try:
         for i in range(args.test_iterations):
             for build in builds:
@@ -73,8 +84,10 @@ def main():
                     out.print(f'Running {test.name} test for {build.name} build...')
 
                 task = makeTask(build, test, args)
-                runTask(task, args)
-                displayResults(out, builds, args)
+                log(f'Running command: {" ".join(task.cmd)}')
+                task.run()
+                parseTaskOutput(task, args)
+                benchcomp.displayResults(out, builds, args.show_samples)
     except KeyboardInterrupt:
         out.print("Interrupted")
         log("Interrupted")
@@ -84,8 +97,8 @@ def main():
     if not sys.stdout.isatty():
         out = display.File(sys.stdout)
 
-    displayResults(out, builds, args)
-    displayResults(display.File(LogFile), builds, args)
+    displayResults(out, builds, args.show_samples)
+    displayResults(display.File(LogFile), builds, args.show_samples)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
@@ -102,7 +115,7 @@ def parseArgs():
                         help='How long to wait (ms) after browser start-up before starting the tests')
     parser.add_argument('--use-replicates', action='store_true', default=False,
                         help='Use individual test results rather than the averaged value for each test run')
-    parser.add_argument('--headless', action='store_true', default=False,
+    parser.add_argument('--headless', '-H', action='store_true', default=False,
                         help='Run the browser in headless mode')
     parser.add_argument('--webrender', action='store_true', default=False,
                         help='Enable webrender (deafult disabled)')
@@ -115,12 +128,6 @@ def parseArgs():
                        help='Use --verbose to get profile; requires raptor patch')
     parser.add_argument('builds', nargs="+")
     return parser.parse_args()
-
-def findTest(tests, args):
-    for test in tests:
-        if test.name == args.test:
-            return test
-    sys.exit(f'Test not found: {args.test}')
 
 LogFile = None
 
@@ -138,124 +145,6 @@ def log(text):
     assert LogFile
     print(text, file=LogFile)
     LogFile.flush()
-
-class Build:
-    def __init__(self, spec):
-        elements = spec.split()
-        path = elements[0]
-        self.name = os.path.normpath(path) + ' '.join(elements[1:])
-        self.path = os.path.abspath(path)
-        ensure(os.path.isdir(self.path), "Build path is not a directory")
-        ensure(canExecute(os.path.join(self.path, 'dist', 'bin', 'firefox')),
-               f"Build {self.name} does not contain FF executable")
-        ensure(canExecute(os.path.join(self.path, '..', 'mach')),
-               f"Build {self.name} does not contain mach executable")
-
-        self.dir = os.path.dirname(self.path)
-        self.mozconfig = self.findMozConfig()
-        ensure(self.mozconfig,
-               "Can't find MOZCONFIG line in config/autoconf.mk")
-        ensure(os.path.isfile(self.mozconfig),
-               "Can't find MOZCONFIG file: " + self.mozconfig)
-
-        self.prefs = []
-        for pref in elements[1:]:
-            ensure(re.match(r'[\w\.]+=', pref),
-                   "Bad pref setting: " + pref)
-            self.prefs.append(pref)
-
-        self.results = ResultSet()
-
-    def __repr__(self):
-        return f"Build({self.name}, {self.path}, {self.dir}, {self.mozconfig})"
-
-    def findMozConfig(self):
-        config_file = os.path.join(self.path, 'config', 'autoconf.mk')
-        ensure(os.path.isfile(config_file), "Can't find config/autoconf.mk")
-        with open(config_file) as file:
-            for line in file:
-                match = re.match(r'MOZCONFIG = (.+)', line)
-                if match:
-                    return match.group(1)
-        return None
-
-class Test:
-    def __init__(self, name, args):
-        self.name = name
-        self.args = args
-
-    def checkArgs(self, args):
-        pass
-
-class BrowserTimeTest(Test):
-    def __init__(self, name, args = []):
-        super().__init__(name, ['--browsertime', '-t', name] + args)
-
-class PageLoadTest(BrowserTimeTest):
-    def __init__(self, name, args = []):
-        super().__init__(name, ['--chimera', '--page-cycles', '2'])
-
-    def checkArgs(self, args):
-        if args.page_cycles is not None:
-            sys.exit("Can't specifiy --page-cycles with pageload test")
-
-# The results from many test runs
-class ResultSet:
-    def __init__(self):
-        self.results = dict()
-        self.stats = None
-
-    def keys(self):
-        return self.results.keys()
-
-    def addResult(self, name, value):
-        if name not in self.results:
-            self.results[name] = []
-        self.results[name].append(value)
-
-    def createStatsSet(self):
-        stats = dict()
-        for name in self.results:
-            stats[name] = Stats(self.results[name])
-        return stats
-
-class Task:
-    def __init__(self, build, test, cmd, env, cwd, profilePath):
-        self.build = build
-        self.test = test
-        self.cmd = cmd
-        self.env = env
-        self.cwd = cwd
-        self.profilePath = profilePath
-        self.running = False
-
-    def start(self):
-        self.proc = subprocess.Popen(self.cmd, env=self.env, cwd=self.cwd, text=True,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.running = True
-
-    def failed(self):
-        assert not self.running
-        return self.proc.poll() != 0
-
-    def poll(self, timeout=1):
-        try:
-            self.stdout, self.stderr = self.proc.communicate(timeout=timeout)
-            self.proc.wait()
-            self.running = False
-        except subprocess.TimeoutExpired:
-            pass
-        except:
-            self.proc.kill()
-            self.proc.wait()
-            raise
-
-def ensure(condition, error):
-    if not condition:
-        sys.exit(error)
-
-def canExecute(path):
-    return os.path.isfile(path) and os.access(path, os.X_OK)
 
 def makeTask(build, test, args):
     cmd = ['./mach', 'raptor'] + test.args
@@ -296,28 +185,7 @@ def makeTask(build, test, args):
         env['JS_GC_PROFILE'] = '0'
         env['JS_GC_PROFILE_NURSERY'] = '0'
 
-    return Task(build, test, cmd, env, build.dir, profilePath)
-
-def runTask(task, args):
-    log(f'Running command: {" ".join(task.cmd)}')
-
-    task.start()
-    while task.running:
-        task.poll(5)
-
-    if task.failed():
-        reportFailedTaskAndExit(task)
-
-    parseTaskOutput(task, args)
-
-def reportFailedTaskAndExit(task):
-    print(f"Error running benchmark {task.test.name} for build {task.build.name}:")
-    print(' '.join(task.cmd))
-    print('stdout:')
-    print(task.stdout)
-    print('stderr:')
-    print(task.stderr)
-    sys.exit(1)
+    return benchcomp.Task(build, test, cmd, env, build.dir, profilePath)
 
 def parseTaskOutput(task, args):
     text = task.stdout + task.stderr
@@ -397,66 +265,6 @@ def parseProfile(build, text):
     gcprofile.summariseProfile(text, result)
     for key in result.keys():
         build.results.addResult(key, result[key])
-
-def displayResults(out, builds, args):
-    out.clear()
-
-    statsSets = dict()
-    for build in builds:
-        statsSets[build.name] = build.results.createStatsSet()
-
-    keysToDisplay = findInterestingKeys(statsSets)
-    if not keysToDisplay:
-        out.print("No results to display")
-        return
-
-    displayHeader(out)
-
-    for key in keysToDisplay:
-        out.print(f"{key}:")
-
-        statsSetsForKey = [statsSets[build.name][key] for build in builds
-                           if key in statsSets[build.name]]
-        minAll = min(map(lambda stats: stats.min, statsSetsForKey))
-        maxAll = max(map(lambda stats: stats.max, statsSetsForKey))
-
-        compareTo = None
-        if len(statsSetsForKey) > 1:
-            compareTo = statsSetsForKey[0]
-
-        for build in builds:
-            if key not in statsSets[build.name]:
-                continue
-
-            stats = statsSets[build.name][key]
-            comp = compareStats(stats, compareTo)
-            main = formatStats(stats, comp)
-
-            box = ''
-            if minAll != maxAll and stats.count > 1:
-                box = formatBox(minAll, maxAll, stats)
-
-            out.print("  %20s  %s  %s" % (build.name[-20:], main, box))
-
-            if args.show_samples and minAll != maxAll:
-                samples = formatSamples(minAll, maxAll, stats)
-                out.print("%76s%s" % ('', samples))
-
-def findInterestingKeys(statsSets):
-    # todo: returns any existing keys for now
-    result = None
-    for statsSet in statsSets.values():
-        keys = set(statsSet.keys())
-        if result is None:
-            result = keys
-        else:
-            result = result.union(keys)
-    return sorted(list(result))
-
-def displayHeader(out):
-    header = (24 * " ") + statsHeader()
-    out.print(header)
-    out.print(len(header) * "=")
 
 try:
     main()

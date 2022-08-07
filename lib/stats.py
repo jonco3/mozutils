@@ -33,6 +33,9 @@ class Stats:
             std = 0.0
         return mean, std
 
+    def compareTo(self, other):
+        return compareStats(self, other)
+
 class Comparison:
     def __init__(self, diff, factor, pvalue):
         self.diff = diff
