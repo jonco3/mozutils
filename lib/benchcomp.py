@@ -161,7 +161,9 @@ class ResultSet:
 # Display
 ################################################################################
 
-def displayResults(out, builds, showSamples):
+CompactKeyWidth = 40
+
+def displayResults(out, builds, compact, showSamples):
     out.clear()
 
     statsSets = dict()
@@ -173,7 +175,7 @@ def displayResults(out, builds, showSamples):
         out.print("No results to display")
         return
 
-    displayHeader(out)
+    displayHeader(out, builds, compact)
 
     for key in keysToDisplay:
         statsSetsForKey = [statsSets[build.name][key] for build in builds
@@ -188,25 +190,41 @@ def displayResults(out, builds, showSamples):
         if len(statsSetsForKey) > 1:
             compareTo = statsSetsForKey[0]
 
-        out.print(f"{key}:")
+        if compact:
+            line = "%*s" % (-CompactKeyWidth, key[-CompactKeyWidth:])
 
-        for build in builds:
-            if key not in statsSets[build.name]:
-                continue
+            for build in builds:
+                if key not in statsSets[build.name]:
+                    break
 
-            stats = statsSets[build.name][key]
-            comp = stats.compareTo(compareTo)
-            main = format.formatStats(stats, comp)
+                stats = statsSets[build.name][key]
+                comp = stats.compareTo(compareTo)
 
-            box = ''
-            if minAll != maxAll and stats.count > 1:
-                box = format.formatBox(minAll, maxAll, stats)
+                line += "  " + format.formatCompactStats(stats, comp)
 
-            out.print("  %20s  %s  %s" % (build.name[-20:], main, box))
+            out.print(line)
+        else:
+            out.print(f"{key}:")
 
-            if showSamples and minAll != maxAll:
-                samples = format.formatSamples(minAll, maxAll, stats)
-                out.print("%76s%s" % ('', samples))
+            for build in builds:
+                if key not in statsSets[build.name]:
+                    continue
+
+                stats = statsSets[build.name][key]
+                comp = stats.compareTo(compareTo)
+
+                main = format.formatStats(stats, comp)
+
+                box = ""
+                if not compact and minAll != maxAll and stats.count > 1:
+                    box = format.formatBox(minAll, maxAll, stats)
+
+                out.print("  %20s  %s  %s" % (build.name[-20:], main, box))
+
+                if showSamples and minAll != maxAll:
+                    samples = format.formatSamples(minAll, maxAll, stats)
+                    out.print("%76s%s" % ('', samples))
+
 
 def findAllKeys(statsSets):
     keys = list(statsSets.pop(0).keys())
@@ -216,7 +234,27 @@ def findAllKeys(statsSets):
                 keys.append(key)
     return keys
 
-def displayHeader(out):
-    header = (24 * " ") + format.statsHeader()
+def displayHeader(out, builds, compact):
+    if compact:
+        buildHeader = CompactKeyWidth * " "
+        header = CompactKeyWidth * " "
+
+        statsHeader = format.compactStatsHeader(False)
+        width = len(statsHeader)
+        if builds:
+            buildHeader += "  %*s" % (-width, builds[0].name[-width:])
+            header += "  " + statsHeader
+
+        statsHeader = format.compactStatsHeader(True)
+        width = len(statsHeader)
+        for build in builds[1:]:
+            buildHeader += "  %*s" % (-width, build.name[-width:])
+            header += "  " + statsHeader
+
+        out.print(buildHeader)
+    else:
+        statsHeader = format.statsHeader()
+        header = (24 * " ") + statsHeader
+
     out.print(header)
     out.print(len(header) * "=")

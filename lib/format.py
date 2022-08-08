@@ -14,6 +14,22 @@ def formatStats(stats, comp = None):
     return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d  %8s  %6s  %7s" % (
         stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff, percent, pvalue)
 
+def compactStatsHeader(withComparison):
+    header = "%-8s  %-6s" % ("Mean", "CofV")
+    if withComparison:
+        header += "  %-6s  %-7s" % ("%", "P-value")
+    return header
+
+def formatCompactStats(stats, comp = None):
+    line = "%8.1f  %5.1f%%" % (stats.mean, stats.cofv * 100)
+
+    if comp:
+        percent = "%5.1f%%" % (comp.factor * 100) if comp.factor != None else ""
+        pvalue = "%7.2f" % comp.pvalue if comp.pvalue != None else ""
+        line += "  %6s  %7s" % (percent, pvalue)
+
+    return line
+
 def formatBox(minAll, maxAll, stats):
     width = 40
     scale = (maxAll - minAll) / (width - 1)
