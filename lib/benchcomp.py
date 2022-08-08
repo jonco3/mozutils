@@ -176,16 +176,19 @@ def displayResults(out, builds, showSamples):
     displayHeader(out)
 
     for key in keysToDisplay:
-        out.print(f"{key}:")
-
         statsSetsForKey = [statsSets[build.name][key] for build in builds
                            if key in statsSets[build.name]]
         minAll = min(map(lambda stats: stats.min, statsSetsForKey))
         maxAll = max(map(lambda stats: stats.max, statsSetsForKey))
 
+        if minAll == 0 and maxAll == 0:
+            continue  # No interesting data, skip this key.
+
         compareTo = None
         if len(statsSetsForKey) > 1:
             compareTo = statsSetsForKey[0]
+
+        out.print(f"{key}:")
 
         for build in builds:
             if key not in statsSets[build.name]:
