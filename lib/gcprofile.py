@@ -2,6 +2,8 @@
 #
 # Summarise GC profiling information from log data.
 
+import re
+
 # Detect whether we're currently running a raptor test, or between
 # tests.
 StartTestText = 'Testing url'
@@ -25,10 +27,11 @@ def findFirstMajorGC(result, majorFields, majorData):
     timestampField = majorFields.get('Timestamp')
     sizeField = majorFields.get('SizeKB')
     timeField = majorFields.get('total')
+    statesField = majorFields.get('States')
 
     for line in majorData:
         # Skip collections where we don't collect anything.
-        if int(line[timeField]) == 0:
+        if int(line[timeField]) == 0 and line[statesField] == "0 -> 0":
             continue
 
         result['First major GC'] = float(line[timestampField])
@@ -73,9 +76,11 @@ def extractHeapSizeData(text):
     return runtimes
 
 def parseOutput(text):
-    majorFields = dict()
+    majorFields = None
+    majorSpans = None
     majorData = list()
-    minorFields = dict()
+    minorFields = None
+    minorSpans = None
     minorData = list()
 
     inTest = False
@@ -97,40 +102,39 @@ def parseOutput(text):
 
         if 'MajorGC:' in line:
             line = line.split('MajorGC: ', maxsplit=1)[1]
-            line = line[:76] + line[83:] # remove optional budget field
-            line = line[:55] + line[69:] # remove other annoying to parse fields
 
-            fields = line.split()
-            if 'PID' in fields:
+            if 'TOTALS:' in line:
+                continue
+            elif line.startswith('PID'):
                 if not majorFields:
-                    majorFields = makeFieldMap(fields)
+                    majorFields, majorSpans = parseHeaderLine(line)
                 continue
-
-            if 'TOTALS:' in fields:
-                continue
+            else:
+                fields = splitWithSpans(line, majorSpans)
 
             fields.append(testNum)
             if len(fields) != len(majorFields):
-                # todo: this would skip lines without budget (including
-                # non-incremental slices) if we didn't strip that field
-                # above
+                print("Skipping garbled profile line")
                 continue
 
             majorData.append(fields)
             continue
 
         if 'MinorGC:' in line:
-            fields = line.split('MinorGC: ', maxsplit=1)[1].split()
-            if 'PID' in fields:
-                if not minorFields:
-                    minorFields = makeFieldMap(fields)
-                continue
+            line = line.split('MinorGC: ', maxsplit=1)[1]
 
-            if 'TOTALS:' in fields:
+            if 'TOTALS:' in line:
                 continue
+            elif line.startswith('PID'):
+                if not minorFields:
+                    minorFields, minorSpans = parseHeaderLine(line)
+                continue
+            else:
+                fields = splitWithSpans(line, minorSpans)
 
             fields.append(testNum)
             if len(fields) != len(minorFields):
+                print("Skipping garbled profile line")
                 continue
 
             minorData.append(fields)
@@ -140,19 +144,32 @@ def parseOutput(text):
 
     return majorFields, majorData, minorFields, minorData, testCount
 
-def makeFieldMap(fields):
-    # Add our generated fields:
-    fields.append('testNum')
-
+def parseHeaderLine(line):
     fieldMap = dict()
-    for i in range(len(fields)):
-        fieldMap[fields[i]] = i
+    fieldSpans = list()
+
+    for match in re.finditer(r"(\w+)\s*", line):
+        name = match.group(1)
+        span = match.span()
+        fieldMap[name] = len(fieldMap)
+        fieldSpans.append(span)
 
     # Assumed by findMostActiveRuntime
     assert fieldMap.get('PID') == 0
     assert fieldMap.get('Runtime') == 1
 
-    return fieldMap
+    # Add our generated field:
+    fieldMap['testNum'] = len(fieldMap)
+
+    return fieldMap, fieldSpans
+
+def splitWithSpans(line, spans):
+    fields = []
+    for span in spans:
+        field = line[span[0]:span[1]].strip()
+        fields.append(field)
+
+    return fields
 
 def summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, inTest):
     majorData = filterByInTest(majorFields, majorData, inTest)
