@@ -13,8 +13,11 @@ import json
 import os
 import os.path
 import platform
+import signal
 import sys
 import tempfile
+
+import psutil  # Requires psutil installed with pip.
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
@@ -80,6 +83,8 @@ def main():
     try:
         for i in range(args.test_iterations):
             for build in builds:
+                killOldFirefoxProcesses(out)
+
                 if sys.stdout.isatty():
                     out.print(f'Running {test.name} test for {build.name} build...')
 
@@ -270,6 +275,30 @@ def parseProfile(build, text):
     gcprofile.summariseProfile(text, result)
     for key in result.keys():
         build.results.addResult(key, result[key])
+
+def killOldFirefoxProcesses(out):
+    # For some reason these tests can leave a load of old browser
+    # processes running, so make sure we kill these off before we start
+    # any more.
+
+    processes = []
+    for p in psutil.process_iter(['cmdline']):
+        cmd = p.info['cmdline']
+        if cmd and 'dist/bin/firefox' in cmd[0]:
+            processes.append(p)
+
+    if not processes:
+        return
+
+    out.print(f"Killing {len(processes)} processes")
+
+    for p in processes:
+        try:
+            p.send_signal(signal.SIGTERM)
+        except psutil.NoSuchProcess:
+            pass
+    gone, alive = psutil.wait_procs(processes, timeout=5)
+    assert not alive
 
 try:
     main()
