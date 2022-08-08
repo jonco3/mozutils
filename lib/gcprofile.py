@@ -19,10 +19,20 @@ def summariseProfile(text, result, filterMostActiveRuntime = True):
     if testCount != 0:
         summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
 
-    if len(majorData) > 0:
-        first = majorData[0]
-        result['First major GC'] = float(first[majorFields.get('Timestamp')])
-        result['Heap size / KB at first major GC'] = int(first[majorFields.get('SizeKB')])
+    findFirstMajorGC(result, majorFields, majorData)
+
+def findFirstMajorGC(result, majorFields, majorData):
+    timestampField = majorFields.get('Timestamp')
+    sizeField = majorFields.get('SizeKB')
+    timeField = majorFields.get('total')
+
+    for line in majorData:
+        # Skip collections where we don't collect anything.
+        if int(line[timeField]) == 0:
+            continue
+
+        result['First major GC'] = float(line[timestampField])
+        result['Heap size / KB at first major GC'] = int(line[sizeField])
 
 def extractHeapSizeData(text):
     majorFields, majorData, _, _, _ = parseOutput(text)
