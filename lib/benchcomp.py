@@ -168,7 +168,7 @@ def displayResults(out, builds, showSamples):
     for build in builds:
         statsSets[build.name] = build.results.createStatsSet()
 
-    keysToDisplay = findAllKeys(statsSets)
+    keysToDisplay = findAllKeys(list(statsSets.values()))
     if not keysToDisplay:
         out.print("No results to display")
         return
@@ -206,14 +206,12 @@ def displayResults(out, builds, showSamples):
                 out.print("%76s%s" % ('', samples))
 
 def findAllKeys(statsSets):
-    result = None
-    for statsSet in statsSets.values():
-        keys = set(statsSet.keys())
-        if result is None:
-            result = keys
-        else:
-            result = result.union(keys)
-    return sorted(list(result))
+    keys = list(statsSets.pop(0).keys())
+    for statsSet in statsSets:
+        for key in statsSet.keys():
+            if key not in keys:
+                keys.append(key)
+    return keys
 
 def displayHeader(out):
     header = (24 * " ") + format.statsHeader()

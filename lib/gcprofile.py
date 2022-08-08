@@ -160,6 +160,9 @@ def summariseAllData(result, majorFields, majorData, minorFields, minorData, key
     result['ALLOC_TRIGGER slices' + keySuffix] = \
         len(filterByReason(majorFields, majorData, 'ALLOC_TRIGGER'))
 
+    result['TOO_MUCH_MALLOC slices' + keySuffix] = \
+        len(filterByReason(majorFields, majorData, 'TOO_MUCH_MALLOC'))
+
     result['Full store buffer nursery collections' + keySuffix] = \
         len(filterByFullStoreBufferReason(minorFields, minorData))
 

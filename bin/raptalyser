@@ -97,8 +97,8 @@ def main():
     if not sys.stdout.isatty():
         out = display.File(sys.stdout)
 
-    displayResults(out, builds, args.show_samples)
-    displayResults(display.File(LogFile), builds, args.show_samples)
+    benchcomp.displayResults(out, builds, args.show_samples)
+    benchcomp.displayResults(display.File(LogFile), builds, args.show_samples)
 
 def parseArgs():
     parser = argparse.ArgumentParser(
