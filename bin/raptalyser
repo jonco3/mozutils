@@ -14,6 +14,7 @@ import os
 import os.path
 import platform
 import signal
+import statistics
 import sys
 import tempfile
 
@@ -242,6 +243,7 @@ def parseResults(build, test, args, jsonText):
     if isPageLoadTest:
         assert len(suites) == 2
 
+    results = []
     for i in range(len(suites)):
         suite = suites[i]
         testName = test.name
@@ -265,10 +267,15 @@ def parseResults(build, test, args, jsonText):
                 ensure(len(replicates) > 1, "Expected more than more result")
                 for value in replicates[1:]:
                     build.results.addResult(key, value)
+                    results.append(value)
             else:
                 build.results.addResult(key, subtest['value'])
+                results.append(subtest['value'])
 
             log(f'  {name} {value} {replicates}')
+
+    if len(results) > 1:
+        build.results.addResult("Geometric mean", statistics.geometric_mean(results))
 
 def parseProfile(build, text):
     result = dict()
