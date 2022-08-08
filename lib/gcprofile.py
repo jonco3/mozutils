@@ -17,6 +17,8 @@ def summariseProfile(text, result, filterMostActiveRuntime = True):
         majorData = filterByRuntime(majorData, runtime)
         minorData = filterByRuntime(minorData, runtime)
 
+    countMajorGCs(result, majorFields, majorData)
+
     summariseAllData(result, majorFields, majorData, minorFields, minorData)
     if testCount != 0:
         summariseAllDataByInTest(result, majorFields, majorData, minorFields, minorData, True)
@@ -36,6 +38,20 @@ def findFirstMajorGC(result, majorFields, majorData):
 
         result['First major GC'] = float(line[timestampField])
         result['Heap size / KB at first major GC'] = int(line[sizeField])
+
+def countMajorGCs(result, majorFields, majorData):
+    statesField = majorFields.get('States')
+    reasonField = majorFields.get('Reason')
+
+    count = 0
+    for line in majorData:
+        if "0 ->" in line[statesField] and not isShutdownReason(line[reasonField]):
+            count += 1
+
+    result['Major GC count'] = count
+
+def isShutdownReason(reason):
+    return 'SHUTDOWN' in reason or 'DESTROY' in reason or reason == 'ROOTS_REMOVED'
 
 def extractHeapSizeData(text):
     majorFields, majorData, _, _, _ = parseOutput(text)
