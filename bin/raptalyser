@@ -207,7 +207,8 @@ def parseTaskOutput(task, args):
             profileText = f.read()
         os.remove(task.profilePath)
 
-        log(f'GC profile:')
+        log('')
+        log(f'GC profile for {task.build.name} {task.test.name}:')
         log(profileText)
         log('')
 
