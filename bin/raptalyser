@@ -135,6 +135,8 @@ def parseArgs():
                        help='Collect information about garbage collections')
     group.add_argument('--gc-profile-via-raptor', action='store_true', default=False,
                        help='Use --verbose to get profile; requires raptor patch')
+    parser.add_argument('--no-nursery-profile', action='store_true', default=False,
+                       help='Skip collecting GC profile information for the nursery')
     parser.add_argument('--expanded-display', action='store_true', default=False,
                        help='Display more data about results')
     parser.add_argument('builds', nargs="+")
@@ -194,7 +196,8 @@ def makeTask(build, test, args):
 
     if args.gc_profile or args.gc_profile_via_raptor:
         env['JS_GC_PROFILE'] = '0'
-        env['JS_GC_PROFILE_NURSERY'] = '0'
+        if not args.no_nursery_profile:
+            env['JS_GC_PROFILE_NURSERY'] = '0'
 
     return benchcomp.Task(build, test, cmd, env, build.dir, profilePath)
 

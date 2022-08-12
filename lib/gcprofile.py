@@ -206,11 +206,12 @@ def summariseAllData(result, majorFields, majorData, minorFields, minorData, key
     result['TOO_MUCH_MALLOC slices' + keySuffix] = \
         len(filterByReason(majorFields, majorData, 'TOO_MUCH_MALLOC'))
 
-    result['Full store buffer nursery collections' + keySuffix] = \
-        len(filterByFullStoreBufferReason(minorFields, minorData))
+    if minorData:
+        result['Full store buffer nursery collections' + keySuffix] = \
+            len(filterByFullStoreBufferReason(minorFields, minorData))
 
-    result['Mean full nusery promotion rate' + keySuffix] = \
-        meanPromotionRate(minorFields, filterByReason(minorFields, minorData, 'OUT_OF_NURSERY'))
+        result['Mean full nusery promotion rate' + keySuffix] = \
+            meanPromotionRate(minorFields, filterByReason(minorFields, minorData, 'OUT_OF_NURSERY'))
 
 def summariseMajorMinorData(result, majorFields, majorData, minorFields, minorData, keySuffix):
     majorCount, majorTime = summariseData(majorFields, majorData)
