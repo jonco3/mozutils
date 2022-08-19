@@ -56,8 +56,6 @@ def get_configs_from_args(args):
     if multiprocessing.cpu_count() < 32:
         options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
 
-    options.append('--enable-clang-plugin')
-
     if config('minimal'):
         names.append('minimal')
         options.append('--disable-av1')
@@ -85,6 +83,8 @@ def get_configs_from_args(args):
         names.append('gcc')
         options.append('export CC=gcc')
         options.append('export CXX=g++')
+    else:
+        options.append('--enable-clang-plugin')
 
     if config('opt'):
         names.append('opt')
