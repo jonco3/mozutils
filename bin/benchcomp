@@ -52,7 +52,10 @@ def main():
     if args.test:
         tests = list(filter(lambda t: t.name == args.test, allTests))
         if not tests:
-            sys.exit(f"Test '{args.test}' not found")
+            if os.path.exists(args.test):
+                tests = [LocalTest(args.test)]
+            else:
+                sys.exit(f"Test '{args.test}' not found")
 
     scores = []
 
@@ -100,6 +103,12 @@ class OctaneTest(Test):
         if not script:
             script = f"run-{name}.js"
         super().__init__(name, 'octane', script)
+
+class LocalTest(Test):
+    def __init__(self, path):
+        path = os.path.normpath(path)
+        dir, name = os.path.split(os.path.abspath(path))
+        super().__init__(name, dir, name)
 
 class DelayedKeyboardInterrupt(object):
     # From https://stackoverflow.com/a/21919644
@@ -149,6 +158,9 @@ def runBenchmark(build, test, args):
     if args.sys_usage:
         cmd = ['/usr/bin/time', '-v'] + cmd
 
+    subprocess.call('sync')
+    subprocess.call(['sleep', '1'])
+
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
         print(f"Error running benchmark {test.name} with shell {build.shell}:")
@@ -172,10 +184,10 @@ def addScore(builds, scores, results, score):
 def parseOutput(stdout, stderr, args, profilePath):
     result = dict()
     for line in stdout.splitlines():
-        match = re.match(r'(\w+):\s(\d+)', line)
+        match = re.match(r'(\w+):\s(\d+(:?\.\d+)?)', line)
         if match:
             key, value = match.group(1), match.group(2)
-            result['!' + key] = int(value)
+            result['!' + key] = float(value)
 
     if profilePath:
         with open(profilePath) as f:
@@ -186,7 +198,7 @@ def parseOutput(stdout, stderr, args, profilePath):
         parseSysUsage(result, stderr)
 
     if not result:
-        print(text)
+        print(stdout + stderr)
         sys.exit("Can't parse output")
 
     return result
