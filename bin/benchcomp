@@ -52,10 +52,7 @@ def main():
     if args.test:
         tests = list(filter(lambda t: t.name == args.test, allTests))
         if not tests:
-            if os.path.exists(args.test):
-                tests = [LocalTest(args.test)]
-            else:
-                sys.exit(f"Test '{args.test}' not found")
+            tests = [LocalTest(args.test)]
 
     scores = []
 
@@ -93,10 +90,11 @@ class Build:
         return f"Build({self.name})"
 
 class Test:
-    def __init__(self, name, dir, script):
+    def __init__(self, name, dir, script, args = []):
         self.name = name
         self.dir = dir
         self.script = script
+        self.args = args
 
 class OctaneTest(Test):
     def __init__(self, name, script=None):
@@ -105,10 +103,14 @@ class OctaneTest(Test):
         super().__init__(name, 'octane', script)
 
 class LocalTest(Test):
-    def __init__(self, path):
+    def __init__(self, spec):
+        path, *args = spec.split(" ")
+        if not os.path.exists(path):
+            sys.exit(f"Test '{path}' not found")
+
         path = os.path.normpath(path)
         dir, name = os.path.split(os.path.abspath(path))
-        super().__init__(name, dir, name)
+        super().__init__(spec, dir, name, args)
 
 class DelayedKeyboardInterrupt(object):
     # From https://stackoverflow.com/a/21919644
@@ -143,7 +145,7 @@ def parseArgs():
 def runBenchmark(build, test, args):
     oldcwd = os.getcwd()
     os.chdir(test.dir)
-    cmd = [build.shell] + build.args + [test.script]
+    cmd = [build.shell] + build.args + [test.script] + test.args
     env = dict()
 
     profilePath = None
