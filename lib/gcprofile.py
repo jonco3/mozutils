@@ -25,6 +25,8 @@ def summariseProfile(text, result, filterMostActiveRuntime = True):
 
     findFirstMajorGC(result, majorFields, majorData)
 
+    summarisePhaseTimes(result, majorFields, majorData)
+
 def findFirstMajorGC(result, majorFields, majorData):
     timestampField = majorFields.get('Timestamp')
     sizeField = majorFields.get('SizeKB')
@@ -38,6 +40,22 @@ def findFirstMajorGC(result, majorFields, majorData):
 
         result['First major GC'] = float(line[timestampField])
         result['Heap size / KB at first major GC'] = int(line[sizeField])
+        break
+
+def summarisePhaseTimes(result, majorFields, majorData):
+    fieldNames = ['bgwrk', 'waitBG', 'prep', 'mark', 'sweep', 'cmpct']
+    fields = [majorFields.get(name) for name in fieldNames]
+    totals = [0 for name in fieldNames]
+
+    for line in majorData:
+        for i in range(len(fields)):
+            value = line[fields[i]]
+            if value:
+                totals[i] += int(value)
+
+    for i in range(len(fields)):
+        key = 'Total major GC time in phase ' + fieldNames[i]
+        result[key] = totals[i]
 
 def countMajorGCs(result, majorFields, majorData):
     statesField = majorFields.get('States')
