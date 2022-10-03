@@ -148,6 +148,8 @@ def get_configs_from_args(args):
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
+    options.append('--enable-linker=mold')
+
     return names, options
 
 def add_sanitizer_options(args, options):
