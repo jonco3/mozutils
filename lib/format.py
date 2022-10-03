@@ -6,13 +6,27 @@ def statsHeader():
     return "%-8s  %-8s  %-8s  %-6s  %-4s  %-8s  %-6s  %-7s" % (
         "Min", "Mean", "Max", "CofV", "Runs", "Change", "%", "P-value")
 
+def formatFloat(width, x):
+    # General purpose number format that fits the most significant
+    # digits possible in |width|. Only uses scientific notation if
+    # necessary.
+    assert width >= 5
+    s = "%*.*g" % (width, width - 1, x)
+    if len(s) <= width:
+        return s
+    return "%*.*g" % (width, width - 5, x)
+
 def formatStats(stats, comp = None):
-    diff = "%8.1f" % comp.diff if comp else ""
+    diff = formatFloat(8, comp.diff) if comp else ""
+
     percent = "%5.1f%%" % (comp.factor * 100) if comp and comp.factor != None else ""
     pvalue = "%7.2f" % comp.pvalue if comp and comp.pvalue != None else ""
 
-    return "%8.1f  %8.1f  %8.1f  %5.1f%%  %4d  %8s  %6s  %7s" % (
-        stats.min, stats.mean, stats.max, stats.cofv * 100, stats.count, diff, percent, pvalue)
+    return "%8s  %8s  %8s  %5.1f%%  %4d  %8s  %6s  %7s" % (
+        formatFloat(8, stats.min),
+        formatFloat(8, stats.mean),
+        formatFloat(8, stats.max),
+        stats.cofv * 100, stats.count, diff, percent, pvalue)
 
 def compactStatsHeader(withComparison):
     header = "%-8s  %-6s" % ("Mean", "CofV")
@@ -21,7 +35,7 @@ def compactStatsHeader(withComparison):
     return header
 
 def formatCompactStats(stats, comp = None):
-    line = "%8.1f  %5.1f%%" % (stats.mean, stats.cofv * 100)
+    line = "%8s  %5.1f%%" % (formatFloat(8, stats.mean), stats.cofv * 100)
 
     if comp:
         percent = "%5.1f%%" % (comp.factor * 100) if comp.factor != None else ""
