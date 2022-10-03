@@ -86,11 +86,11 @@ try:
 
     if args.jittest or test_all:
         run_test(build_name, 'jit',
-                 'jit-test/jit_test.py %s %s' % (testOptions, shell))
+                 'python3 jit-test/jit_test.py %s %s' % (testOptions, shell))
 
     if args.jstest or test_all:
         run_test(build_name, 'js',
-                 'tests/jstests.py %s %s /' % (testOptions, shell))
+                 'python3 tests/jstests.py %s %s /' % (testOptions, shell))
 
     if args.octane:
         os.chdir('octane')
