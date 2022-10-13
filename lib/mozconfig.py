@@ -39,6 +39,9 @@ def add_browser_config_arguments(parser):
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
 
+    parser.add_argument('--android', action='store_true',
+                        help='Build Android browser')
+
 def add_shell_config_arguments(parser):
     add_common_config_arguments(parser, False)
     parser.add_argument('--armsim', action='store_true', help='ARM simulator build')
@@ -59,9 +62,7 @@ def get_configs_from_args(args):
     if config('minimal'):
         names.append('minimal')
         options.append('--disable-av1')
-        options.append('--disable-cranelift')
         options.append('--disable-ffmpeg')
-        options.append('--disable-js-shell')
         options.append('--disable-printing')
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
@@ -78,6 +79,11 @@ def get_configs_from_args(args):
     if config('target32'):
         names.append('32bit')
         options.append('--target=i686-pc-linux')
+
+    if config('android'):
+        names.append('android')
+        options.append('--enable-application=mobile/android')
+        # Defaults to armv7, or add --target=aarch64
 
     if config('gcc'):
         names.append('gcc')
