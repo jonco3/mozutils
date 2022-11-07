@@ -54,14 +54,13 @@ def main():
         if not tests:
             tests = [LocalTest(args.test)]
 
-    scores = []
-
+    # Nested map of lists keyed by score name then by build.
     results = dict()
 
     out = display.Terminal()
 
     printHeader()
-    displayResults(out, builds, scores, results, args.show_samples)
+    displayResults(out, builds, results, args.show_samples)
 
     for i in range(iterations):
         for build in builds:
@@ -69,10 +68,10 @@ def main():
                 result = runBenchmark(build, test, args)
                 for score in result.keys():
                     if score not in results:
-                        addScore(builds, scores, results, score)
+                        addScore(builds, results, score)
                     results[score][build].append(result[score])
                 with DelayedKeyboardInterrupt():
-                    displayResults(out, builds, scores, results, args)
+                    displayResults(out, builds, results, args)
 
 class Build:
     def __init__(self, spec):
@@ -173,11 +172,8 @@ def runBenchmark(build, test, args):
 
     return parseOutput(proc.stdout, proc.stderr, args, profilePath)
 
-def addScore(builds, scores, results, score):
+def addScore(builds, results, score):
     assert score not in results
-    assert score not in scores
-
-    scores.append(score)
 
     results[score] = dict()
     for build in builds:
@@ -224,7 +220,7 @@ def printHeader():
     print(header)
     print(len(header) * "=")
 
-def displayResults(out, builds, scores, results, args):
+def displayResults(out, builds, results, args):
     out.clear()
 
     count = 0
@@ -232,7 +228,7 @@ def displayResults(out, builds, scores, results, args):
     for build in builds:
         geomean[build] = 0
 
-    for score in scores:
+    for score in results.keys():
         statsForBuild = dict()
         compareTo = None
         low = None
