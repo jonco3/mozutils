@@ -54,7 +54,7 @@ def main():
         if not tests:
             tests = [LocalTest(args.test)]
 
-    # Nested map of lists keyed by score name then by build.
+    # Nested map of lists keyed by result key then by build.
     results = dict()
 
     out = display.Terminal()
@@ -65,11 +65,9 @@ def main():
     for i in range(iterations):
         for build in builds:
             for test in tests:
-                result = runBenchmark(build, test, args)
-                for score in result.keys():
-                    if score not in results:
-                        addScore(builds, results, score)
-                    results[score][build].append(result[score])
+                bmResults = runBenchmark(build, test, args)
+                for key in bmResults.keys():
+                    addResult(builds, results, build, key, bmResults[key])
                 with DelayedKeyboardInterrupt():
                     displayResults(out, builds, results, args)
 
@@ -172,12 +170,13 @@ def runBenchmark(build, test, args):
 
     return parseOutput(proc.stdout, proc.stderr, args, profilePath)
 
-def addScore(builds, results, score):
-    assert score not in results
+def addResult(builds, results, build, key, result):
+    if key not in results:
+        results[key] = dict()
+        for b in builds:
+            results[key][b] = []
 
-    results[score] = dict()
-    for build in builds:
-        results[score][build] = []
+    results[key][build].append(result)
 
 def parseOutput(stdout, stderr, args, profilePath):
     result = dict()
@@ -228,18 +227,18 @@ def displayResults(out, builds, results, args):
     for build in builds:
         geomean[build] = 0
 
-    for score in results.keys():
+    for key in results.keys():
         statsForBuild = dict()
         compareTo = None
         low = None
         high = None
         first = True
         for build in builds:
-            data = results[score][build]
+            data = results[key][build]
             if data:
                 stats = Stats(data)
                 statsForBuild[build] = stats
-                if score.startswith('!') and stats.mean != 0:
+                if key.startswith('!') and stats.mean != 0:
                     geomean[build] += math.log(stats.mean)
                 if first:
                     compareTo = stats
@@ -251,11 +250,11 @@ def displayResults(out, builds, results, args):
         if low == 0 and high == 0:
             continue
 
-        if score.startswith('!'):
-            score = score[1:]
+        if key.startswith('!'):
+            key = key[1:]
             count += 1
 
-        out.print(f"{score}:")
+        out.print(f"{key}:")
         for build in builds:
             text = ""
             samples = ""
