@@ -285,13 +285,13 @@ def displayResults(out, builds, scores, results, args):
         for build in builds:
             if geomean[build] != 0:
                 mean = math.exp(geomean[build] / count)
-                text = "          %8.1f" % mean
+                text = "          %8s" % formatFloat(8, mean)
                 if first:
                     compareTo = mean
                     first = False
                 else:
                     diff = (mean - compareTo) / compareTo
-                    text += "                         %4.1f%%" % (diff * 100)
+                    text += "                                     %4.1f%%" % (diff * 100)
                 out.print("  %20s  %s" % (build.spec[-20:], text))
 
 try:
