@@ -126,7 +126,7 @@ def chdir_to_source_root():
 def sync_branch(args):
     libDir = os.path.dirname(__file__)
     binDir = os.path.join(libDir, '..', 'bin')
-    cmd = [ os.path.join(binDir, 'syncBranch') ]
+    cmd = [os.path.join(binDir, 'syncBranch')]
     if args.sync == "js":
         cmd.append("-j")
     subprocess.check_call(cmd)
@@ -177,6 +177,7 @@ def mach(args, mach_args, filter_output = True):
     build_config = "mozconfig-" + build_name
 
     if not os.path.exists(build_config):
+        print("Generating mozconfig file: " + build_config)
         write_mozconfig(build_dir, config_options, build_config)
 
     setup_environment(args)
