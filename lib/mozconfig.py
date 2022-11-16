@@ -94,17 +94,19 @@ def get_configs_from_args(args):
 
     if config('opt'):
         names.append('opt')
-        options.append('--enable-optimize')
         options.append('--disable-debug')
+        options.append('--enable-release')
+        options.append('--enable-strip')
     elif config('pgo'):
         names.append('pgo')
-        options.append('--enable-optimize')
         options.append('--disable-debug')
+        options.append('--enable-release')
+        options.append('--enable-strip')
         options.append('ac_add_options MOZ_PGO=1')
     elif config('optdebug'):
         names.append('optdebug')
-        options.append('--enable-optimize')
         options.append('--enable-debug')
+        options.append('--enable-optimize')
         options.append('--enable-gczeal')
         options.append('--enable-debug-symbols')
     else:
