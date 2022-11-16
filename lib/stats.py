@@ -57,7 +57,7 @@ def compareStats(a, b):
         factor = diff / b.mean
 
     if a.count > 1 and b.count > 1 and a.mean != b.mean:
-        p = stats.ttest_ind(a.samples, b.samples, equal_var=False).pvalue
+        p = stats.ttest_ind(a.samples, b.samples, equal_var=False, trim=0.2).pvalue
     else:
         p = None
 
