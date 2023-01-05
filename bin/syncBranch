@@ -13,6 +13,12 @@ if ! [[ -f $EXCLUDE_FILE ]]; then
    exit 1
 fi
 
+CLIENT=`echo $SSH_CLIENT | cut -f1 -d' '`
+if [[ -z $CLIENT ]]; then
+    echo "Can't parse \$SSH_CLIENT: $SSH_CLIENT"
+    exit 1
+fi
+
 VERBOSE=
 if [[ $# -gt 0 && $1 == "-v" ]]; then
     VERBOSE=$1
@@ -20,32 +26,45 @@ if [[ $# -gt 0 && $1 == "-v" ]]; then
 fi
 
 DIR=.
-if [[ $# -gt 0 && $1 == "-j" ]]; then
-    DIR=js
+CREATE=
+
+if [[ $# -eq 2 && $1 == "-c" ]]; then
     shift
-elif [[ $# -gt 0 && $1 == "-d" ]]; then
-    DIR=dom
+
+    BRANCH=$1
     shift
+
+    CREATE=1
 elif [[ $# -eq 1 ]]; then
-    DIR=$1
-    shift
+    if [[ $1 == "-j" ]]; then
+        DIR=js
+        shift
+    elif [[ $1 == "-d" ]]; then
+        DIR=dom
+        shift
+    else
+        DIR=$1
+        shift
+    fi
 fi
 
-if [[ $# -ne 0 && $# -ne 2 ]]; then
-    echo "usage: syncBranch [ -v ] [ -j | -d ] [ DIR | HOST BRANCH ]"
-    echo "Sync remote source repository ~/work/BRANCH from host HOST"
+if [[ $# -ne 0 ]]; then
+    echo "usage: syncBranch [ -v ] ( -c BRANCH | [  -j | -d | SUBDIR ] )"
+    echo "Sync remote source repository ~/work/BRANCH from ssh client ($CLIENT)"
     exit 1
 fi
 
-if [[ $# -eq 2 ]]; then
-    # Create a new directory to clone into
+if [[ -n $CREATE ]]; then
+    # Create a new directory to sync into
 
-    REMOTE=$1
-    BRANCH=$2
     if [[ -e $BRANCH ]]; then
         echo "Directory already exists: $BRANCH"
         exit 1
     fi
+
+    mkdir $BRANCH
+    cd $BRANCH
+    echo $CLIENT > $REMOTE_FILE
  else
     # Find root of source tree
     while [[ ! -f $REMOTE_FILE ]]; do
@@ -61,27 +80,15 @@ if [[ $# -eq 2 ]]; then
         exit 1
     fi
 
-    REMOTE=`cat $REMOTE_FILE`
-    if ! [[ $REMOTE =~ ^[[:alnum:]]+$ ]]; then
-        echo "Bad remote hostname set in $REMOTE_FILE: $REMOTE"
+    if [[ ! -d $DIR ]]; then
+        echo "Directory $DIR not found"
         exit 1
     fi
+
+    BRANCH=${PWD##*/}
 fi
 
-#if ! ping -c 1 $REMOTE > /dev/null 2>&1; then
-#    echo "Can't contact remote host: $REMOTE"
-#    exit 1
-#fi
-
-if [[ $# -eq 2 ]]; then
-    mkdir $BRANCH
-    cd $BRANCH
-    echo $REMOTE > $REMOTE_FILE
-fi
-
-BRANCH=${PWD##*/}
-
-SOURCE=$REMOTE:work/$BRANCH/$DIR
+SOURCE=$CLIENT:work/$BRANCH/$DIR
 TARGET=$DIR
 
 echo "Syncing $SOURCE to $TARGET"
@@ -101,4 +108,4 @@ rsync \
     --exclude /src/old-configure \
     --exclude GSTALE \
     --exclude /testing/mozbase/*/*.egg-info/ \
-    $SOURCE/ $TARGET/ || exit $?
+    $SOURCE/ $TARGET/
