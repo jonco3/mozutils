@@ -24,8 +24,6 @@ def main():
 
     builds = list(map(Build, args.builds))
 
-    iterations = 20
-
     allTests = [
         # Run all tests sequentially in a single runtime.
         OctaneTest('octane', 'run.js'),
@@ -62,7 +60,7 @@ def main():
     printHeader()
     displayResults(out, builds, results, args.show_samples)
 
-    for i in range(iterations):
+    for i in range(args.iterations):
         for build in builds:
             for test in tests:
                 bmResults = runBenchmark(build, test, args)
@@ -76,6 +74,8 @@ class Build:
         command = spec.split()
         path = command[0]
         shell = os.path.join(path, "shell")
+        if not os.path.isfile(shell):
+            shell = os.path.join(path, "dist", "bin", "js")
         ensure(canExecute(shell), f"Executeable shell not found at: {shell}")
         self.spec = spec
         self.path = os.path.normpath(path)
@@ -133,6 +133,8 @@ def canExecute(path):
 def parseArgs():
     parser = argparse.ArgumentParser(description = 'Benchmark SpiderMonkey')
     parser.add_argument('-t', '--test', help='Test suite to run')
+    parser.add_argument('--iterations', type=int, default=20,
+                        help='The number of times to run each test')
     parser.add_argument('--show-samples', action='store_true')
     parser.add_argument('--gc-profile', action='store_true')
     parser.add_argument('--sys-usage', action='store_true')
