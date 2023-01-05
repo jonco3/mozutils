@@ -145,12 +145,13 @@ def get_configs_from_args(args):
         options.append('--enable-application=js')
         if not config('tsan') and not config('asan'):
             options.append('--enable-warnings-as-errors')
+        # Currently producing binaries that crash for the browser
+        options.append('--enable-linker=mold')
     else:
         options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
-    options.append('--enable-linker=mold')
 
     return names, options
 
