@@ -12,12 +12,10 @@ def platform_is_64bit():
 
 def add_common_config_arguments(parser, isBrowserConfig):
     opt_group = parser.add_mutually_exclusive_group()
+    opt_group.add_argument('--release', action='store_true', help = 'Release build')
     opt_group.add_argument('-o', '--opt', action='store_true', help = 'Optimized build')
     opt_group.add_argument('-d', '--optdebug', action='store_true',
                            help = 'Optimized build with assertions enabled')
-    if isBrowserConfig:
-        opt_group.add_argument('-p', '--pgo', action='store_true',
-                               help='Profile guided optimization build')
 
     if platform_is_64bit():
         parser.add_argument('--32bit', action='store_true', dest='target32',
@@ -92,17 +90,20 @@ def get_configs_from_args(args):
     else:
         options.append('--enable-clang-plugin')
 
-    if config('opt'):
+    if config('release'):
+        names.append('release')
+        options.append('MOZILLA_OFFICIAL=1')
+        options.append('MOZ_LTO=cross')
+        options.append('--disable-debug')
+        options.append('--enable-release')
+        options.append('--enable-strip')
+        options.append('--enable-update-channel=nightly')
+        options.append('--enable-rust-simd')
+    elif config('opt'):
         names.append('opt')
         options.append('--disable-debug')
-        options.append('--enable-release')
+        options.append('--enable-optimize')
         options.append('--enable-strip')
-    elif config('pgo'):
-        names.append('pgo')
-        options.append('--disable-debug')
-        options.append('--enable-release')
-        options.append('--enable-strip')
-        options.append('ac_add_options MOZ_PGO=1')
     elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-debug')
@@ -146,7 +147,7 @@ def get_configs_from_args(args):
         if not config('tsan') and not config('asan'):
             options.append('--enable-warnings-as-errors')
         # Currently producing binaries that crash for the browser
-        options.append('--enable-linker=mold')
+        # options.append('--enable-linker=mold')
     else:
         options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
