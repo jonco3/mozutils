@@ -72,13 +72,13 @@ def main():
 class Build:
     def __init__(self, spec):
         command = spec.split()
-        path = command[0]
+        path = os.path.expanduser(os.path.normpath(command[0]))
         shell = os.path.join(path, "shell")
         if not os.path.isfile(shell):
             shell = os.path.join(path, "dist", "bin", "js")
         ensure(canExecute(shell), f"Executeable shell not found at: {shell}")
         self.spec = spec
-        self.path = os.path.normpath(path)
+        self.path = path
         self.name = os.path.basename(self.path)
         self.shell = os.path.abspath(shell)
         self.args = command[1:]
