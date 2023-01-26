@@ -88,7 +88,9 @@ def get_configs_from_args(args):
         options.append('export CC=gcc')
         options.append('export CXX=g++')
     else:
-        options.append('--enable-clang-plugin')
+        if platform.system() == 'Linux':
+            # Currently broken on MacOS?
+            options.append('--enable-clang-plugin')
 
     if config('release'):
         names.append('release')
@@ -135,10 +137,11 @@ def get_configs_from_args(args):
             options.append('--enable-optimize="-Og -g"')
 
     if config('armsim'):
-        platform = 'arm'
         if platform_is_64bit() and not config('target32'):
-            platform = 'arm64'
-        names.append(platform + 'sim')
+            name = 'arm64sim'
+        else:
+            name = 'armsim'
+        names.append(name)
         options.append('--enable-simulator=' + platform)
 
     if config('shell'):
