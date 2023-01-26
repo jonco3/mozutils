@@ -69,14 +69,23 @@ def main():
                 with DelayedKeyboardInterrupt():
                     displayResults(out, builds, results, args)
 
+def findShellInBuildDir(path):
+    locations = [['shell'],
+                 ['dist', 'bin', 'shell'],
+                 ['d8']]
+    for location in locations:
+        shell = os.path.join(path, *location)
+        if os.path.isfile(shell):
+            return shell
+
+    sys.exit(f"No shell found under path: {path}")
+
 class Build:
     def __init__(self, spec):
         command = spec.split()
         path = os.path.expanduser(os.path.normpath(command[0]))
-        shell = os.path.join(path, "shell")
-        if not os.path.isfile(shell):
-            shell = os.path.join(path, "dist", "bin", "js")
-        ensure(canExecute(shell), f"Executeable shell not found at: {shell}")
+        shell = findShellInBuildDir(path)
+        ensure(canExecute(shell), f"Shell not executable: {shell}")
         self.spec = spec
         self.path = path
         self.name = os.path.basename(self.path)
