@@ -94,7 +94,7 @@ def run_command(command, verbose, warnings):
             directory_line = line
             continue
 
-        if "error:" in line or "required from" in line:
+        if "error:" in line or "error[" in line or "required from" in line:
             verbose = True
             if directory_line:
                 println(directory_line)
