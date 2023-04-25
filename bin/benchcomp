@@ -71,11 +71,11 @@ def main():
 
 def findShellInBuildDir(path):
     locations = [['shell'],
-                 ['dist', 'bin', 'shell'],
+                 ['dist', 'bin', 'js'],
                  ['d8']]
     for location in locations:
         shell = os.path.join(path, *location)
-        if os.path.isfile(shell):
+        if os.path.exists(shell):
             return shell
 
     sys.exit(f"No shell found under path: {path}")
@@ -142,7 +142,7 @@ def canExecute(path):
 def parseArgs():
     parser = argparse.ArgumentParser(description = 'Benchmark SpiderMonkey')
     parser.add_argument('-t', '--test', help='Test suite to run')
-    parser.add_argument('--iterations', type=int, default=20,
+    parser.add_argument('--iterations', type=int, default=50,
                         help='The number of times to run each test')
     parser.add_argument('--show-samples', action='store_true')
     parser.add_argument('--gc-profile', action='store_true')

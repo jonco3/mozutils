@@ -11,7 +11,10 @@ def formatFloat(width, x):
     # digits possible in |width|. Only uses scientific notation if
     # necessary.
     assert width >= 5
-    s = "%*.*g" % (width, width - 1, x)
+    s = "%*.*f" % (width, width - 1, x)
+    if len(s) <= width:
+        return s
+    s = "%*.*f" % (width, 2, x)
     if len(s) <= width:
         return s
     return "%*.*g" % (width, width - 5, x)
