@@ -5,9 +5,13 @@
 *.pyc
 *.pyo
 
-# (?i)(^|/)TAGS$
+# (^|/)TAGS$
 /TAGS
 */TAGS
+
+# (^|/)tags$
+/tags
+*/tags
 
 # (^|/)ID$
 /ID
@@ -35,6 +39,12 @@
 # compile_commands\.json
 *compile_commands.json*
 
+# \.orig$
+*.orig
+
+# \.rej$
+*.rej
+
 # ^(?=.*\.egg-info/)(?!^third_party/python/)(?!^testing/web-platform/tests/tools/third_party/)
 # Skipping pattern including negative lookahead assertion
 
@@ -53,14 +63,17 @@
 # ^\.clang-tidy
 /.clang-tidy*
 
+# ^\.clangd
+/.clangd*
+
 # ^\.mozconfig
 /.mozconfig*
 
 # ^mozconfig*
 /mozconfig*
 
-# ^configure$
-/configure
+# ^\.moz-fast-forward
+/.moz-fast-forward*
 
 # ^old-configure$
 /old-configure
@@ -92,6 +105,18 @@
 # ^browser/components/newtab/logs/
 /browser/components/newtab/logs/
 
+# ^browser/components/newtab/content-src/asrouter/schemas/corpus/CFRMessageProvider.messages.json
+/browser/components/newtab/content-src/asrouter/schemas/corpus/CFRMessageProvider?messages?json*
+
+# ^browser/components/newtab/content-src/asrouter/schemas/corpus/OnboardingMessageProvider.messages.json
+/browser/components/newtab/content-src/asrouter/schemas/corpus/OnboardingMessageProvider?messages?json*
+
+# ^browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider.messages.json
+/browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider?messages?json*
+
+# ^browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider_toast_notification.messages.json
+/browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider_toast_notification?messages?json*
+
 # browser/components/pocket/content/panels/css/main.compiled.css.map
 *browser/components/pocket/content/panels/css/main?compiled?css?map*
 
@@ -106,9 +131,6 @@
 
 # ^js/src/obj-.*/
 /js/src/obj-**/
-
-# ^js/src/configure$
-/js/src/configure
 
 # ^js/src/old-configure$
 /js/src/old-configure
@@ -175,23 +197,41 @@
 # ^devtools/.*/node_modules/
 /devtools/**/node_modules/
 
-# ^remote/test/puppeteer/package-lock.json
-/remote/test/puppeteer/package-lock?json*
+# ^remote/test/puppeteer/.*\.tsbuildinfo
+/remote/test/puppeteer/**.tsbuildinfo*
 
-# ^remote/test/puppeteer/node_modules/
-/remote/test/puppeteer/node_modules/
+# ^remote/test/puppeteer/.*/lib/
+/remote/test/puppeteer/**/lib/
 
-# ^remote/test/puppeteer/.github
-/remote/test/puppeteer/?github*
+# ^remote/test/puppeteer/.*/node_modules/
+/remote/test/puppeteer/**/node_modules/
 
-# ^remote/test/puppeteer/.husky
-/remote/test/puppeteer/?husky*
+# ^remote/test/puppeteer/.*/\.wireit/
+/remote/test/puppeteer/**/.wireit/
 
-# ^remote/test/puppeteer/.local-chromium/
-/remote/test/puppeteer/?local-chromium/
+# ^remote/test/puppeteer/\.devcontainer/
+/remote/test/puppeteer/.devcontainer/
 
-# ^remote/test/puppeteer/.local-firefox/
-/remote/test/puppeteer/?local-firefox/
+# ^remote/test/puppeteer/\.github
+/remote/test/puppeteer/.github*
+
+# ^remote/test/puppeteer/\.husky
+/remote/test/puppeteer/.husky*
+
+# ^remote/test/puppeteer/\.wireit/
+/remote/test/puppeteer/.wireit/
+
+# ^remote/test/puppeteer/coverage/
+/remote/test/puppeteer/coverage/
+
+# ^remote/test/puppeteer/docker/
+/remote/test/puppeteer/docker/
+
+# ^remote/test/puppeteer/docs/puppeteer-core\.api\.json
+/remote/test/puppeteer/docs/puppeteer-core.api.json*
+
+# ^remote/test/puppeteer/docs/puppeteer\.api\.json
+/remote/test/puppeteer/docs/puppeteer.api.json*
 
 # ^remote/test/puppeteer/experimental/
 /remote/test/puppeteer/experimental/
@@ -199,14 +239,44 @@
 # ^remote/test/puppeteer/lib/
 /remote/test/puppeteer/lib/
 
+# ^remote/test/puppeteer/node_modules/
+/remote/test/puppeteer/node_modules/
+
+# ^remote/test/puppeteer/package-lock\.json
+/remote/test/puppeteer/package-lock.json*
+
+# ^remote/test/puppeteer/packages/ng-schematics/test/build
+/remote/test/puppeteer/packages/ng-schematics/test/build*
+
+# ^remote/test/puppeteer/src/generated
+/remote/test/puppeteer/src/generated*
+
+# ^remote/test/puppeteer/test/build
+/remote/test/puppeteer/test/build*
+
+# ^remote/test/puppeteer/test/installation/puppeteer.*\.tgz
+/remote/test/puppeteer/test/installation/puppeteer**.tgz*
+
 # ^remote/test/puppeteer/test/output-firefox
 /remote/test/puppeteer/test/output-firefox*
 
 # ^remote/test/puppeteer/test/output-chromium
 /remote/test/puppeteer/test/output-chromium*
 
+# ^remote/test/puppeteer/testserver/lib/
+/remote/test/puppeteer/testserver/lib/
+
+# ^remote/test/puppeteer/utils/mochaRunner/lib/
+/remote/test/puppeteer/utils/mochaRunner/lib/
+
 # ^remote/test/puppeteer/website
 /remote/test/puppeteer/website*
+
+# ^third_party/js/PKI.js/node_modules/
+/third_party/js/PKI?js/node_modules/
+
+# ^third_party/js/PKI.js/package-lock.json
+/third_party/js/PKI?js/package-lock?json*
 
 # ^media/libstagefright/android$
 /media/libstagefright/android
@@ -242,6 +312,18 @@
 # ^target/
 /target/
 
+# ^servo/ports/geckolib/target/
+/servo/ports/geckolib/target/
+
+# ^dom/base/rust/target/
+/dom/base/rust/target/
+
+# ^servo/components/style/target/
+/servo/components/style/target/
+
+# ^dom/webgpu/tests/cts/vendor/target/
+/dom/webgpu/tests/cts/vendor/target/
+
 # ^testing/mozharness/.tox/
 /testing/mozharness/?tox/
 
@@ -271,6 +353,9 @@
 
 # ^browser/components/newtab/node_modules/
 /browser/components/newtab/node_modules/
+
+# ^tools/esmify/node_modules/
+/tools/esmify/node_modules/
 
 # ^testing/talos/.Python
 /testing/talos/?Python*
@@ -335,6 +420,9 @@
 # \.pytest_cache/
 *.pytest_cache/
 
+# \.ruff_cache/
+*.ruff_cache/
+
 # ^lextab.py$
 /lextab?py
 
@@ -383,12 +471,6 @@
 # gfx/wr/target/
 *gfx/wr/target/
 
-# toolkit/components/certviewer/content/node_modules/
-*toolkit/components/certviewer/content/node_modules/
-
-# toolkit/components/certviewer/content/package-lock.json
-*toolkit/components/certviewer/content/package-lock?json*
-
 # ^taskcluster/docker/image_builder/build-image/target
 /taskcluster/docker/image_builder/build-image/target*
 
@@ -407,3 +489,28 @@
 # ^browser/components/storybook/storybook-static/
 /browser/components/storybook/storybook-static/
 
+# ^browser/components/storybook/.storybook/chrome-map.js
+/browser/components/storybook/?storybook/chrome-map?js*
+
+# ^browser/components/storybook/custom-elements.json
+/browser/components/storybook/custom-elements?json*
+
+# ^tools/esmify/jscodeshift
+/tools/esmify/jscodeshift*
+
+# ^tools/esmify/jscodeshift.cmd
+/tools/esmify/jscodeshift?cmd*
+
+# ^tools/esmify/jscodeshift.ps1
+/tools/esmify/jscodeshift?ps1*
+
+# ^tools/esmify/package-lock.json
+/tools/esmify/package-lock?json*
+
+# ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/scowl
+/extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/scowl*
+
+# ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/support_files/
+/extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/support_files/
+
+# ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/*en_US-mozilla*
