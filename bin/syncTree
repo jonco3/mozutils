@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+
+# Sync a tree from a remote one by fetching a diff of outgoing changes
+# and applying it locally.
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
+from mozutils import *
+
+parser = argparse.ArgumentParser(description = 'Sync with remote tree')
+parser.add_argument('-c', '--set-client', action='store_true',
+                    help="Initialise the current tree as a syncTree client")
+parser.add_argument('--print-changes', metavar="TREE",
+                    help="Print outgoing changes as a diff (used internally on server)")
+args = parser.parse_args()
+
+SyncTreeClientFile = ".sync-tree-client"
+
+def is_sync_tree_client():
+    return os.path.isfile(SyncTreeClientFile)
+
+def print_changes():
+    changeset = get_first_outgoing_changeset()
+    changeset = get_parent_changeset(changeset)
+    diff = diff_against_changeset(changeset)
+    print(changeset)
+    print(diff)
+
+def get_first_outgoing_changeset():
+    stdout = run_or_exit('hg outgoing --template "{node}\n" --quiet')
+    changeset = stdout.splitlines()[0].strip()
+    assert re.match(r'[0-9a-z]+$', changeset)
+    return changeset
+
+def get_parent_changeset(changeset):
+    stdout = run_or_exit(f'hg log -r {changeset}^ --template "{{node}}\n"')
+    changeset = stdout.splitlines()[0].strip()
+    assert re.match(r'[0-9a-z]+$', changeset)
+    return changeset
+
+def diff_against_changeset(changeset):
+    return run_or_exit(f'hg diff -r {changeset}')
+
+def sync_changes():
+    mq_patches = run_or_exit('hg qapplied').splitlines()
+    if mq_patches:
+        sys.exit("MQ patches are applied, not syncing")
+
+    # todo, will remove this check
+    local_changes = run_or_exit('hg diff').splitlines()
+    if local_changes:
+        sys.exit("There are local changes, not syncing")
+
+    client = os.environ['SSH_CLIENT'].split()[0]
+    if not client:
+        sys.exit("SSH_CLIENT not set, can't identify server")
+    assert re.match(r'(\d+\.){3}\d+$', client)
+
+    tree = os.path.basename(os.getcwd())
+    changes = run_or_exit(f'ssh {client} "syncTree --print-changes {tree}"')
+    lines = changes.splitlines()
+    changeset = lines[0]
+    diff = "\n".join(lines[1:])
+    patch = tempfile.NamedTemporaryFile(mode='w', delete=False)
+    patch.write(diff)
+    patch.close()
+
+    run_or_exit('hg revert --all')
+    run_or_exit(f'hg import --no-commit {patch.name}')
+
+    os.remove(patch.name)
+
+def run_or_exit(command):
+    p = subprocess.run(command, shell=True, capture_output=True, text=True)
+    if p.returncode != 0:
+        sys.exit(f'Failed to run {command}: {p.stderr}')
+    return p.stdout
+
+if args.print_changes:
+    path = "~/work/" + args.print_changes
+    path = os.path.expanduser(path)
+    if not os.path.isdir(path):
+        sys.exit("Tree not found: " + path)
+    os.chdir(path)
+
+    if is_sync_tree_client():
+        sys.exit("Attempt to get changes from client tree")
+
+    print_changes()
+elif args.set_client:
+    chdir_to_source_root()
+    if is_sync_tree_client():
+        print("Tree is already a syncTree client")
+    else:
+        with open(SyncTreeClientFile, "w") as f:
+            f.write("Tree is a syncTree client")
+else:
+    chdir_to_source_root()
+    if not is_sync_tree_client():
+        sys.exit("Tree is not a syncTree client (initialize with --set-client)")
+    sync_changes()
