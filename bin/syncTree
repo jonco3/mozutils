@@ -4,6 +4,7 @@
 # and applying it locally.
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -29,8 +30,8 @@ def print_changes():
     changeset = get_first_outgoing_changeset()
     changeset = get_parent_changeset(changeset)
     diff = diff_against_changeset(changeset)
-    print(changeset)
-    print(diff)
+    response = [changeset, diff]
+    print(json.dumps(response), flush=True)
 
 def get_first_outgoing_changeset():
     stdout = run_or_exit('hg outgoing --template "{node}\n" --quiet')
@@ -45,7 +46,7 @@ def get_parent_changeset(changeset):
     return changeset
 
 def diff_against_changeset(changeset):
-    return run_or_exit(f'hg diff -r {changeset}')
+    return run_or_exit(f'hg diff --git -r {changeset}')
 
 def sync_changes():
     mq_patches = run_or_exit('hg qapplied').splitlines()
@@ -60,26 +61,26 @@ def sync_changes():
     tree = os.path.basename(os.getcwd())
 
     print(f"Fetching changes for '{tree}' from {client}")
-    changes = run_or_exit(f'ssh {client} "syncTree --print-changes {tree}"')
-    lines = changes.splitlines()
-    changeset = lines[0]
-    diff = os.linesep.join(lines[1:])
-    patch = tempfile.NamedTemporaryFile(mode='w', delete=False)
-    patch.write(diff)
+    response = run_or_exit(f'ssh {client} "syncTree --print-changes {tree}"')
+    [changeset, diff] = json.loads(response)
+    linecount = len(diff.splitlines())
+    print(f"Fetched {linecount} line diff against changeset {changeset}")
+
+    patch = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+    patch.write(diff.encode())
     patch.close()
-    print(f"Fetched {len(lines) - 1} line diff against changeset {changeset}")
 
     print("Reverting local changes")
     run_or_exit('hg revert --all')
     run_or_exit('hg purge')
 
-    print("Updateing to parent changeset")
+    print("Updating to parent changeset")
     run_or_exit(f'hg update -r {changeset}')
 
     print("Applying diff")
-    run_or_exit(f'hg import --no-commit {patch.name}')
+    run_or_exit(f'hg import --no-commit {path}')
 
-    os.remove(patch.name)
+    os.remove(path)
     print("done.")
 
 def run_or_exit(command):
