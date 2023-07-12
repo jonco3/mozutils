@@ -95,12 +95,15 @@ def get_configs_from_args(args):
     if config('release'):
         names.append('release')
         options.append('MOZILLA_OFFICIAL=1')
-        options.append('MOZ_LTO=cross')
         options.append('--disable-debug')
         options.append('--enable-release')
-        options.append('--enable-strip')
         options.append('--enable-update-channel=nightly')
         options.append('--enable-rust-simd')
+        options.append('--enable-strip')
+        if platform.system() == 'Linux':
+            # Causes link failure on MacOS
+            options.append('MOZ_LTO=cross')
+
     elif config('opt'):
         names.append('opt')
         options.append('--disable-debug')
