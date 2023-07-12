@@ -52,11 +52,6 @@ def sync_changes():
     if mq_patches:
         sys.exit("MQ patches are applied, not syncing")
 
-    # todo, will remove this check
-    local_changes = run_or_exit('hg diff').splitlines()
-    if local_changes:
-        sys.exit("There are local changes, not syncing")
-
     client = os.environ['SSH_CLIENT'].split()[0]
     if not client:
         sys.exit("SSH_CLIENT not set, can't identify server")
@@ -72,6 +67,8 @@ def sync_changes():
     patch.close()
 
     run_or_exit('hg revert --all')
+    run_or_exit('hg purge')
+    run_or_exit(f'hg update -r {changeset}')
     run_or_exit(f'hg import --no-commit {patch.name}')
 
     os.remove(patch.name)
