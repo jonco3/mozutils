@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+# unfinish: perform the opposite of `hg qfinish --all`
+
+import re
+import subprocess
+import sys
+
+p = subprocess.run('hg qapplied',
+                   shell=True, capture_output=True, text=True)
+if p.returncode != 0:
+    print(f'Failed to run hg qapplied: ${p.stderr}')
+    sys.exit(1)
+
+patches = p.stdout.splitlines()
+
+if patches:
+    print(f'Patches are applied, exiting.')
+    sys.exit(1)
+
+p = subprocess.run('hg outgoing --quiet --template "{node}\n"',
+                   shell=True, capture_output=True, text=True)
+if p.returncode != 0 and not (p.returncode == 1 and p.stderr == ''):
+    print(f'Failed to run hg outgoing: {p.stderr}')
+    sys.exit(1)
+
+changesets = p.stdout.splitlines()
+
+for c in changesets:
+    if not re.fullmatch(r"[0-9a-f]+", c):
+        print(f'Bad changeset: ${c}')
+        sys.exit(1)
+
+if not changesets:
+    print('No finshed patches.')
+    sys.exit(0)
+
+first = changesets[0]
+last = changesets[-1]
+
+p = subprocess.run(f'hg qimport -r {first}:{last}',
+                   shell=True, capture_output=True, text=True)
+if p.returncode != 0:
+    print(f'Failed to run hg qimport: ${p.stderr}')
+    sys.exit(1)
