@@ -66,9 +66,10 @@ def sync_changes():
     linecount = len(diff.splitlines())
     print(f"Fetched {linecount} line diff against changeset {changeset}")
 
-    patch = tempfile.NamedTemporaryFile(mode='wb', delete=False)
-    patch.write(diff.encode())
-    patch.close()
+    file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+    file.write(diff.encode())
+    file.close()
+    path = file.name
 
     print("Reverting local changes")
     run_or_exit('hg revert --all')
