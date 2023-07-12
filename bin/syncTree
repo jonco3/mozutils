@@ -58,20 +58,29 @@ def sync_changes():
     assert re.match(r'(\d+\.){3}\d+$', client)
 
     tree = os.path.basename(os.getcwd())
+
+    print(f"Fetching changes for '{tree}' from {client}")
     changes = run_or_exit(f'ssh {client} "syncTree --print-changes {tree}"')
     lines = changes.splitlines()
     changeset = lines[0]
-    diff = "\n".join(lines[1:])
+    diff = os.linesep.join(lines[1:])
     patch = tempfile.NamedTemporaryFile(mode='w', delete=False)
     patch.write(diff)
     patch.close()
+    print(f"Fetched {len(lines) - 1} line diff against changeset {changeset}")
 
+    print("Reverting local changes")
     run_or_exit('hg revert --all')
     run_or_exit('hg purge')
+
+    print("Updateing to parent changeset")
     run_or_exit(f'hg update -r {changeset}')
+
+    print("Applying diff")
     run_or_exit(f'hg import --no-commit {patch.name}')
 
     os.remove(patch.name)
+    print("done.")
 
 def run_or_exit(command):
     p = subprocess.run(command, shell=True, capture_output=True, text=True)
