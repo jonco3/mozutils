@@ -26,8 +26,7 @@ def add_common_config_arguments(parser, isBrowserConfig):
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
     san_group.add_argument('--valgrind', action='store_true', help='Valgrind build')
 
-    parser.add_argument('--small-chunk', action='store_true',
-                        help='Use 256KM chunks instead of the usual 1MB')
+    parser.add_argument('--ccov', action='store_true', help='Coverage build')
 
     parser.add_argument('--concurrent', action='store_true',
                         help='GC support for concurrent marking')
@@ -108,7 +107,6 @@ def get_configs_from_args(args):
         names.append('opt')
         options.append('--disable-debug')
         options.append('--enable-optimize')
-        options.append('--enable-strip')
     elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-debug')
@@ -146,6 +144,9 @@ def get_configs_from_args(args):
             name = 'armsim'
         names.append(name)
         options.append('--enable-simulator=' + platform)
+
+    if config('ccov'):
+        options.append('--enable-coverage')
 
     if config('shell'):
         names.append('shell')
