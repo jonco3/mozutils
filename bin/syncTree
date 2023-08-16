@@ -3,6 +3,12 @@
 # Sync a tree from a remote one by fetching a diff of outgoing changes
 # and applying it locally.
 
+# todo:
+#  - hg outgoing exits with return code 1 if no changes
+#  - parallelise branch prep and fetching diff
+#  - record list of changed files to speed up prep
+#  - warn if update from upstream needed
+
 import argparse
 import json
 import os
