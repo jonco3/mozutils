@@ -26,8 +26,6 @@ def add_common_config_arguments(parser, isBrowserConfig):
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
     san_group.add_argument('--valgrind', action='store_true', help='Valgrind build')
 
-    parser.add_argument('--ccov', action='store_true', help='Coverage build')
-
     parser.add_argument('--concurrent', action='store_true',
                         help='GC support for concurrent marking')
 
@@ -38,6 +36,8 @@ def add_browser_config_arguments(parser):
 
     parser.add_argument('--android', action='store_true',
                         help='Build Android browser')
+
+    parser.add_argument('--ccov', action='store_true', help='Coverage build')
 
 def add_shell_config_arguments(parser):
     add_common_config_arguments(parser, False)
@@ -146,6 +146,7 @@ def get_configs_from_args(args):
         options.append('--enable-simulator=' + platform)
 
     if config('ccov'):
+        names.append('ccov')
         options.append('--enable-coverage')
 
     if config('shell'):
