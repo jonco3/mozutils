@@ -5,13 +5,31 @@ import fileinput
 
 parser = argparse.ArgumentParser(
     description = 'Sort objdump disassembly output to aid comparison')
-parser.add_argument('--filter-gc', help='Include only GC relevant functions')
+parser.add_argument('--filter-gc', action='store_true',
+                    help='Include only GC relevant functions')
+parser.add_argument('files', metavar='FILE', nargs='*')
 args = parser.parse_args();
+
+GCFilters = ["js::gc::", "mark", "trace"]
+
+def isGCRelated(section_name):
+    for filter in GCFilters:
+        if filter in section_name:
+            return True
+    return False
+
+def sectionKey(section):
+    words = section[0].split()
+    while '(' not in words[0] and '>' not in words[0]:
+        words.pop(0)
+        if not words:
+            return section[0]
+    return ' '.join(words)
 
 section = None
 sections = []
 
-for line in fileinput.input():
+for line in fileinput.input(args.files):
     line = line.rstrip()
 
     if line == "":
@@ -24,17 +42,11 @@ for line in fileinput.input():
 
     section.append(line)
 
-sections.sort(key = lambda s: s[0].partition(" ")[2])
+# Sort sections by function name and args, ignoring address and return type.
+sections.sort(key = sectionKey)
 
 for section in sections:
-    # Hack to filter sections to GC-relevant parts.
-    line = section[0].lower()
-
-    if args.filter_gc and ("js::gc::" not in line and \
-                           "trace" not in line and \
-                           "mark" not in line and \
-                           "create" not in line and \
-                           "alloc" not in line):
+    if args.filter_gc and not isGCRelated(section[0].lower()):
         continue
 
     for line in section:
