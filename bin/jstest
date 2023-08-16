@@ -33,6 +33,8 @@ parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit test
 parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
 parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
+parser.add_argument('extra', nargs='*', help = 'Extra arguments passed to the test suite')
+
 args = parser.parse_args()
 args.shell = True
 
@@ -55,7 +57,13 @@ os.environ['LOCALE'] = 'en_US.utf8'
 if args.gczeal:
     os.environ['JS_GC_ZEAL'] = str(args.gczeal)
 
-testOptions = '--tbpl' if args.tbpl else ''
+test_options = []
+if args.tbpl:
+    test_options.append('--tbpl')
+if args.extra:
+    test_options.extend(args.extra)
+test_options = ' '.join(test_options)
+
 test_all = not any([args.jsapitest, args.jittest, args.jstest, args.octane, args.stylecheck])
 
 config_names, _ = get_configs_from_args(args)
@@ -86,11 +94,11 @@ try:
 
     if args.jittest or test_all:
         run_test(build_name, 'jit',
-                 'python3 jit-test/jit_test.py %s %s' % (testOptions, shell))
+                 'python3 jit-test/jit_test.py %s %s' % (shell, test_options))
 
     if args.jstest or test_all:
         run_test(build_name, 'js',
-                 'python3 tests/jstests.py %s %s /' % (testOptions, shell))
+                 'python3 tests/jstests.py %s %s /' % (shell, test_options))
 
     if args.octane:
         os.chdir('octane')
