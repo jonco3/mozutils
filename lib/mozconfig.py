@@ -64,10 +64,9 @@ def get_configs_from_args(args):
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
+    else:
+        options.append('--enable-ctypes') # Required for hazard analysis
 
-    if config('small_chunk'):
-        names.append('smallChunk')
-        options.append('--enable-small-chunk-size')
 
     if config('concurrent'):
         names.append('concurrent')
@@ -148,6 +147,16 @@ def get_configs_from_args(args):
     if config('ccov'):
         names.append('ccov')
         options.append('--enable-coverage')
+
+        options.append("--enable-debug-symbols=-g1")
+        options.append("--disable-sandbox")
+        options.append("--disable-warnings-as-errors")
+        options.append("--without-wasm-sandboxed-libraries")
+        options.append("CLANG_LIB_DIR=~/.mozbuild/clang/lib/clang/16/lib/darwin")
+        options.append('export LDFLAGS="-coverage -L$CLANG_LIB_DIR"')
+        options.append('export LIBS="-lclang_rt.profile_osx"')
+        options.append('export RUSTFLAGS="-Ccodegen-units=1 -Zprofile -Cpanic=abort -Zpanic_abort_tests -Clink-dead-code -Coverflow-checks=off"')
+        options.append('export RUSTDOCFLAGS="-Cpanic=abort"')
 
     if config('shell'):
         names.append('shell')
