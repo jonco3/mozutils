@@ -248,6 +248,15 @@
 # ^remote/test/puppeteer/packages/ng-schematics/test/build
 /remote/test/puppeteer/packages/ng-schematics/test/build*
 
+# ^remote/test/puppeteer/packages/puppeteer/.*/README.md
+/remote/test/puppeteer/packages/puppeteer/**/README?md*
+
+# ^remote/test/puppeteer/packages/puppeteer-core/src/generated
+/remote/test/puppeteer/packages/puppeteer-core/src/generated*
+
+# ^remote/test/puppeteer/packages/puppeteer-core/.*/README.md
+/remote/test/puppeteer/packages/puppeteer-core/**/README?md*
+
 # ^remote/test/puppeteer/src/generated
 /remote/test/puppeteer/src/generated*
 
