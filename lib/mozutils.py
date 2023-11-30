@@ -28,12 +28,6 @@ def add_build_arguments(parser):
     clean_group.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
     clean_group.add_argument('-C', '--no-clean', action='store_false', dest = 'clean')
 
-    sync_group = parser.add_mutually_exclusive_group()
-    sync_group.add_argument('-S', '--no-sync', dest='sync', action='store_const', const=None,
-                            default='all', help = 'Don\'t sync cloned branch')
-    sync_group.add_argument('-m', '--sync-js-only', dest='sync', action='store_const', const="js",
-                            help = 'Sync js source only before build')
-
 def println(str):
     print(str, flush=True)
 
@@ -127,8 +121,8 @@ def sync_branch(args):
     libDir = os.path.dirname(__file__)
     binDir = os.path.join(libDir, '..', 'bin')
     cmd = [os.path.join(binDir, 'syncBranch')]
-    if args.sync == "js":
-        cmd.append("-j")
+    if args.sync_dir:
+        cmd.append(args.sync_dir)
     subprocess.check_call(cmd)
 
 def disable_unified_build(path):
@@ -143,7 +137,7 @@ def js_build(args):
     mach_build(args)
 
 def mach_build(args):
-    if os.path.isfile('.cloned-from') and args.sync:
+    if os.path.isfile('.cloned-from') and not args.no_sync:
         sync_branch(args);
 
     if not args.unified:

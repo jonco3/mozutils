@@ -26,6 +26,14 @@ def add_common_config_arguments(parser, isBrowserConfig):
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
     san_group.add_argument('--valgrind', action='store_true', help='Valgrind build')
 
+    sync_group = parser.add_mutually_exclusive_group()
+    sync_group.add_argument('-S', '--no-sync', action='store_true',
+                            help = 'Don\'t sync cloned branch')
+    sync_group.add_argument('-s', '--sync-dir',
+                            help = 'Sync specified directory before build')
+    sync_group.add_argument('-m', '--sync-js-only', dest='sync_dir', action='store_const', const="js",
+                            help = 'Sync js source only before build')
+
     parser.add_argument('--concurrent', action='store_true',
                         help='GC support for concurrent marking')
 
@@ -79,14 +87,15 @@ def get_configs_from_args(args):
     if config('android'):
         names.append('android')
         options.append('--enable-application=mobile/android')
-        # Defaults to armv7, or add --target=aarch64
+        options.append('--target=aarch64') # Defaults to armv7
+        # todo: above conflicts with --target32 option
 
     if config('gcc'):
         names.append('gcc')
         options.append('export CC=gcc')
         options.append('export CXX=g++')
     else:
-        if platform.system() == 'Linux':
+        if platform.system() == 'Linux' and not config('target32'):
             # Currently broken on MacOS?
             options.append('--enable-clang-plugin')
 
@@ -130,19 +139,24 @@ def get_configs_from_args(args):
         add_sanitizer_options(args, options)
     elif config('valgrind'):
         names.append('valgrind')
+        options.remove('--enable-clang-plugin')
         options.append('--enable-valgrind')
         options.append('--disable-jemalloc')
+        options.append('--disable-dmd')
+        options.append('--disable-install-strip')
+        options.append('--disable-gtest-in-build')
+        options.append('--enable-logrefcnt')
         if '--enable-optimize' in options:
             options.remove('--enable-optimize')
             options.append('--enable-optimize="-Og -g"')
 
     if config('armsim'):
         if platform_is_64bit() and not config('target32'):
-            name = 'arm64sim'
+            arm_platform = 'arm64'
         else:
-            name = 'armsim'
-        names.append(name)
-        options.append('--enable-simulator=' + platform)
+            arm_platform = 'arm'
+        names.append(arm_platform + 'sim')
+        options.append('--enable-simulator=' + arm_platform)
 
     if config('ccov'):
         names.append('ccov')
@@ -161,9 +175,10 @@ def get_configs_from_args(args):
     if config('shell'):
         names.append('shell')
         options.append('--enable-application=js')
-        if not config('tsan') and not config('asan'):
+        if not config('tsan') and not config('asan') and not config('gcc'):
             options.append('--enable-warnings-as-errors')
         # Currently producing binaries that crash for the browser
+        # Doesn't support LTO
         # options.append('--enable-linker=mold')
     else:
         options.append('--disable-sandbox') # Allow content processes to access filesystem

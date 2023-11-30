@@ -16,7 +16,9 @@ from mozconfig import *
 parser = argparse.ArgumentParser(description = 'Invoke Mozilla mach command')
 add_build_arguments(parser)
 add_browser_config_arguments(parser)
-parser.add_argument('-H', '--headless', action='store_true', help = 'Run in headless mode')
+parser.add_argument('-H', '--headless', action='store_true', help='Run in headless mode')
+parser.add_argument('-x', '--display', type=int, help='Set the DISPLAY env var')
+parser.add_argument('-z', '--gczeal', help='GC zeal mode')
 
 args, remaining = parser.parse_known_args()
 args.verbose = True
@@ -30,5 +32,11 @@ if args.remote and not args.ignore_remote:
 
 if args.headless:
     os.environ['MOZ_HEADLESS'] = '1'
+
+if args.display != None:
+    os.environ['DISPLAY'] = ":%u" % args.display
+
+if args.gczeal:
+    os.environ['JS_GC_ZEAL'] = str(args.gczeal)
 
 mach(args, remaining, False)

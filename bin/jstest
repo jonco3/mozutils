@@ -24,13 +24,13 @@ parser.add_argument('-B', '--no-build', action='store_false', dest='build', defa
 add_build_arguments(parser)
 add_shell_config_arguments(parser)
 
-parser.add_argument('-z', '--gczeal', type=int, help = 'GC zeal mode')
+parser.add_argument('-z', '--gczeal', help = 'GC zeal mode')
 parser.add_argument('-t', '--tbpl', action='store_true', help = 'Run TBPL tests')
 
 parser.add_argument('-y', '--stylecheck', action='store_true', help = 'Run style check')
 parser.add_argument('-a', '--jsapitest', action='store_true', help = 'Run jsapi tests')
-parser.add_argument('-j', '--jittest', action='store_true', help = 'Run jit tests')
-parser.add_argument('-s', '--jstest', action='store_true', help = 'Run js tests')
+parser.add_argument('-i', '--jittest', action='store_true', help = 'Run jit tests')
+parser.add_argument('-j', '--jstest', action='store_true', help = 'Run js tests')
 parser.add_argument('-b', '--octane', action='store_true', help = 'Run octane benchmark')
 
 parser.add_argument('extra', nargs='*', help = 'Extra arguments passed to the test suite')
@@ -97,8 +97,11 @@ try:
                  'python3 jit-test/jit_test.py %s %s' % (shell, test_options))
 
     if args.jstest or test_all:
+        options = test_options
+        if not args.extra:
+            options += ' /'
         run_test(build_name, 'js',
-                 'python3 tests/jstests.py %s %s /' % (shell, test_options))
+                 'python3 tests/jstests.py %s %s' % (shell, options))
 
     if args.octane:
         os.chdir('octane')
