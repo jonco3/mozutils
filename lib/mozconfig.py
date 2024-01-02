@@ -37,6 +37,9 @@ def add_common_config_arguments(parser, isBrowserConfig):
     parser.add_argument('--concurrent', action='store_true',
                         help='GC support for concurrent marking')
 
+    parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default=True,
+                        help='Disable unified build')
+
 def add_browser_config_arguments(parser):
     add_common_config_arguments(parser, True)
     parser.add_argument('--minimal', action='store_true',
@@ -72,9 +75,9 @@ def get_configs_from_args(args):
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
-    else:
-        options.append('--enable-ctypes') # Required for hazard analysis
 
+    if not config('minimal') and platform.system() == 'Linux':
+        options.append('--enable-ctypes') # Required for hazard analysis
 
     if config('concurrent'):
         names.append('concurrent')
@@ -185,6 +188,9 @@ def get_configs_from_args(args):
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
+    if not config('unified'):
+        names.append('nonunified')
+        options.append('--disable-unified-build')
 
     return names, options
 

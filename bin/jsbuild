@@ -20,9 +20,6 @@ add_shell_config_arguments(parser)
 
 args = parser.parse_args()
 
-if not args.unified and not args.remote:
-    sys.exit("Disabling of unifed build only supported with remote builds")
-
 enter_dirs(args.dirs)
 
 chdir_to_source_root()

@@ -20,9 +20,6 @@ add_browser_config_arguments(parser)
 
 args = parser.parse_args()
 
-if not args.unified and not args.sync:
-    sys.exit("Disabling of unifed build only supported with sync")
-
 enter_dirs(args.dirs)
 
 chdir_to_source_root()

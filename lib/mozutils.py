@@ -21,8 +21,6 @@ def add_build_arguments(parser):
                         help = 'Change directory before building')
     parser.add_argument('-r', '--remote', action='store_true', help = 'Build on remote machine')
     parser.add_argument('-R', '--ignore-remote', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default = True,
-                        help = 'Disable unified build')
 
     clean_group = parser.add_mutually_exclusive_group()
     clean_group.add_argument('-c', '--clean', action='store_true', help = 'Clean build')
@@ -125,13 +123,6 @@ def sync_branch(args):
         cmd.append(args.sync_dir)
     subprocess.check_call(cmd)
 
-def disable_unified_build(path):
-    with open(path, "r") as file:
-        content = file.read()
-    content = re.sub("FILES_PER_UNIFIED_FILE = \\d+\n", "FILES_PER_UNIFIED_FILE = 1\n", content)
-    with open(path, "w") as file:
-        file.write(content)
-
 def js_build(args):
     args.shell = True
     mach_build(args)
@@ -139,10 +130,6 @@ def js_build(args):
 def mach_build(args):
     if os.path.isfile('.cloned-from') and not args.no_sync:
         sync_branch(args);
-
-    if not args.unified:
-        # Hack to disable unified builds on remotely synced repo
-        disable_unified_build("js/src/moz.build")
 
     config_names, config_options = get_configs_from_args(args)
     build_name = get_build_name(config_names)
