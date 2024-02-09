@@ -110,6 +110,7 @@ def get_configs_from_args(args):
         options.append('--enable-update-channel=nightly')
         options.append('--enable-rust-simd')
         options.append('--enable-strip')
+        options.append('--disable-tests')
         if platform.system() == 'Linux':
             # Causes link failure on MacOS
             options.append('MOZ_LTO=cross')
