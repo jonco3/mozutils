@@ -5,6 +5,7 @@
 import io
 import os
 import pathlib
+import platform
 import re
 import shutil
 import subprocess
@@ -163,7 +164,7 @@ def mach(args, mach_args, filter_output = True):
 
     setup_environment(args)
     os.environ['MOZCONFIG'] = os.path.abspath(build_config)
-    cmd = ['./mach'] + mach_args
+    cmd = ['mach.cmd'] + mach_args
     if filter_output:
         run_command(cmd, args.verbose, args.warnings)
     else:
@@ -183,11 +184,21 @@ def ensure_js_src_links(args):
     if not os.path.exists(js_src_build_dir):
         os.makedirs(js_src_build_dir)
     os.chdir(js_src_build_dir)
-    if not os.path.lexists('shell'):
-        os.symlink(os.path.join(abs_build_dir, 'dist/bin/js'), 'shell')
-    if not os.path.lexists('jsapi-tests'):
-        os.symlink(os.path.join(abs_build_dir, 'dist/bin/jsapi-tests'), 'jsapi-tests')
+    ensure_link(os.path.join(abs_build_dir, 'dist/bin/js'), 'shell')
+    ensure_link(os.path.join(abs_build_dir, 'dist/bin/jsapi-tests'), 'jsapi-tests')
     os.chdir("../../..")
+
+
+def ensure_link(source_path, target_path):
+    source_path = get_exe_path(source_path)
+    target_path = get_exe_path(target_path)
+    if not os.path.lexists(target_path):
+        os.symlink(source_path, target_path)
+
+def get_exe_path(path):
+    if platform.system() == 'Windows':
+        path += '.exe'
+    return path
 
 # Functions for handling remote builds:
 
