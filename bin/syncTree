@@ -27,11 +27,6 @@ parser.add_argument('--print-changes', metavar="TREE",
                     help="Print outgoing changes as a diff (used internally on server)")
 args = parser.parse_args()
 
-SyncTreeClientFile = ".sync-tree-client"
-
-def is_sync_tree_client():
-    return os.path.isfile(SyncTreeClientFile)
-
 def print_changes():
     changeset = get_first_outgoing_changeset()
     changeset = get_parent_changeset(changeset)
@@ -103,19 +98,7 @@ if args.print_changes:
         sys.exit("Tree not found: " + path)
     os.chdir(path)
 
-    if is_sync_tree_client():
-        sys.exit("Attempt to get changes from client tree")
-
     print_changes()
-elif args.set_client:
-    chdir_to_source_root()
-    if is_sync_tree_client():
-        print("Tree is already a syncTree client")
-    else:
-        with open(SyncTreeClientFile, "w") as f:
-            f.write("Tree is a syncTree client")
 else:
     chdir_to_source_root()
-    if not is_sync_tree_client():
-        sys.exit("Tree is not a syncTree client (initialize with --set-client)")
     sync_changes()
