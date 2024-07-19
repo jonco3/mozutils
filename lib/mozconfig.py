@@ -65,7 +65,7 @@ def get_configs_from_args(args):
 
     # Don't use sccache on machines with lots of cores because it's slower.
     if multiprocessing.cpu_count() < 32:
-        options.append("--with-ccache=$HOME/.mozbuild/sccache/sccache")
+        options.append("--with-ccache=sccache")
 
     if config('minimal'):
         names.append('minimal')
@@ -75,7 +75,9 @@ def get_configs_from_args(args):
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
-
+    elif platform.system() != 'Windows':
+        options.append('--enable-ctypes') # Required for hazard analysis
+ 
     if not config('minimal') and platform.system() == 'Linux':
         options.append('--enable-ctypes') # Required for hazard analysis
 
