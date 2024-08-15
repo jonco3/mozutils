@@ -164,7 +164,8 @@ def mach(args, mach_args, filter_output = True):
 
     setup_environment(args)
     os.environ['MOZCONFIG'] = os.path.abspath(build_config)
-    cmd = ['mach.cmd'] + mach_args
+    mach = 'mach.cmd' if platform.system() == 'Windows' else './mach'
+    cmd = [mach] + mach_args
     if filter_output:
         run_command(cmd, args.verbose, args.warnings)
     else:
