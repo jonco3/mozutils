@@ -2,6 +2,8 @@
 
 import argparse
 import fileinput
+import re
+import sys
 
 parser = argparse.ArgumentParser(
     description = 'Sort objdump disassembly output to aid comparison')
@@ -10,21 +12,28 @@ parser.add_argument('--filter-gc', action='store_true',
 parser.add_argument('files', metavar='FILE', nargs='*')
 args = parser.parse_args();
 
-GCFilters = ["js::gc::", "mark", "trace"]
+GCFilters = ["js::gc::", "mark", "trace", "sweep", "arena", "finalize"]
 
-def isGCRelated(section_name):
+def isGCRelated(first_line):
+    first_line = first_line.lower()
     for filter in GCFilters:
-        if filter in section_name:
+        if filter in first_line:
             return True
     return False
 
 def sectionKey(section):
-    words = section[0].split()
-    while '(' not in words[0] and '>' not in words[0]:
+    first_line = section[0]
+    words = first_line.split()
+    if words and re.match(r"[0-9a-f]+", words[0], re.IGNORECASE):
         words.pop(0)
-        if not words:
-            return section[0]
-    return ' '.join(words)
+    while words and "(" not in words[0] and "<" not in words[0][1:]:
+        words.pop(0)
+    if not words:
+        return first_line
+    result = ' '.join(words)
+    if result.startswith("<"):
+        result = result[1:]
+    return result
 
 section = None
 sections = []
@@ -36,18 +45,24 @@ for line in fileinput.input(args.files):
         section = None
         continue
 
+    if line.startswith("Disassembly of section"):
+        continue
+
     if section is None:
         section = []
         sections.append(section)
 
     section.append(line)
 
+if args.filter_gc:
+    sections = list(filter(lambda section: isGCRelated(section[0]), sections))
+
 # Sort sections by function name and args, ignoring address and return type.
 sections.sort(key = sectionKey)
 
 for section in sections:
-    if args.filter_gc and not isGCRelated(section[0].lower()):
-        continue
+    #print(section[0], file=sys.stderr)
+    #print("  " + sectionKey(section), file=sys.stderr)
 
     for line in section:
         print(line)
