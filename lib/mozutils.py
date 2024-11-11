@@ -45,7 +45,7 @@ def ensureExe(name):
         sys.exit("Can't find %s on path" % name)
     return path
 
-timeStampRe = re.compile(" *[\d\.:]+ (.+)")
+timeStampRe = re.compile(r" *[\d\.:]+ (.+)")
 
 def stripTimestamp(line):
     match = timeStampRe.match(line)
@@ -53,7 +53,7 @@ def stripTimestamp(line):
         return line
     return match.group(1)
 
-pathRe = re.compile("\w[\w\-_/\.]*")
+pathRe = re.compile(r"\w[\w\-_/\.]*")
 
 def exit_with_code(code, message):
     sys.stderr.write(message + "\n")
