@@ -112,7 +112,8 @@ def get_configs_from_args(args):
         options.append('MOZILLA_OFFICIAL=1')
         options.append('--disable-debug')
         options.append('--enable-release')
-        options.append('--enable-update-channel=nightly')
+        options.append('--as-milestone=release')
+        options.append('--enable-official-branding')
         options.append('--enable-rust-simd')
         options.append('--enable-strip')
         options.append('--disable-tests')
@@ -123,6 +124,7 @@ def get_configs_from_args(args):
         names.append('opt')
         options.append('--disable-debug')
         options.append('--enable-optimize')
+        options.append('--as-milestone=release')  # Reduces poisoning.
     elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-debug')
