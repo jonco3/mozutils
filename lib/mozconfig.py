@@ -54,6 +54,7 @@ def add_shell_config_arguments(parser):
     add_common_config_arguments(parser, False)
     parser.add_argument('--armsim', action='store_true', help='ARM simulator build')
     parser.add_argument('--gcc', action='store_true', help='Build with GCC rather than clang')
+    parser.add_argument('--pbl', action='store_true', help='Portable baseline interpreter')
 
 def get_configs_from_args(args):
     names = []
@@ -77,13 +78,15 @@ def get_configs_from_args(args):
         options.append('--disable-webrtc')
     elif platform.system() != 'Windows':
         options.append('--enable-ctypes') # Required for hazard analysis
- 
-    if not config('minimal') and platform.system() == 'Linux':
-        options.append('--enable-ctypes') # Required for hazard analysis
 
     if config('concurrent'):
         names.append('concurrent')
         options.append('--enable-gc-concurrent-marking')
+
+    if config('pbl'):
+        names.append('pbl')
+        options.append('--enable-portable-baseline-interp')
+        options.append('--enable-portable-baseline-interp-force')
 
     if config('target32'):
         names.append('32bit')
@@ -116,7 +119,6 @@ def get_configs_from_args(args):
         if platform.system() == 'Linux':
             # Causes link failure on MacOS
             options.append('MOZ_LTO=cross')
-
     elif config('opt'):
         names.append('opt')
         options.append('--disable-debug')
@@ -181,8 +183,6 @@ def get_configs_from_args(args):
     if config('shell'):
         names.append('shell')
         options.append('--enable-application=js')
-        if not config('tsan') and not config('asan') and not config('gcc'):
-            options.append('--enable-warnings-as-errors')
         # Currently producing binaries that crash for the browser
         # Doesn't support LTO
         # options.append('--enable-linker=mold')
@@ -190,6 +190,9 @@ def get_configs_from_args(args):
         options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
+
+    if not config('tsan') and not config('asan') and not config('gcc'):
+        options.append('--enable-warnings-as-errors')
 
     if not config('unified'):
         names.append('nonunified')
