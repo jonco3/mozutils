@@ -37,6 +37,9 @@ def add_common_config_arguments(parser, isBrowserConfig):
     parser.add_argument('--concurrent', action='store_true',
                         help='GC support for concurrent marking')
 
+    parser.add_argument('--ctypes', action='store_true',
+                        help='GC support for concurrent marking')
+
     parser.add_argument('-U', '--no-unify', action='store_false', dest='unified', default=True,
                         help='Disable unified build')
 
@@ -76,8 +79,11 @@ def get_configs_from_args(args):
         options.append('--disable-synth-speechd')
         options.append('--disable-webspeech')
         options.append('--disable-webrtc')
-    elif platform.system() != 'Windows':
-        options.append('--enable-ctypes') # Required for hazard analysis
+
+    if config('ctypes'):
+        # Required for hazard analysis but doesn't build everywhere.
+        names.append('ctypes')
+        options.append('--enable-ctypes')
 
     if config('concurrent'):
         names.append('concurrent')
