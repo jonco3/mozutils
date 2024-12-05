@@ -158,13 +158,14 @@ def get_configs_from_args(args):
         options.remove('--enable-clang-plugin')
         options.append('--enable-valgrind')
         options.append('--disable-jemalloc')
-        options.append('--disable-dmd')
         options.append('--disable-install-strip')
         options.append('--disable-gtest-in-build')
-        options.append('--enable-logrefcnt')
         if '--enable-optimize' in options:
             options.remove('--enable-optimize')
             options.append('--enable-optimize="-Og -g"')
+        if not config('shell'):
+            options.append('--disable-dmd')
+            options.append('--enable-logrefcnt')
 
     if config('armsim'):
         if platform_is_64bit() and not config('target32'):
