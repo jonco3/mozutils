@@ -200,7 +200,8 @@ def get_configs_from_args(args):
         options.append('--without-wasm-sandboxed-libraries')
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
-    if not config('tsan') and not config('asan') and not config('gcc'):
+    if not config('tsan') and not config('asan') and not config('gcc') and \
+            platform.system() != "Windows":
         options.append('--enable-warnings-as-errors')
 
     if not config('unified'):
