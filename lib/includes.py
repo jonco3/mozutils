@@ -44,6 +44,7 @@ def shouldProcessInclude(path):
                  path.startswith("unicode/") or
                  path.startswith("devtools/") or
                  path.startswith("pr") or
+                 path.startswith("ICU4X") or
                  path.endswith("Generated.h") or
                  path.endswith(".out.h") or
                  path.endswith("javascript-trace.h") or
@@ -67,7 +68,9 @@ def shouldProcessInclude(path):
                           "dtoa.c",
                           "jscustomallocator.h",
                           "FuzzerDefs.h",
-                          "FuzzingInterface.h"]))
+                          "FuzzingInterface.h",
+                          "diplomat_runtime.h"
+                          ]))
 
 def mapInclude(path):
     if path.startswith("js/"):
