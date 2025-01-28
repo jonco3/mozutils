@@ -43,11 +43,14 @@ def findFirstMajorGC(result, majorFields, majorData):
         break
 
 def summarisePhaseTimes(result, majorFields, majorData):
+    reasonField = majorFields.get('Reason')
     fieldNames = ['bgwrk', 'waitBG', 'prep', 'mark', 'sweep', 'cmpct']
     fields = [majorFields.get(name) for name in fieldNames]
     totals = [0 for name in fieldNames]
 
     for line in majorData:
+        if isShutdownReason(line[reasonField]):
+            continue
         for i in range(len(fields)):
             value = line[fields[i]]
             if value:
