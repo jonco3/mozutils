@@ -94,15 +94,20 @@ def get_configs_from_args(args):
         options.append('--enable-portable-baseline-interp')
         options.append('--enable-portable-baseline-interp-force')
 
-    if config('target32'):
-        names.append('32bit')
-        options.append('--target=i686-pc-linux')
 
     if config('android'):
         names.append('android')
         options.append('--enable-application=mobile/android')
-        options.append('--target=aarch64') # Defaults to armv7
-        # todo: above conflicts with --target32 option
+
+        # Set target based on /mobile/android/config/mozconfigs
+        if config('target32'):
+            names.append('32bit')
+            options.append('--target=arm-linux-androideabi')
+        else:
+            options.append('--target=aarch64-linux-android')
+    elif config('target32'):
+        names.append('32bit')
+        options.append('--target=i686-pc-linux')
 
     if config('gcc'):
         names.append('gcc')
@@ -130,7 +135,8 @@ def get_configs_from_args(args):
         names.append('opt')
         options.append('--disable-debug')
         options.append('--enable-optimize')
-        options.append('--as-milestone=release')  # Reduces poisoning.
+        options.append('--enable-strip')
+        # options.append('--as-milestone=release')  # Reduces poisoning.
     elif config('optdebug'):
         names.append('optdebug')
         options.append('--enable-debug')
@@ -201,7 +207,7 @@ def get_configs_from_args(args):
         options.append('--enable-js-shell') # Required for mach jstestbrowser
 
     if not config('tsan') and not config('asan') and not config('gcc') and \
-            platform.system() != "Windows":
+       not config('android') and platform.system() != "Windows":
         options.append('--enable-warnings-as-errors')
 
     if not config('unified'):
