@@ -21,6 +21,9 @@ def add_common_config_arguments(parser, isBrowserConfig):
         parser.add_argument('--32bit', action='store_true', dest='target32',
                             help='Cross compile 32bit build on 64bit host')
 
+    parser.add_argument('--android', action='store_true',
+                        help='Cross compile for Android')
+
     san_group = parser.add_mutually_exclusive_group()
     san_group.add_argument('--tsan', action='store_true', help='Thread sanitizer build')
     san_group.add_argument('--asan', action='store_true', help='Address sanitizer build')
@@ -47,9 +50,6 @@ def add_browser_config_arguments(parser):
     add_common_config_arguments(parser, True)
     parser.add_argument('--minimal', action='store_true',
                         help='Disable optional functionality to reduce build time')
-
-    parser.add_argument('--android', action='store_true',
-                        help='Build Android browser')
 
     parser.add_argument('--ccov', action='store_true', help='Coverage build')
 
@@ -97,7 +97,8 @@ def get_configs_from_args(args):
 
     if config('android'):
         names.append('android')
-        options.append('--enable-application=mobile/android')
+        if not config('shell'):
+            options.append('--enable-application=mobile/android')
 
         # Set target based on /mobile/android/config/mozconfigs
         if config('target32'):
