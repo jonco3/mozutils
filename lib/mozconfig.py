@@ -125,7 +125,6 @@ def get_configs_from_args(args):
         options.append('--disable-debug')
         options.append('--enable-release')
         options.append('--as-milestone=release')
-        options.append('--enable-official-branding')
         options.append('--enable-rust-simd')
         options.append('--enable-strip')
         options.append('--disable-tests')
