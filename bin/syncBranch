@@ -99,6 +99,7 @@ rsync \
     --exclude-from="$EXCLUDE_FILE" \
     --exclude /$REMOTE_FILE \
     --exclude /.hg/ \
+    --exclude /.jj/ \
     --exclude "/*-build/" \
     --exclude "/src/*-build/" \
     --exclude "/js/src/*-build/" \
