@@ -1,8 +1,10 @@
 # ~$
 *~
 
-# \.py(c|o)$
+# \.pyc$
 *.pyc
+
+# \.pyo$
 *.pyo
 
 # (^|/)TAGS$
@@ -13,31 +15,43 @@
 /tags
 */tags
 
-# (^|/)ID$
-/ID
-*/ID
-
 # (^|/)\.DS_Store$
 /.DS_Store
 */.DS_Store
 
-# \.pdb
-*.pdb*
+# \.pdb$
+*.pdb
 
-# \.eslintcache
-*.eslintcache*
+# (^|/)\.eslintcache$
+/.eslintcache
+*/.eslintcache
 
-# \.gcda
-*.gcda*
+# \.gcda$
+*.gcda
 
-# \.gcno
-*.gcno*
+# \.gcno$
+*.gcno
 
-# \.gcov
-*.gcov*
+# \.gcov$
+*.gcov
 
-# compile_commands\.json
-*compile_commands.json*
+# \.tsbuildinfo$
+*.tsbuildinfo
+
+# (^|/)compile_commands\.json$
+/compile_commands.json
+*/compile_commands.json
+
+# (^|/)\#[^/]*\#$
+# Skipping pattern including negated character class
+
+# (^|/)\.\#.*
+/.#***
+*/.#***
+
+# (^|/)ID$
+/ID
+*/ID
 
 # \.orig$
 *.orig
@@ -45,14 +59,24 @@
 # \.rej$
 *.rej
 
-# ^(?=.*\.egg-info/)(?!^third_party/python/)(?!^testing/web-platform/tests/tools/third_party/)
-# Skipping pattern including negative lookahead assertion
+# (^|/)\.fuse_hidden.*$
+/.fuse_hidden**
+*/.fuse_hidden**
 
-# ^\.sw.$
-/.sw?
+# .*\.egg-info/
+***.egg-info/
 
-# .[^/]*\.sw.$
-*.sw?
+# ^testing/web-platform/tests/tools/third_party/pywebsocket3/pywebsocket3.egg-info
+/testing/web-platform/tests/tools/third_party/pywebsocket3/pywebsocket3?egg-info*
+
+# ^testing/web-platform/tests/tools/third_party/pywebsocket3/build
+/testing/web-platform/tests/tools/third_party/pywebsocket3/build*
+
+# ^\.sw[a-z]$
+/.sw[a-z]
+
+# \.[^/]*\.sw[a-z]$
+# Skipping pattern including negated character class
 
 # \.dir-locals\.el
 *.dir-locals.el*
@@ -75,6 +99,9 @@
 # ^\.moz-fast-forward
 /.moz-fast-forward*
 
+# ^\.moz-vendoring
+/.moz-vendoring*
+
 # ^old-configure$
 /old-configure
 
@@ -87,8 +114,14 @@
 # ^\.clang_complete
 /.clang_complete*
 
-# ^\.?machrc$
+# ^machrc$
 /machrc
+
+# ^\.machrc$
+/.machrc
+
+# ^\.skip_fails_cache
+/.skip_fails_cache*
 
 # ^\.python-version$
 /.python-version
@@ -96,29 +129,74 @@
 # ^security/manager/\.nss\.checkout$
 /security/manager/.nss.checkout
 
-# ^obj
-/obj*
+# ^obj.*/
+/obj**/
 
-# ^gecko\.log
-/gecko.log*
+# ^haz-.*/
+/haz-**/
 
-# ^browser/components/newtab/logs/
-/browser/components/newtab/logs/
+# ^build/reports/
+/build/reports/
 
-# ^browser/components/newtab/content-src/asrouter/schemas/corpus/CFRMessageProvider.messages.json
-/browser/components/newtab/content-src/asrouter/schemas/corpus/CFRMessageProvider?messages?json*
+# ^gecko\.log$
+/gecko.log
 
-# ^browser/components/newtab/content-src/asrouter/schemas/corpus/OnboardingMessageProvider.messages.json
-/browser/components/newtab/content-src/asrouter/schemas/corpus/OnboardingMessageProvider?messages?json*
+# ^node_modules/
+/node_modules/
 
-# ^browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider.messages.json
-/browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider?messages?json*
+# ^devtools/.*/node_modules/
+/devtools/**/node_modules/
 
-# ^browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider_toast_notification.messages.json
-/browser/components/newtab/content-src/asrouter/schemas/corpus/PanelTestProvider_toast_notification?messages?json*
+# ^tools/browsertime/node_modules/
+/tools/browsertime/node_modules/
 
-# browser/components/pocket/content/panels/css/main.compiled.css.map
-*browser/components/pocket/content/panels/css/main?compiled?css?map*
+# ^tools/lint/eslint/eslint-plugin-mozilla/node_modules/
+/tools/lint/eslint/eslint-plugin-mozilla/node_modules/
+
+# ^tools/lint/stylelint/stylelint-plugin-mozilla/node_modules/
+/tools/lint/stylelint/stylelint-plugin-mozilla/node_modules/
+
+# ^tools/terser/node_modules/
+/tools/terser/node_modules/
+
+# ^browser/components/asrouter/node_modules/
+/browser/components/asrouter/node_modules/
+
+# ^browser/components/aboutwelcome/node_modules/
+/browser/components/aboutwelcome/node_modules/
+
+# ^browser/extensions/newtab/node_modules/
+/browser/extensions/newtab/node_modules/
+
+# ^tools/ts/node_modules/
+/tools/ts/node_modules/
+
+# ^testing/xpcshell/moz-http2/node_modules/
+/testing/xpcshell/moz-http2/node_modules/
+
+# ^browser/extensions/newtab/logs/
+/browser/extensions/newtab/logs/
+
+# ^browser/components/aboutwelcome/logs/
+/browser/components/aboutwelcome/logs/
+
+# ^browser/components/asrouter/logs/
+/browser/components/asrouter/logs/
+
+# ^browser/components/asrouter/content-src/schemas/corpus/CFRMessageProvider\.messages\.json
+/browser/components/asrouter/content-src/schemas/corpus/CFRMessageProvider.messages.json*
+
+# ^browser/components/asrouter/content-src/schemas/corpus/OnboardingMessageProvider\.messages\.json
+/browser/components/asrouter/content-src/schemas/corpus/OnboardingMessageProvider.messages.json*
+
+# ^browser/components/asrouter/content-src/schemas/corpus/PanelTestProvider\.messages\.json
+/browser/components/asrouter/content-src/schemas/corpus/PanelTestProvider.messages.json*
+
+# ^browser/components/asrouter/content-src/schemas/corpus/PanelTestProvider_toast_notification\.messages\.json
+/browser/components/asrouter/content-src/schemas/corpus/PanelTestProvider_toast_notification.messages.json*
+
+# ^toolkit/components/translations/bergamot-translator/thirdparty
+/toolkit/components/translations/bergamot-translator/thirdparty*
 
 # _DBG\.OBJ/
 *_DBG.OBJ/
@@ -135,11 +213,13 @@
 # ^js/src/old-configure$
 /js/src/old-configure
 
-# ^js/src/autom4te.cache$
-/js/src/autom4te?cache
+# ^js/src/autom4te\.cache$
+/js/src/autom4te.cache
 
-# ^js/src/tests/results-.*\.(html|txt)$
+# ^js/src/tests/results-.*\.html$
 /js/src/tests/results-**.html
+
+# ^js/src/tests/results-.*\.txt$
 /js/src/tests/results-**.txt
 
 # ^js/src/devtools/rootAnalysis/t/out
@@ -154,9 +234,17 @@
 # ^js/src/jit-test/etc/wasm/generate-spectests/target/
 /js/src/jit-test/etc/wasm/generate-spectests/target/
 
-# ^parser/html/java/(html|java)parser/
+# ^parser/html/java/htmlparser/
 /parser/html/java/htmlparser/
+
+# ^parser/html/java/javaparser/
 /parser/html/java/javaparser/
+
+# ^parser/html/java/javaparser\.jar$
+/parser/html/java/javaparser.jar
+
+# ^parser/html/java/translator\.jar$
+/parser/html/java/translator.jar
 
 # \.svn/
 *.svn/
@@ -179,26 +267,29 @@
 # ^captures/
 /captures/
 
-# ^.gradle/
-/?gradle/
+# ^\.gradle/
+/.gradle/
 
-# ^local.properties$
-/local?properties
+# ^\.kotlin/
+/.kotlin/
 
-# .git/
-*?git/
+# ^local\.properties$
+/local.properties
 
-# ^devtools/client/chrome.manifest$
-/devtools/client/chrome?manifest
+# \.git/
+*.git/
 
-# ^devtools/shared/chrome.manifest$
-/devtools/shared/chrome?manifest
+# ^devtools/client/chrome\.manifest$
+/devtools/client/chrome.manifest
 
-# ^devtools/.*/node_modules/
-/devtools/**/node_modules/
+# ^devtools/shared/chrome\.manifest$
+/devtools/shared/chrome.manifest
 
-# ^remote/test/puppeteer/.*\.tsbuildinfo
-/remote/test/puppeteer/**.tsbuildinfo*
+# ^devtools/client/debugger/assets/build
+/devtools/client/debugger/assets/build*
+
+# ^devtools/client/debugger/assets/module-manifest\.json
+/devtools/client/debugger/assets/module-manifest.json*
 
 # ^remote/test/puppeteer/.*/lib/
 /remote/test/puppeteer/**/lib/
@@ -245,17 +336,20 @@
 # ^remote/test/puppeteer/package-lock\.json
 /remote/test/puppeteer/package-lock.json*
 
+# ^remote/test/puppeteer/packages/browsers/src/generated
+/remote/test/puppeteer/packages/browsers/src/generated*
+
 # ^remote/test/puppeteer/packages/ng-schematics/test/build
 /remote/test/puppeteer/packages/ng-schematics/test/build*
 
-# ^remote/test/puppeteer/packages/puppeteer/.*/README.md
-/remote/test/puppeteer/packages/puppeteer/**/README?md*
+# ^remote/test/puppeteer/packages/puppeteer/.*/README\.md
+/remote/test/puppeteer/packages/puppeteer/**/README.md*
 
 # ^remote/test/puppeteer/packages/puppeteer-core/src/generated
 /remote/test/puppeteer/packages/puppeteer-core/src/generated*
 
-# ^remote/test/puppeteer/packages/puppeteer-core/.*/README.md
-/remote/test/puppeteer/packages/puppeteer-core/**/README?md*
+# ^remote/test/puppeteer/packages/puppeteer-core/.*/README\.md
+/remote/test/puppeteer/packages/puppeteer-core/**/README.md*
 
 # ^remote/test/puppeteer/src/generated
 /remote/test/puppeteer/src/generated*
@@ -275,17 +369,23 @@
 # ^remote/test/puppeteer/testserver/lib/
 /remote/test/puppeteer/testserver/lib/
 
-# ^remote/test/puppeteer/utils/mochaRunner/lib/
-/remote/test/puppeteer/utils/mochaRunner/lib/
+# ^remote/test/puppeteer/tools/doctest/bin/
+/remote/test/puppeteer/tools/doctest/bin/
+
+# ^remote/test/puppeteer/tools/internal/
+/remote/test/puppeteer/tools/internal/
+
+# ^remote/test/puppeteer/tools/mocha-runner/bin/
+/remote/test/puppeteer/tools/mocha-runner/bin/
 
 # ^remote/test/puppeteer/website
 /remote/test/puppeteer/website*
 
-# ^third_party/js/PKI.js/node_modules/
-/third_party/js/PKI?js/node_modules/
+# ^third_party/js/PKI\.js/node_modules/
+/third_party/js/PKI.js/node_modules/
 
-# ^third_party/js/PKI.js/package-lock.json
-/third_party/js/PKI?js/package-lock?json*
+# ^third_party/js/PKI\.js/package-lock\.json
+/third_party/js/PKI.js/package-lock.json*
 
 # ^media/libstagefright/android$
 /media/libstagefright/android
@@ -312,11 +412,44 @@
 # ^testing/web-platform/products/
 /testing/web-platform/products/
 
-# ^mobile/android/gradle/.gradle
-/mobile/android/gradle/?gradle*
+# ^mobile/android/gradle/\.gradle
+/mobile/android/gradle/.gradle*
+
+# ^mobile/android/.*/.build-cache
+/mobile/android/**/?build-cache*
+
+# ^mobile/android/.*/.gradle
+/mobile/android/**/?gradle*
+
+# ^mobile/android/.*/build
+/mobile/android/**/build*
+
+# ^mobile/android/.*/.kotlin
+/mobile/android/**/?kotlin*
+
+# ^mobile/android/.*/bin
+/mobile/android/**/bin*
+
+# services/app-services/tools/nimbus-gradle-plugin/.gradle
+*services/app-services/tools/nimbus-gradle-plugin/?gradle*
+
+# services/app-services/tools/nimbus-gradle-plugin/build
+*services/app-services/tools/nimbus-gradle-plugin/build*
+
+# ^mobile/android/.*/local.properties
+/mobile/android/**/local?properties*
+
+# ^mobile/android/android-components/.*/assets/extensions/.*/manifest\.json
+/mobile/android/android-components/**/assets/extensions/**/manifest.json*
 
 # ^[^/]*\.xcodeproj/
-*.xcodeproj/
+# Skipping pattern including negated character class
+
+# ^mobile/ios/GeckoTestBrowser/GeckoTestBrowser.xcodeproj/project.xcworkspace/xcuserdata
+/mobile/ios/GeckoTestBrowser/GeckoTestBrowser?xcodeproj/project?xcworkspace/xcuserdata*
+
+# ^mobile/ios/GeckoTestBrowser/GeckoTestBrowser.xcodeproj/xcuserdata
+/mobile/ios/GeckoTestBrowser/GeckoTestBrowser?xcodeproj/xcuserdata*
 
 # ^target/
 /target/
@@ -333,8 +466,8 @@
 # ^dom/webgpu/tests/cts/vendor/target/
 /dom/webgpu/tests/cts/vendor/target/
 
-# ^testing/mozharness/.tox/
-/testing/mozharness/?tox/
+# ^testing/mozharness/\.tox/
+/testing/mozharness/.tox/
 
 # ^testing/mozharness/build/
 /testing/mozharness/build/
@@ -342,32 +475,17 @@
 # ^testing/mozharness/logs/
 /testing/mozharness/logs/
 
-# ^testing/mozharness/.coverage
-/testing/mozharness/?coverage*
+# ^testing/mozharness/\.coverage
+/testing/mozharness/.coverage*
 
-# ^testing/mozharness/nosetests.xml
-/testing/mozharness/nosetests?xml*
+# ^testing/mozharness/nosetests\.xml
+/testing/mozharness/nosetests.xml*
 
-# .tox/
-*?tox/
+# \.tox/
+*.tox/
 
-# ^node_modules/
-/node_modules/
-
-# ^tools/browsertime/node_modules/
-/tools/browsertime/node_modules/
-
-# ^tools/lint/eslint/eslint-plugin-mozilla/node_modules/
-/tools/lint/eslint/eslint-plugin-mozilla/node_modules/
-
-# ^browser/components/newtab/node_modules/
-/browser/components/newtab/node_modules/
-
-# ^tools/esmify/node_modules/
-/tools/esmify/node_modules/
-
-# ^testing/talos/.Python
-/testing/talos/?Python*
+# ^testing/talos/\.Python
+/testing/talos/.Python*
 
 # ^testing/talos/bin/
 /testing/talos/bin/
@@ -378,29 +496,32 @@
 # ^testing/talos/lib/
 /testing/talos/lib/
 
-# ^testing/talos/talos/fis/tp5n.zip
-/testing/talos/talos/fis/tp5n?zip*
+# ^testing/talos/talos/fis/tp5n\.zip
+/testing/talos/talos/fis/tp5n.zip*
 
-# ^testing/talos/talos/fis/tp5n.tar.gz
-/testing/talos/talos/fis/tp5n?tar?gz*
+# ^testing/talos/talos/fis/tp5n\.tar\.gz
+/testing/talos/talos/fis/tp5n.tar.gz*
 
 # ^testing/talos/talos/fis/tp5n
 /testing/talos/talos/fis/tp5n*
 
-# ^testing/talos/talos/tests/tp5n.zip
-/testing/talos/talos/tests/tp5n?zip*
+# ^testing/talos/talos/tests/tp5n\.zip
+/testing/talos/talos/tests/tp5n.zip*
 
-# ^testing/talos/talos/tests/tp5n.tar.gz
-/testing/talos/talos/tests/tp5n?tar?gz*
+# ^testing/talos/talos/tests/tp5n\.tar\.gz
+/testing/talos/talos/tests/tp5n.tar.gz*
 
 # ^testing/talos/talos/tests/tp5n
 /testing/talos/talos/tests/tp5n*
 
-# ^testing/talos/talos/tests/devtools/damp.manifest.develop
-/testing/talos/talos/tests/devtools/damp?manifest?develop*
+# ^testing/talos/talos/tests/pdfpaint/pdfs
+/testing/talos/talos/tests/pdfpaint/pdfs*
 
-# ^testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint.manifest.develop
-/testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint?manifest?develop*
+# ^testing/talos/talos/tests/devtools/damp\.manifest\.develop
+/testing/talos/talos/tests/devtools/damp.manifest.develop*
+
+# ^testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint\.manifest\.develop
+/testing/talos/talos/startup_test/startup_about_home_paint/startup_about_home_paint.manifest.develop*
 
 # ^testing/talos/talos/webextensions/
 /testing/talos/talos/webextensions/
@@ -423,8 +544,14 @@
 # ^testing/talos/talos/tests/webkit/PerformanceTests
 /testing/talos/talos/tests/webkit/PerformanceTests*
 
-# ^toolchains\.json
-/toolchains.json*
+# tps\.log$
+*tps.log
+
+# tps_result\.json$
+*tps_result.json
+
+# ^toolchains\.json$
+/toolchains.json
 
 # \.pytest_cache/
 *.pytest_cache/
@@ -432,29 +559,26 @@
 # \.ruff_cache/
 *.ruff_cache/
 
-# ^lextab.py$
-/lextab?py
-
-# tps\.log
-*tps.log*
-
-# tps_result\.json
-*tps_result.json*
+# ^lextab\.py$
+/lextab.py
 
 # \.vs/
 *.vs/
 
-# \.vscode/(?!extensions\.json|tasks\.json)
-# Skipping pattern including negative lookahead assertion
+# \.vscode/
+*.vscode/
 
 # \.user$
 *.user
 
+# \.zed/
+*.zed/
+
 # ^comm/
 /comm/
 
-# ^testing/raptor/.raptor-venv
-/testing/raptor/?raptor-venv*
+# ^testing/raptor/\.raptor-venv
+/testing/raptor/.raptor-venv*
 
 # ^testing/raptor/raptor-venv
 /testing/raptor/raptor-venv*
@@ -462,8 +586,8 @@
 # ^testing/raptor/raptor/tests/json/
 /testing/raptor/raptor/tests/json/
 
-# ^testing/raptor/webext/raptor/auto_gen_test_config.js
-/testing/raptor/webext/raptor/auto_gen_test_config?js*
+# ^testing/raptor/webext/raptor/auto_gen_test_config\.js
+/testing/raptor/webext/raptor/auto_gen_test_config.js*
 
 # ^testing/condprofile/build
 /testing/condprofile/build*
@@ -471,14 +595,14 @@
 # ^browsertime-results
 /browsertime-results*
 
-# gfx/wgpu/target
-*gfx/wgpu/target*
+# ^gfx/wgpu/target
+/gfx/wgpu/target*
 
-# gfx/wgpu/.*/build
-*gfx/wgpu/**/build*
+# ^gfx/wgpu/.*/build
+/gfx/wgpu/**/build*
 
-# gfx/wr/target/
-*gfx/wr/target/
+# ^gfx/wr/target/
+/gfx/wr/target/
 
 # ^taskcluster/docker/image_builder/build-image/target
 /taskcluster/docker/image_builder/build-image/target*
@@ -486,8 +610,8 @@
 # ^config/external/icu4x
 /config/external/icu4x*
 
-# ^.cache/clangd/index/
-/?cache/clangd/index/
+# ^\.cache/clangd/index/
+/.cache/clangd/index/
 
 # \.mypy_cache/
 *.mypy_cache/
@@ -498,23 +622,20 @@
 # ^browser/components/storybook/storybook-static/
 /browser/components/storybook/storybook-static/
 
-# ^browser/components/storybook/.storybook/chrome-map.js
-/browser/components/storybook/?storybook/chrome-map?js*
+# ^browser/components/storybook/\.storybook/chrome-map\.js
+/browser/components/storybook/.storybook/chrome-map.js*
 
-# ^browser/components/storybook/custom-elements.json
-/browser/components/storybook/custom-elements?json*
+# ^browser/components/storybook/custom-elements\.json
+/browser/components/storybook/custom-elements.json*
 
-# ^tools/esmify/jscodeshift
-/tools/esmify/jscodeshift*
+# ^browser/components/storybook/component-status/components\.json
+/browser/components/storybook/component-status/components.json*
 
-# ^tools/esmify/jscodeshift.cmd
-/tools/esmify/jscodeshift?cmd*
+# toolkit/themes/shared/design-system/node_modules/
+*toolkit/themes/shared/design-system/node_modules/
 
-# ^tools/esmify/jscodeshift.ps1
-/tools/esmify/jscodeshift?ps1*
-
-# ^tools/esmify/package-lock.json
-/tools/esmify/package-lock?json*
+# ^tools/@types/index.d.ts
+/tools/@types/index?d?ts*
 
 # ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/scowl
 /extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/scowl*
@@ -522,4 +643,27 @@
 # ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/support_files/
 /extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/support_files/
 
-# ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/*en_US-mozilla*
+# ^extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/.*en_US-mozilla.*
+/extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/**en_US-mozilla***
+
+# ^docs/mots/index\.rst
+/docs/mots/index.rst*
+
+# ^mobile/android/annotations/bin/
+/mobile/android/annotations/bin/
+
+# ^media/libvpx/config/.*/config.log
+/media/libvpx/config/**/config?log*
+
+# ^toolkit/crashreporter/minidump-analyzer/target/
+/toolkit/crashreporter/minidump-analyzer/target/
+
+# ^artifacts/
+/artifacts/
+
+# ^CLAUDE\.local\.md
+/CLAUDE.local.md*
+
+# .claude/settings.local.json
+*?claude/settings?local?json*
+

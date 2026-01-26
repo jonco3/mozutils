@@ -18,15 +18,16 @@ import re
 import sys
 
 def isNormalChar(char):
-    return char.isalnum() or char in '~_-'
+    return char.isalnum() or char in '~_-@'
 
 # Matching state is tuple of:
 #  - remaining input (list of chars)
 #  - output so far (string)
 
 class State:
-    def __init__(self, input):
-        self.input = list(input)    # Remaining input
+    def __init__(self, line):
+        self.line = line
+        self.input = list(line)    # Remaining input
         self.output = ''            # Output so far
         self.inSubExpr = False      # Whether we're inside a sub expression
         self.anchorBeginning = False
@@ -70,7 +71,7 @@ class State:
             while not self.finished() and self.input[0] != ']':
                 next = self.input.pop(0)
                 if not next.isalnum() and not isNormalChar(next):
-                    sys.exit('Unhandled character in character class: ' + next)
+                    sys.exit(f"Unhandled character '{next}' in character class in line: {self.line}")
                 self.output += next
 
             if self.finished():
@@ -119,7 +120,7 @@ class State:
             self.anchorEnd = True
             return
 
-        sys.exit(f"Unhandled char: '{char}'")
+        sys.exit(f"Unhandled char '{char}' in line {self.line}")
 
     def enterSubExpr(self):
         assert not self.inSubExpr
@@ -150,14 +151,14 @@ def convertLine(line):
 
     # Clean up input to remove dubious constructs:
     line = line.replace('.[^/]*', '')
-    line = re.sub('g\*$', 'g', line)
+    line = re.sub(r'g\*$', 'g', line)
     line = line.replace('^[^/]*', '')
 
-    line = line.replace('^\.?', '^')  # todo: this is not legit
+    line = line.replace(r'^\.?', '^')  # todo: this is not legit
 
     results = []
 
-    queue = [State(list(line))]
+    queue = [State(line)]
     while queue:
         state = queue[0]
         if state.finished():
@@ -204,6 +205,10 @@ for line in fileinput.input():
 
     if '(?!' in line:
         print("# Skipping pattern including negative lookahead assertion")
+        print()
+        continue
+    if '[^' in line:
+        print("# Skipping pattern including negated character class")
         print()
         continue
 
