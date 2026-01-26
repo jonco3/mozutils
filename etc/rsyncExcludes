@@ -54,7 +54,7 @@
 */ID
 
 # \.orig$
-*.orig
+# *.orig  !!! Ignored but present in tree
 
 # \.rej$
 *.rej
