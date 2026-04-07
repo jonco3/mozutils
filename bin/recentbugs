@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""
+List bugs assigned to a user that changed in the last N days on bugzilla.mozilla.org.
+"""
+
+import argparse
+import os
+import sys
+import xmlrpc.client
+from datetime import datetime, timedelta, timezone
+
+import bugzilla
+
+BUGZILLA_URL = "https://bugzilla.mozilla.org"
+DEFAULT_EMAIL = "jcoppeard@mozilla.com"
+DEFAULT_DAYS = 7
+PHABRICATOR_CONTENT_TYPE = "text/x-phabricator-request"
+
+
+def parse_dt(val):
+    """Parse a datetime from either a string or xmlrpc.client.DateTime."""
+    if isinstance(val, datetime):
+        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    if isinstance(val, xmlrpc.client.DateTime):
+        return datetime.strptime(val.value, "%Y%m%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+
+
+def has_patch_by(bug, email, since):
+    """Return True if the bug has a patch/Phabricator revision uploaded by email after since."""
+    for att in getattr(bug, "attachments", []):
+        if not (att.get("is_patch") or att.get("content_type") == PHABRICATOR_CONTENT_TYPE):
+            continue
+        if att.get("creator") != email:
+            continue
+        if parse_dt(att["creation_time"]) >= since:
+            return True
+    return False
+
+
+def was_resolved_since(bug, since):
+    """Return True if the bug was resolved after since."""
+    last_resolved = getattr(bug, "cf_last_resolved", None)
+    return last_resolved and parse_dt(last_resolved) >= since
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="List recently changed bugs assigned to a user on bugzilla.mozilla.org.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--email",
+        default=os.environ.get("BUGZILLA_EMAIL", DEFAULT_EMAIL),
+        help=f"Bugzilla account email (default: {DEFAULT_EMAIL}, or set BUGZILLA_EMAIL env var)",
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=DEFAULT_DAYS,
+        help=f"Number of days to look back (default: {DEFAULT_DAYS})",
+    )
+    parser.add_argument(
+        "--api-key",
+        default=os.environ.get("BUGZILLA_API_KEY"),
+        help="Bugzilla API key (or set BUGZILLA_API_KEY env var)",
+    )
+    args = parser.parse_args()
+
+    since = datetime.now(timezone.utc) - timedelta(days=args.days)
+
+    bz = bugzilla.Bugzilla(BUGZILLA_URL, api_key=args.api_key, use_creds=False)
+
+    print(f"Fetching bugs for {args.email} since {since.strftime('%Y-%m-%d')}...\n", file=sys.stderr)
+
+    query = bz.build_query(
+        assigned_to=args.email,
+        include_fields=[
+            "id", "summary", "status", "resolution",
+            "component", "product", "attachments", "cf_last_resolved"])
+    query["last_change_time"] = since.strftime("%Y-%m-%d")
+    query["limit"] = 100
+
+    bugs = bz.query(query)
+    bugs = [b for b in bugs if has_patch_by(b, args.email, since) or
+                               was_resolved_since(b, since)]
+    bugs = sorted(bugs, key=lambda b: b.id)
+
+    if not bugs:
+        print(f"No bugs found in the last {args.days} day(s).")
+        return
+
+    print(f"Found {len(bugs)} bug(s) in the last {args.days} day(s).\n")
+
+    for bug in bugs:
+        status_str = bug.status
+        if bug.resolution:
+            status_str += f" ({bug.resolution})"
+        print(f"Bug {bug.id}: {bug.summary}")
+        print(f"  {BUGZILLA_URL}/show_bug.cgi?id={bug.id}")
+        if getattr(bug, "cf_last_resolved", None):
+            resolved_date = parse_dt(bug.cf_last_resolved).strftime("%Y-%m-%d")
+            print(f"  {bug.component} — {status_str} on {resolved_date}")
+        else:
+            print(f"  {bug.component} — {status_str}")
+        print()
+
+
+if __name__ == "__main__":
+    main()
