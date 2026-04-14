@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+
+# cleanOldBuilds
+#
+# Cleans out old build directories from checkouts under ~/work and
+# ~/clone. Build directories are identified by name, for example,
+# ~/work/checkout/some-build.
+#
+# Old builds are found using the modification time of their buildid.h
+# file. By default builds older than one week are selected.
+#
+# Selected builds are printed by default unless -f is passed on the
+# command line in which case they are deleted.
+
+import argparse
+import os
+import shutil
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+SEARCH_DIRS = [os.path.join(HOME, "work"), os.path.join(HOME, "clone")]
+DEFAULT_MAX_AGE_DAYS = 7
+
+
+def list_subdirs(path):
+    """Return a list of immediate subdirectories under path."""
+    if not os.path.isdir(path):
+        return []
+    return [os.path.join(path, entry) for entry in os.listdir(path)
+            if os.path.isdir(os.path.join(path, entry))]
+
+
+def find_build_dirs():
+    """Find all directories ending in '-build' under checkouts in SEARCH_DIRS."""
+    build_dirs = []
+    for search_dir in SEARCH_DIRS:
+        for checkout_path in list_subdirs(search_dir):
+            for build_path in list_subdirs(checkout_path):
+                if os.path.basename(build_path).endswith("-build"):
+                    build_dirs.append(build_path)
+    return build_dirs
+
+
+def find_buildid_h(build_dir):
+    """Find buildid.h under a build directory."""
+    path = os.path.join(build_dir, "buildid.h")
+    if os.path.isfile(path):
+        return path
+    return None
+
+
+def get_build_age_days(build_dir):
+    """Return the age in days of a build based on its buildid.h mtime, or None."""
+    buildid_path = find_buildid_h(build_dir)
+    mtime = os.path.getmtime(buildid_path if buildid_path else build_dir)
+    return (time.time() - mtime) / (60 * 60 * 24)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Clean old build directories from ~/work and ~/clone.")
+    parser.add_argument("-f", "--force", action="store_true",
+                        help="Delete selected builds (default is to just print them)")
+    parser.add_argument("--days", type=int, default=DEFAULT_MAX_AGE_DAYS,
+                        help=f"Max age in days (default: {DEFAULT_MAX_AGE_DAYS})")
+    args = parser.parse_args()
+
+    build_dirs = find_build_dirs()
+    old_builds = []
+    for build_dir in sorted(build_dirs):
+        age = get_build_age_days(build_dir)
+        if age > args.days:
+            old_builds.append((build_dir, age))
+
+    if not old_builds:
+        print("No old builds found.")
+        return
+
+    for build_dir, age in old_builds:
+        print(f"{build_dir} ({age:.0f} days old)")
+
+    if args.force:
+        for build_dir, age in old_builds:
+            print(f"Deleting {build_dir}...")
+            shutil.rmtree(build_dir)
+        print(f"Deleted {len(old_builds)} build(s).")
+    else:
+        print(f"\n{len(old_builds)} build(s) selected. Use -f to delete.")
+
+
+if __name__ == "__main__":
+    main()
