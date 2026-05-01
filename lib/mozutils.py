@@ -70,6 +70,7 @@ def exit_fatal(message):
 def run_command(command, verbose, warnings):
     if verbose:
         println(" ".join(command))
+    localDir = os.getcwd()
     proc = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
     directory_line = None
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
@@ -86,6 +87,8 @@ def run_command(command, verbose, warnings):
         if "Entering directory" in line:
             directory_line = line
             continue
+
+        line = line.replace('./../../../..', localDir)
 
         if "error:" in line or "error[" in line or "required from" in line:
             verbose = True
@@ -238,9 +241,7 @@ def run_remote_command(args):
                 remoteDir = match.group(1)
                 println("Remote dir: " + remoteDir)
                 continue
-        if remoteDir and line.startswith(remoteDir):
-            line = localDir + line[len(remoteDir):]
-            line = re.sub("/clone/", "/work/", line)
+        line = line.replace('./../../../..', localDir)
         line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
         println(line)
     proc.wait()
