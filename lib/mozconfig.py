@@ -71,6 +71,10 @@ def get_configs_from_args(args):
     if multiprocessing.cpu_count() < 32:
         options.append("--with-ccache=sccache")
 
+    # Don't use all cores on large systems as there may not be enough memory.
+    if multiprocessing.cpu_count() >= 64:
+        options.append("mk_add_options MOZ_PARALLEL_BUILD=52")
+
     if config('minimal'):
         names.append('minimal')
         options.append('--disable-av1')
@@ -97,6 +101,7 @@ def get_configs_from_args(args):
 
     if config('android'):
         names.append('android')
+
         if not config('shell'):
             options.append('--enable-application=mobile/android')
 
@@ -218,12 +223,14 @@ def add_sanitizer_options(args, options):
     options.append('--enable-debug-symbols')
     options.append('--disable-install-strip')
     if '--enable-optimize' in options:
+        options.remove('--enable-strip')
         options.remove('--enable-optimize')
         options.append('--enable-optimize="-O2 -gline-tables-only"')
     if not getattr(args, 'shell', False):
         options.append('--disable-elf-hack')
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
+        options.append('ac_add_options --enable-debug-symbols=-gline-tables-only')
     options.append('export MOZ_DEBUG_SYMBOLS=1')
     if not '--enable-gczeal' in options:
         options.append('--enable-gczeal')
