@@ -17,7 +17,7 @@ def add_common_config_arguments(parser, isBrowserConfig):
     opt_group.add_argument('-d', '--optdebug', action='store_true',
                            help = 'Optimized build with assertions enabled')
 
-    if platform_is_64bit():
+    if platform.system() == 'Linux' and platform_is_64bit():
         parser.add_argument('--32bit', action='store_true', dest='target32',
                             help='Cross compile 32bit build on 64bit host')
 
@@ -114,10 +114,6 @@ def get_configs_from_args(args):
         names.append('gcc')
         options.append('export CC=gcc')
         options.append('export CXX=g++')
-    else:
-        if platform.system() == 'Linux' and not config('target32'):
-            # Currently broken on MacOS?
-            options.append('--enable-clang-plugin')
 
     if config('release'):
         names.append('release')
@@ -136,6 +132,8 @@ def get_configs_from_args(args):
         options.append('--disable-debug')
         options.append('--enable-optimize')
         options.append('--enable-strip')
+        if not config('gcc') and not config('target32') and not config('valgrind'):
+            options.append('--enable-clang-plugin')
         # options.append('--as-milestone=release')  # Reduces poisoning.
     elif config('optdebug'):
         names.append('optdebug')
@@ -161,7 +159,6 @@ def get_configs_from_args(args):
         add_sanitizer_options(args, options)
     elif config('valgrind'):
         names.append('valgrind')
-        options.remove('--enable-clang-plugin')
         options.append('--enable-valgrind')
         options.append('--disable-jemalloc')
         options.append('--disable-install-strip')
@@ -198,9 +195,6 @@ def get_configs_from_args(args):
     if config('shell'):
         names.append('shell')
         options.append('--enable-application=js')
-        # Currently producing binaries that crash for the browser
-        # Doesn't support LTO
-        # options.append('--enable-linker=mold')
     else:
         options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
@@ -231,6 +225,8 @@ def add_sanitizer_options(args, options):
         options.append('--disable-crashreporter')
         options.append('--disable-sandbox')
     options.append('export MOZ_DEBUG_SYMBOLS=1')
+    if not '--enable-gczeal' in options:
+        options.append('--enable-gczeal')
 
 def get_build_name(config_names):
     """
