@@ -2,6 +2,8 @@
 
 import argparse
 import fileinput
+import os
+import os.path
 import re
 import sys
 
@@ -12,7 +14,9 @@ parser.add_argument('--filter-gc', action='store_true',
 parser.add_argument('files', metavar='FILE', nargs='*')
 args = parser.parse_args();
 
-GCFilters = ["js::gc::", "mark", "trace", "sweep", "arena", "finalize"]
+GCFilters = ["js::gc::", "mark", "trace", "sweep", "arena", "finalize", "allocator"]
+
+HomeDir = os.environ['HOME']
 
 def isGCRelated(first_line):
     first_line = first_line.lower()
@@ -21,6 +25,7 @@ def isGCRelated(first_line):
             return True
     return False
 
+# Sort sections by function name and args, ignoring address and return type.
 def sectionKey(section):
     first_line = section[0]
     words = first_line.split()
@@ -34,6 +39,53 @@ def sectionKey(section):
     if result.startswith("<"):
         result = result[1:]
     return result
+
+# Try to simplify lines to make the output a little more readable
+BufferedLine = None
+def processLine(line):
+    # Replace tabs with spaces
+    line = line.replace("\t", ' ')
+
+    # Simplify types
+    line = line.replace("js::gc::", "")
+    line = line.replace("js::", "")
+
+    # Normalise paths
+    if line.startswith("; /"):
+        path = line[2:]
+        path = os.path.normpath(path)
+        path = path.replace(HomeDir, '~')
+        # This part is super hacky
+        if path.startswith('~/work/'):
+            if '/js/' in path:
+                path = 'js/' + path.split('/js/')[1]
+            elif '/dist/include/' in path:
+                path = path.split('/dist/include/')[1]
+        elif '/usr/include/' in path:
+            path = path.split('/usr/include/')[1]
+        line = "; " + path
+
+    # Remove references to functions in branches
+    if line.startswith(' ') and '<' in line and line.endswith('>'):
+        line = line.split('<')[0]
+
+    # Try to put comments following the content they reference
+    global BufferedLine
+    if line.startswith(';'):
+        if BufferedLine:
+            result = [BufferedLine]
+            BufferedLine = line
+            return result
+        BufferedLine = line
+        return []
+    if BufferedLine:
+        if len(line) > 58:
+            result = [BufferedLine, line]
+            BufferedLine = None
+            return result
+        line = line.ljust(58) + " " + BufferedLine
+        BufferedLine = None
+    return [line]
 
 section = None
 sections = []
@@ -57,7 +109,6 @@ for line in fileinput.input(args.files):
 if args.filter_gc:
     sections = list(filter(lambda section: isGCRelated(section[0]), sections))
 
-# Sort sections by function name and args, ignoring address and return type.
 sections.sort(key = sectionKey)
 
 for section in sections:
@@ -65,5 +116,6 @@ for section in sections:
     #print("  " + sectionKey(section), file=sys.stderr)
 
     for line in section:
-        print(line)
+        for l in processLine(line):
+            print(l)
     print()
