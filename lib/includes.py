@@ -4,7 +4,7 @@ import re
 import sys
 
 # Match double quoted but not angle bracketed includes.
-IncludeRe = re.compile('^#include\s+"([^\s]+)"')
+IncludeRe = re.compile(r'^#include\s+"([^\s]+)"')
 
 def findAllPublicHeaders():
     return glob.glob("public/*.h") + glob.glob("public/*/*.h")
@@ -43,6 +43,7 @@ def shouldProcessInclude(path):
             not (path.startswith("mozilla/") or
                  path.startswith("unicode/") or
                  path.startswith("devtools/") or
+                 path.startswith("fmt/") or
                  path.startswith("pr") or
                  path.startswith("ICU4X") or
                  path.endswith("Generated.h") or
@@ -51,9 +52,11 @@ def shouldProcessInclude(path):
                  path.endswith("double-conversion.h") or
                  path.endswith("Opcodes.h") or
                  path.endswith("ProfilingCategoryList.h") or
+                 path.endswith("normalizer_glue.h") or
                  "arm" in path or
                  "mips" in path or
                  "generated" in path or
+                 "xsum" in path or
                  path in ["js-config.h",
                           "fdlibm.h",
                           "ffi.h",
