@@ -7,6 +7,9 @@ DEST=~/shared/patches
 HOSTALIAS=~/.hostalias
 VERBOSE=
 
+REVSET='mine() & mutable()'
+LOGFILE=jj-log.txt
+
 if [[ ! -d $SOURCE ]]; then
     echo "Can't find source dir: $SOURCE"
     exit 1
@@ -23,18 +26,12 @@ if [[ ! -f $HOSTALIAS ]]; then
 fi
 
 if [[ $# -gt 0 && $1 == "-v" ]]; then
-    VERBOSE=-i
+    VERBOSE=1
     shift
 fi
 
 if [[ $# -ne 0 ]]; then
     echo "Usage: copyPatches [-v]"
-    exit 1
-fi
-
-# check for modified files in current repo
-if [[ -n "$(hg status -m 2> /dev/null)" ]]; then
-    echo "Modified files exist, aborting"
     exit 1
 fi
 
@@ -44,36 +41,34 @@ if [[ -n $VERBOSE ]]; then
     echo "copyPatches $SOURCE -> $DEST/$HOST"
 fi
 
+slugify() {
+    local text=$1
+    local slug
+    slug=$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]' \
+        | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+    slug=${slug:0:60}
+    slug=${slug%-}
+    if [[ -z $slug ]]; then
+        slug=no-description
+    fi
+    printf '%s' "$slug"
+}
+
 cd $SOURCE
 for dir in `ls`; do
     if [[ ! -d $dir ]]; then
         continue
     fi
-    name=${dir##*/}
-    repo=$dir/.hg
-    patches=$repo/patches
-    if [[ ! -e "$patches/series" ]]; then
+    if [[ ! -d "$dir/.jj" ]]; then
         continue
     fi
+    name=${dir##*/}
 
     if [[ -n $VERBOSE ]]; then
         echo "  repo $dir"
     fi
 
     backup=$DEST/$HOST/$name
-
-    # Delete old patches.  rsync --delete doesn't work without --dirs or
-    # --recursive.
-    for file in `ls $backup`; do
-        path=$patches/$file
-        if [[ ! -e $patches/$file ]]; then
-            if [[ -n $VERBOSE ]]; then
-                echo "    deleting $file"
-            fi
-            rm $backup/$file
-        fi
-    done
-
     if [[ ! -d $backup ]]; then
         if ! mkdir -p $backup; then
             echo "Failed to create directory: $backup"
@@ -81,8 +76,34 @@ for dir in `ls`; do
         fi
     fi
 
-    if ! rsync $VERBOSE --checksum --times $patches/* $backup; then
-        echo "rsync failed!"
-        exit 1
-    fi
+    pushd $SOURCE/$dir > /dev/null
+
+    # Save jj log output to the backup directory.
+    jj log > "$backup/$LOGFILE"
+
+    # Build the list of patch files we expect to exist after this run.
+    expected=$'\n'$LOGFILE$'\n'
+
+    while IFS=$'\t' read -r id desc; do
+        slug=$(slugify "$desc")
+        file="${id}-${slug}.patch"
+        expected+="${file}"$'\n'
+        if [[ -n $VERBOSE ]]; then
+            echo "    writing $file"
+        fi
+        jj show --ignore-working-copy --git -r "$id" > "$backup/$file"
+    done < <(jj log -r "$REVSET" --no-graph \
+                -T 'change_id.short() ++ "\t" ++ description.first_line() ++ "\n"')
+
+    popd > /dev/null
+
+    # Delete files in the backup directory that are no longer expected.
+    for file in `ls $backup`; do
+        if [[ "$expected" != *$'\n'"$file"$'\n'* ]]; then
+            if [[ -n $VERBOSE ]]; then
+                echo "    deleting $file"
+            fi
+            rm "$backup/$file"
+        fi
+    done
 done
