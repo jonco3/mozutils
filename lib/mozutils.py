@@ -241,7 +241,7 @@ def run_remote_command(args):
                 remoteDir = match.group(1)
                 println("Remote dir: " + remoteDir)
                 continue
-        line = line.replace('./../../../..', localDir)
+        line = line.replace(remoteDir, localDir)
         line = re.sub("‘|’", "'", line)  # This is an encoding problem somewhere.
         println(line)
     proc.wait()
