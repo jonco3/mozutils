@@ -40,7 +40,9 @@ args.shell = True
 
 enter_dirs(args.dirs)
 
-if args.remote:
+chdir_to_source_root()
+
+if args.remote and not args.ignore_remote:
     sys.exit(run_remote_command(args))
 
 def run_test(build_name, test_name, command):
@@ -49,8 +51,6 @@ def run_test(build_name, test_name, command):
     if rc != 0:
         sys.exit("Test failed")
     println('')
-
-chdir_to_source_root()
 
 os.environ['TIMEZONE'] = 'PST'
 os.environ['LOCALE'] = 'en_US.utf8'
