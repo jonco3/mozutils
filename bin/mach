@@ -23,6 +23,9 @@ parser.add_argument('-z', '--gczeal', help='GC zeal mode')
 args, remaining = parser.parse_known_args()
 args.verbose = True
 
+if remaining and remaining[0] == '--':
+    remaining = remaining[1:]
+
 enter_dirs(args.dirs)
 
 chdir_to_source_root()
