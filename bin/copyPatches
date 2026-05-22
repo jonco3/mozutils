@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SOURCE=~/work
+SOURCE=~/firefox
 DEST=~/shared/patches
 HOSTALIAS=~/.hostalias
 VERBOSE=

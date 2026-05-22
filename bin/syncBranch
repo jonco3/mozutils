@@ -50,7 +50,7 @@ fi
 
 if [[ $# -ne 0 ]]; then
     echo "usage: syncBranch [ -v ] ( -c BRANCH | [  -j | -d | SUBDIR ] )"
-    echo "Sync remote source repository ~/work/BRANCH from ssh client ($CLIENT)"
+    echo "Sync remote source repository ~/firefox/BRANCH from ssh client ($CLIENT)"
     exit 1
 fi
 
@@ -88,7 +88,7 @@ if [[ -n $CREATE ]]; then
     BRANCH=${PWD##*/}
 fi
 
-SOURCE=$CLIENT:work/$BRANCH/$DIR
+SOURCE=$CLIENT:firefox/$BRANCH/$DIR
 TARGET=$DIR
 
 echo "Syncing $SOURCE to $TARGET"

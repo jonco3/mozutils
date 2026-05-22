@@ -92,7 +92,7 @@ def run_or_exit(command):
     return p.stdout
 
 if args.print_changes:
-    path = "~/work/" + args.print_changes
+    path = "~/firefox/" + args.print_changes
     path = os.path.expanduser(path)
     if not os.path.isdir(path):
         sys.exit("Tree not found: " + path)

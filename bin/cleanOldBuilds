@@ -2,9 +2,9 @@
 
 # cleanOldBuilds
 #
-# Cleans out old build directories from checkouts under ~/work and
+# Cleans out old build directories from checkouts under ~/firefox and
 # ~/clone. Build directories are identified by name, for example,
-# ~/work/checkout/some-build.
+# ~/firefox/checkout/some-build.
 #
 # Old builds are found using the modification time of their buildid.h
 # file. By default builds older than one week are selected.
@@ -19,7 +19,7 @@ import sys
 import time
 
 HOME = os.path.expanduser("~")
-SEARCH_DIRS = [os.path.join(HOME, "work"), os.path.join(HOME, "clone")]
+SEARCH_DIRS = [os.path.join(HOME, "firefox"), os.path.join(HOME, "clone")]
 DEFAULT_MAX_AGE_DAYS = 7
 
 
@@ -59,7 +59,7 @@ def get_build_age_days(build_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Clean old build directories from ~/work and ~/clone.")
+        description="Clean old build directories from ~/firefox and ~/clone.")
     parser.add_argument("-f", "--force", action="store_true",
                         help="Delete selected builds (default is to just print them)")
     parser.add_argument("--days", type=int, default=DEFAULT_MAX_AGE_DAYS,
