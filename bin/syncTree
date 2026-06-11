@@ -3,12 +3,6 @@
 # Sync a tree from a remote one by fetching a diff of outgoing changes
 # and applying it locally.
 
-# todo:
-#  - hg outgoing exits with return code 1 if no changes
-#  - parallelise branch prep and fetching diff
-#  - record list of changed files to speed up prep
-#  - warn if update from upstream needed
-
 import argparse
 import json
 import os
@@ -21,39 +15,29 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from mozutils import *
 
 parser = argparse.ArgumentParser(description = 'Sync with remote tree')
-parser.add_argument('-c', '--set-client', action='store_true',
-                    help="Initialise the current tree as a syncTree client")
 parser.add_argument('--print-changes', metavar="TREE",
                     help="Print outgoing changes as a diff (used internally on server)")
 args = parser.parse_args()
 
 def print_changes():
-    changeset = get_first_outgoing_changeset()
-    changeset = get_parent_changeset(changeset)
-    diff = diff_against_changeset(changeset)
-    response = [changeset, diff]
-    print(json.dumps(response), flush=True)
+    if subprocess.run('jj root', shell=True, capture_output=True).returncode != 0:
+        sys.exit("Not in a jj repo")
+    base_commit = get_base_commit()
+    diff = get_diff(base_commit)
+    print(json.dumps([base_commit, diff]), flush=True)
 
-def get_first_outgoing_changeset():
-    stdout = run_or_exit('hg outgoing --template "{node}\n" --quiet')
-    changeset = stdout.splitlines()[0].strip()
-    assert re.match(r'[0-9a-z]+$', changeset)
-    return changeset
+def get_base_commit():
+    stdout = run_or_exit('jj log -r "latest(immutable() & ancestors(@))" --no-graph -T "commit_id"')
+    commit = stdout.strip()
+    assert re.match(r'[0-9a-f]{40}$', commit)
+    return commit
 
-def get_parent_changeset(changeset):
-    stdout = run_or_exit(f'hg log -r {changeset}^ --template "{{node}}\n"')
-    changeset = stdout.splitlines()[0].strip()
-    assert re.match(r'[0-9a-z]+$', changeset)
-    return changeset
-
-def diff_against_changeset(changeset):
-    return run_or_exit(f'hg diff --git -r {changeset}')
+def get_diff(base_commit):
+    return run_or_exit(f'jj diff --git --from {base_commit} --to @')
 
 def sync_changes():
-    mq_patches = run_or_exit('hg qapplied').splitlines()
-    if mq_patches:
-        sys.exit("MQ patches are applied, not syncing")
-
+    if subprocess.run('git rev-parse --git-dir', shell=True, capture_output=True).returncode != 0:
+        sys.exit("Not in a git repo")
     client = os.environ['SSH_CLIENT'].split()[0]
     if not client:
         sys.exit("SSH_CLIENT not set, can't identify server")
@@ -63,24 +47,26 @@ def sync_changes():
 
     print(f"Fetching changes for '{tree}' from {client}")
     response = run_or_exit(f'ssh {client} "syncTree --print-changes {tree}"')
-    [changeset, diff] = json.loads(response)
+    [base_commit, diff] = json.loads(response)
     linecount = len(diff.splitlines())
-    print(f"Fetched {linecount} line diff against changeset {changeset}")
+    print(f"Fetched {linecount} line diff against commit {base_commit[:12]}")
 
-    file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
+    file = tempfile.NamedTemporaryFile(mode='wb', suffix='.patch', delete=False)
     file.write(diff.encode())
     file.close()
     path = file.name
 
-    print("Reverting local changes")
-    run_or_exit('hg revert --all')
-    run_or_exit('hg purge')
+    p = subprocess.run(f'git cat-file -e {base_commit}', shell=True)
+    if p.returncode != 0:
+        sys.exit(f"Base commit {base_commit[:12]} not found in remote repo — fetch from upstream first")
 
-    print("Updating to parent changeset")
-    run_or_exit(f'hg update -r {changeset}')
+    print("Resetting to base commit")
+    run_or_exit(f'git reset --hard {base_commit}')
+    run_or_exit('git clean -fd')
 
-    print("Applying diff")
-    run_or_exit(f'hg import --no-commit {path}')
+    if diff.strip():
+        print("Applying diff")
+        run_or_exit(f'git apply {path}')
 
     os.remove(path)
     print("done.")
