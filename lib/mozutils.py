@@ -119,6 +119,16 @@ def chdir_to_source_root():
             sys.exit('Please run from within the mozilla source tree')
         lastDir = currentDir
 
+def is_git_repo():
+    rc = subprocess.run('git rev-parse --git-dir', shell=True, capture_output=True).returncode
+    return rc == 0
+
+def sync_tree(args):
+    libDir = os.path.dirname(__file__)
+    binDir = os.path.join(libDir, '..', 'bin')
+    cmd = [os.path.join(binDir, 'syncTree')]
+    subprocess.check_call(cmd)
+
 def sync_branch(args):
     libDir = os.path.dirname(__file__)
     binDir = os.path.join(libDir, '..', 'bin')
@@ -132,8 +142,16 @@ def js_build(args):
     mach_build(args)
 
 def mach_build(args):
-    if os.path.isfile('.cloned-from') and not args.no_sync:
-        sync_branch(args);
+    if not args.no_sync:
+        isRemotePath = os.path.join(pathlib.Path.home(), ".is-remote")
+        buildRemotePath = os.path.join(pathlib.Path.home(), '.build-remote')
+        if os.path.isfile(isRemotePath) and is_git_repo():
+            assert not os.path.isfile(buildRemotePath)
+            sync_tree(args);
+        elif os.path.isfile('.cloned-from'):
+            sync_branch(args);
+        else:
+            print("local")
 
     config_names, config_options = get_configs_from_args(args)
     build_name = get_build_name(config_names)
