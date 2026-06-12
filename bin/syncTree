@@ -49,9 +49,12 @@ def sync_changes():
 
     tree = os.path.basename(os.getcwd())
 
-    print(f"Fetching changes for '{tree}' from {client}")
+    print(f"Fetching changes for '{tree}' from {client}...")
     proc = subprocess.Popen(f'ssh {client} "syncTree --print-changes {tree}"',
                             shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    print(f"Clearing previous changes...")
+    run_or_exit('git restore --staged --worktree .')
 
     base_commit = proc.stdout.readline().strip()
     if not re.match(r'[0-9a-f]{40}$', base_commit):
@@ -63,22 +66,23 @@ def sync_changes():
         proc.kill()
         sys.exit(f"Base commit {base_commit[:12]} not found in remote repo — fetch from upstream first")
 
-    print(f"Resetting to base commit {base_commit[:12]}")
-    run_or_exit(f'git reset --hard {base_commit}')
+    current_head = run_or_exit('git rev-parse HEAD').strip()
+    if current_head != base_commit:
+        print(f"Resetting to base commit {base_commit[:12]}...")
+        run_or_exit(f'git reset --hard {base_commit}')
+    else:
+        print(f"Already at base commit {base_commit[:12]}, skipping reset")
 
     diff = proc.stdout.read()
     proc.wait()
     if proc.returncode != 0:
         sys.exit(f"ssh failed: {proc.stderr.read()}")
 
-    linecount = len(diff.splitlines())
-    print(f"Received {linecount} line diff")
-
     if diff.strip():
+        print("Applying diff...")
         file = tempfile.NamedTemporaryFile(mode='wb', suffix='.patch', delete=False)
         file.write(diff.encode())
         file.close()
-        print("Applying diff")
         run_or_exit(f'git apply --index {file.name}')
         os.remove(file.name)
 
