@@ -186,7 +186,6 @@ def get_configs_from_args(args):
     if config('ccov'):
         names.append('ccov')
         options.append('--enable-coverage')
-
         options.append("--enable-debug-symbols=-g1")
         options.append("--disable-sandbox")
         options.append("--disable-warnings-as-errors")
@@ -203,7 +202,8 @@ def get_configs_from_args(args):
     else:
         options.append('--disable-sandbox') # Allow content processes to access filesystem
         options.append('--without-wasm-sandboxed-libraries')
-        options.append('--enable-js-shell') # Required for mach jstestbrowser
+        if config('optdebug'):
+            options.append('--enable-js-shell') # Required for mach jstestbrowser
 
     if not config('tsan') and not config('asan') and not config('gcc') and \
        not config('android') and platform.system() != "Windows":
