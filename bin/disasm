@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Disassemble all object files found
+
+OPTIONS="--disassemble --line-numbers --demangle"
+# can also use --source  --no-show-raw-insn
+
+find . -iname "*.o" |
+    while read FILE; do
+        echo $FILE
+        objdump $OPTIONS $FILE | sortdis > $FILE.txt
+    done
