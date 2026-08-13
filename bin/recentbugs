@@ -69,7 +69,7 @@ def main():
 
     since = datetime.now(timezone.utc) - timedelta(days=args.days)
 
-    bz = bugzilla.Bugzilla(BUGZILLA_URL, api_key=args.api_key, use_creds=False)
+    bz = bugzilla.Bugzilla(BUGZILLA_URL, api_key=args.api_key, use_creds=False, force_rest=True)
 
     print(f"Fetching bugs for {args.email} since {since.strftime('%Y-%m-%d')}...\n", file=sys.stderr)
 
