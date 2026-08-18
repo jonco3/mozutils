@@ -1,109 +1,115 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-set -euo pipefail
+# Copy jj patches from local repos to a shared dropbox
 
-SOURCE=~/firefox
-DEST=~/shared/patches
-HOSTALIAS=~/.hostalias
-VERBOSE=
+import argparse
+import os
+import os.path
+import re
+import subprocess
+import sys
 
-REVSET='mine() & mutable()'
-LOGFILE=jj-log.txt
+SOURCE = os.path.expanduser('~/firefox')
+DEST = os.path.expanduser('~/shared/patches')
+HOSTALIAS = os.path.expanduser('~/.hostalias')
 
-if [[ ! -d $SOURCE ]]; then
-    echo "Can't find source dir: $SOURCE"
-    exit 1
-fi
+REVSET = 'mine() & mutable()'
+LOGFILE = 'jj-log.txt'
 
-if [[ ! -d $DEST ]]; then
-    echo "Can't find dest dir: $DEST"
-    exit 1
-fi
+# Records, for each patch, the information needed to reconstruct the stack
+# from the patch files alone: its change id (matching the patch filename),
+# its commit id, and its parents' change and commit ids.
+LOG_TEMPLATE = (
+    '"change_id: " ++ change_id.short() ++ "\\n"'
+    ' ++ "commit_id: " ++ commit_id ++ "\\n"'
+    ' ++ "parents: " ++ parents.map('
+    '|c| c.change_id().short() ++ " (" ++ c.commit_id() ++ ")"'
+    ').join(", ") ++ "\\n\\n"'
+    ' ++ description ++ "\\n"'
+    ' ++ "----------------------------------------\\n"'
+)
 
-if [[ ! -f $HOSTALIAS ]]; then
-    echo "Can't find host alias in: $HOSTALIAS"
-    exit 1
-fi
+parser = argparse.ArgumentParser(description='Copy jj patches to shared dropbox')
+parser.add_argument('-v', '--verbose', action='store_true', help='Print progress')
+parser.add_argument('-n', '--dry-run', action='store_true',
+                    help="Show what would be done without changing anything")
+args = parser.parse_args()
 
-if [[ $# -gt 0 && $1 == "-v" ]]; then
-    VERBOSE=1
-    shift
-fi
+verbose = args.verbose or args.dry_run
 
-if [[ $# -ne 0 ]]; then
-    echo "Usage: copyPatches [-v]"
-    exit 1
-fi
+if not os.path.isdir(SOURCE):
+    sys.exit("Can't find source dir: " + SOURCE)
 
-HOST=`cat $HOSTALIAS`
+if not os.path.isdir(DEST):
+    sys.exit("Can't find dest dir: " + DEST)
 
-if [[ -n $VERBOSE ]]; then
-    echo "copyPatches $SOURCE -> $DEST/$HOST"
-fi
+if not os.path.isfile(HOSTALIAS):
+    sys.exit("Can't find host alias in: " + HOSTALIAS)
 
-slugify() {
-    local text=$1
-    local slug
-    slug=$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]' \
-        | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
-    slug=${slug:0:60}
-    slug=${slug%-}
-    if [[ -z $slug ]]; then
-        slug=no-description
-    fi
-    printf '%s' "$slug"
-}
+with open(HOSTALIAS) as f:
+    host = f.read().strip()
 
-cd $SOURCE
-for dir in `ls`; do
-    if [[ ! -d $dir ]]; then
+if verbose:
+    print("copyPatches %s -> %s/%s" % (SOURCE, DEST, host))
+
+
+def slugify(text):
+    slug = text.lower()
+    slug = re.sub(r'[^a-z0-9]+', '-', slug)
+    slug = slug.strip('-')
+    slug = slug[:60]
+    slug = slug.rstrip('-')
+    return slug or 'no-description'
+
+
+def jj(*args, cwd):
+    return subprocess.run(['jj', *args], cwd=cwd, check=True,
+                           capture_output=True, text=True).stdout
+
+
+for name in sorted(os.listdir(SOURCE)):
+    repoDir = os.path.join(SOURCE, name)
+    if not os.path.isdir(os.path.join(repoDir, '.jj')):
         continue
-    fi
-    if [[ ! -d "$dir/.jj" ]]; then
-        continue
-    fi
-    name=${dir##*/}
 
-    if [[ -n $VERBOSE ]]; then
-        echo "  repo $dir"
-    fi
+    if verbose:
+        print("  repo %s" % name)
 
-    backup=$DEST/$HOST/$name
-    if [[ ! -d $backup ]]; then
-        if ! mkdir -p $backup; then
-            echo "Failed to create directory: $backup"
-            exit 1
-        fi
-    fi
+    backup = os.path.join(DEST, host, name)
+    if not args.dry_run:
+        os.makedirs(backup, exist_ok=True)
+        log = jj('log', '-r', REVSET, '--no-graph', '-T', LOG_TEMPLATE, cwd=repoDir)
+        with open(os.path.join(backup, LOGFILE), 'w') as f:
+            f.write(log)
 
-    pushd $SOURCE/$dir > /dev/null
+    expected = {LOGFILE}
 
-    # Save jj log output to the backup directory.
-    jj log > "$backup/$LOGFILE"
+    template = 'change_id.short() ++ "\\t" ++ description.first_line() ++ "\\n"'
+    log = jj('log', '-r', REVSET, '--no-graph', '-T', template, cwd=repoDir)
+    for line in log.splitlines():
+        id, desc = line.split('\t', 1)
+        slug = slugify(desc)
+        file = "%s-%s.patch" % (id, slug)
+        expected.add(file)
+        patch = jj('show', '--ignore-working-copy', '--git', '-r', id, cwd=repoDir)
+        dest_file = os.path.join(backup, file)
+        if os.path.isfile(dest_file):
+            with open(dest_file) as f:
+                existing = f.read()
+            if existing == patch:
+                if verbose:
+                    print("    unchanged %s" % file)
+                continue
+        if verbose:
+            print("    writing %s" % file)
+        if not args.dry_run:
+            with open(dest_file, 'w') as f:
+                f.write(patch)
 
-    # Build the list of patch files we expect to exist after this run.
-    expected=$'\n'$LOGFILE$'\n'
-
-    while IFS=$'\t' read -r id desc; do
-        slug=$(slugify "$desc")
-        file="${id}-${slug}.patch"
-        expected+="${file}"$'\n'
-        if [[ -n $VERBOSE ]]; then
-            echo "    writing $file"
-        fi
-        jj show --ignore-working-copy --git -r "$id" > "$backup/$file"
-    done < <(jj log -r "$REVSET" --no-graph \
-                -T 'change_id.short() ++ "\t" ++ description.first_line() ++ "\n"')
-
-    popd > /dev/null
-
-    # Delete files in the backup directory that are no longer expected.
-    for file in `ls $backup`; do
-        if [[ "$expected" != *$'\n'"$file"$'\n'* ]]; then
-            if [[ -n $VERBOSE ]]; then
-                echo "    deleting $file"
-            fi
-            rm "$backup/$file"
-        fi
-    done
-done
+    if os.path.isdir(backup):
+        for file in os.listdir(backup):
+            if file not in expected:
+                if verbose:
+                    print("    deleting %s" % file)
+                if not args.dry_run:
+                    os.remove(os.path.join(backup, file))
