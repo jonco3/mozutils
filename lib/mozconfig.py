@@ -98,7 +98,6 @@ def get_configs_from_args(args):
         options.append('--enable-portable-baseline-interp')
         options.append('--enable-portable-baseline-interp-force')
 
-
     if config('android'):
         names.append('android')
 

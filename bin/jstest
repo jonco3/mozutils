@@ -60,6 +60,8 @@ if args.gczeal:
 test_options = []
 if args.tbpl:
     test_options.append('--tbpl')
+if args.valgrind:
+    test_options.append('--valgrind')
 if args.extra:
     test_options.extend(args.extra)
 test_options = ' '.join(test_options)
