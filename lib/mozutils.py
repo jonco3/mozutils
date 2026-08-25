@@ -30,21 +30,6 @@ def add_build_arguments(parser):
 def println(str):
     print(str, flush=True)
 
-# based on http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-def which(program):
-    for path in os.environ["PATH"].split(os.pathsep):
-        path = path.strip('"')
-        file = os.path.join(path, program)
-        if os.path.isfile(file) and os.access(file, os.X_OK):
-            return file
-    return None
-
-def ensureExe(name):
-    path = which(name)
-    if not path:
-        sys.exit("Can't find %s on path" % name)
-    return path
-
 timeStampRe = re.compile(r" *[\d\.:]+ (.+)")
 
 def stripTimestamp(line):

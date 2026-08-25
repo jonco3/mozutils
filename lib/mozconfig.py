@@ -163,6 +163,7 @@ def get_configs_from_args(args):
         options.append('--enable-address-sanitizer')
         add_sanitizer_options(args, options)
     elif config('valgrind'):
+        ensureExe('valgrind')
         names.append('valgrind')
         options.append('--enable-valgrind')
         options.append('--disable-jemalloc')
@@ -260,3 +261,18 @@ def write_mozconfig(build_dir, options, build_config):
 def setup_environment(args):
     if platform.system() == 'Linux' and args.target32:
         os.environ['PKG_CONFIG_PATH']='/usr/lib/x86_64-linux-gnu/pkgconfig'
+
+# based on http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    for path in os.environ["PATH"].split(os.pathsep):
+        path = path.strip('"')
+        file = os.path.join(path, program)
+        if os.path.isfile(file) and os.access(file, os.X_OK):
+            return file
+    return None
+
+def ensureExe(name):
+    path = which(name)
+    if not path:
+        sys.exit("Can't find %s on path" % name)
+    return path
